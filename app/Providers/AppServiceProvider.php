@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Http\Middleware\Authenticate;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,5 +23,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Route::aliasMiddleware('auth', Authenticate::class);
+
+        JsonResource::withoutWrapping();
     }
 }
