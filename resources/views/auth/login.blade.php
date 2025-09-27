@@ -32,7 +32,7 @@
                 </div>
             </div>
 
-            <a href="#" class="small">Recuperar contraseña</a>
+            <a href="#" class="text-secondary text-decoration-none fw-bold">Recuperar contraseña</a>
         </div>
     </div>
 @endsection
