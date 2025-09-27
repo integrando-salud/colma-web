@@ -23,6 +23,7 @@ services:
         depends_on:
             - mysql
         ports:
+            - 8000:8000
             - 5173:5173
 
     mysql:
