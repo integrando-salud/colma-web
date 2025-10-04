@@ -29,6 +29,11 @@ class RolesSeeder extends Seeder
         ]);
 
         Bouncer::role()->firstOrCreate([
+            'name' => 'promotor',
+            'title' => 'Promotor',
+        ]);
+
+        Bouncer::role()->firstOrCreate([
             'name' => 'paciente',
             'title' => 'Paciente',
         ]);
