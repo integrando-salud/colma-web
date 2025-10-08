@@ -3,50 +3,55 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\User\FilterUserRequest;
 use App\Http\Requests\Dashboard\User\StoreUserRequest;
-use App\Services\CentroSaludService;
-use App\Services\PaisService;
-use App\Services\RolService;
+use App\Models\User;
+use App\Services\DashboardService;
 use App\Services\UsuarioService;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
+use Throwable;
 
 class UsuarioController extends Controller
 {
-    public function index(
-        UsuarioService $usuarioService,
-        RolService $rolService,
-        PaisService $paisService,
-        CentroSaludService $centroSaludService
-    )
+    public function index(FilterUserRequest $request, DashboardService $dashboardService)
     {
-        $usuarios = $usuarioService->queryGetUsuarios()
-            ->orderBy('name')
-            ->paginate(10)
-            ->withQueryString();
+        $viewData = $dashboardService->getDataForIndexSupervisor($request->validated());
 
-        $roles = $rolService->queryGetRoles([
-            'exclude' => 'paciente',
-            'orderBy' => 'name',
-            'orderDir' => 'asc',
-        ])->get();
-
-        $paises = $paisService->queryGetPaises([
-            'active' => true,
-            'orderBy' => 'name',
-            'orderDir' => 'asc',
-        ])->get();
-
-        $centrosSalud = $centroSaludService->queryGetCentrosSalud([
-            'active' => true,
-            'orderBy' => 'name',
-            'orderDir' => 'asc',
-        ])->get();
-
-        return view('dashboard.usuarios', compact('usuarios', 'roles', 'paises', 'centrosSalud'));
+        return Inertia::render('Usuarios', $viewData);
     }
 
     public function store(StoreUserRequest $request, UsuarioService $usuarioService)
     {
+        try {
+            $usuarioService->storeUsuario($request->validated());
 
+            session()->flash('success', 'Usuario ' . ($request->filled('id') ? 'actualizado' : 'creado') . ' con éxito.');
+
+            return response()->json();
+        } catch (Throwable $th) {
+            Log::error('Error al crear usuario: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([], 500);
+        }
+    }
+
+    public function delete(UsuarioService $usuarioService, User $user)
+    {
+        try {
+            $usuarioService->deleteUsuario($user);
+
+            session()->flash('success', 'Usuario eliminado con éxito.');
+
+            return response()->json();
+        } catch (Throwable $th) {
+            Log::error('Error al eliminar usuario: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([], 500);
+        }
     }
 }

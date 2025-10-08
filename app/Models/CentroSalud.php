@@ -18,4 +18,9 @@ class CentroSalud extends Model
     protected $casts = [
         'active' => 'boolean',
     ];
+
+    public function pais()
+    {
+        return $this->belongsTo(Pais::class, 'pais_id');
+    }
 }

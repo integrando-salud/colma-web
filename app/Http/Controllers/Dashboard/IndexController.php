@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Services\DashboardService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class IndexController extends Controller
 {
@@ -12,6 +13,6 @@ class IndexController extends Controller
     {
         $view = $dashboardService->handleIndexView($request);
 
-        return view($view['name'], $view['data']);
+        return Inertia::render($view['name'], $view['data']);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Dashboard\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -22,10 +23,11 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['nullable', 'exists:users,id'],
             'nombre' => ['required', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'min:8'],
-            'rol_id' => ['required', 'exists:roles,id'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->id)],
+            'password' => ['nullable', 'required_without:id', 'min:8'],
+            'rol' => ['required', 'exists:roles,name'],
             'pais_id' => ['required', 'exists:paises,id'],
             'centro_salud_id' => ['nullable', 'exists:centros_salud,id'],
         ];
@@ -34,16 +36,17 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'id.exists' => 'El usuario seleccionado no existe.',
             'nombre.required' => 'Ingrese el nombre del usuario.',
             'nombre.max' => 'El nombre del usuario no debe exceder los 255 caracteres.',
             'email.required' => 'Ingrese el correo electrónico del usuario.',
             'email.email' => 'Ingrese un correo electrónico válido.',
             'email.max' => 'El correo electrónico no debe exceder los 255 caracteres.',
             'email.unique' => 'El correo electrónico ya está en uso.',
-            'password.required' => 'Ingrese la contraseña del usuario.',
+            'password.required_without' => 'Ingrese la contraseña del usuario.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-            'rol_id.required' => 'Seleccione un rol para el usuario.',
-            'rol_id.exists' => 'El rol seleccionado no es válido.',
+            'rol.required' => 'Seleccione un rol para el usuario.',
+            'rol.exists' => 'El rol seleccionado no es válido.',
             'pais_id.required' => 'Seleccione un país para el usuario.',
             'pais_id.exists' => 'El país seleccionado no es válido.',
             'centro_salud_id.exists' => 'El centro de salud seleccionado no es válido.'

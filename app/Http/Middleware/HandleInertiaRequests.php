@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\Dashboard\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -38,6 +39,9 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'success' => session('success'),
+            'error' => session('error'),
+            'user' => auth()->check() ? new UserResource(auth()->user()) : null,
             'app_name' => config('app.name'),
             'logo_url' => asset(Storage::url('logo.webp')),
         ];

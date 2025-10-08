@@ -20,5 +20,7 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.usuarios.index');
         Route::post('guardar', [UsuarioController::class, 'store'])
             ->name('dashboard.usuarios.store');
+        Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
+            ->name('dashboard.usuarios.delete');
     });
 });
