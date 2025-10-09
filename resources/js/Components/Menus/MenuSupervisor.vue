@@ -5,10 +5,10 @@ import MenuItem from "@/Components/Layouts/MenuItem.vue";
 
 <template>
     <Menu>
-        <li class="list-inline-item me-4">
+        <li class="nav-item me-md-3">
             <MenuItem link="#" title="Pacientes" />
         </li>
-        <li class="list-inline-item">
+        <li class="nav-item">
             <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
         </li>
     </Menu>

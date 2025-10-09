@@ -6,6 +6,7 @@ $success: #22ab62;
 $danger: #c00f0c;
 $info: #c4eae3;
 $thead: #7dd1c1;
+$thead-light: #c4eae3;
 
 $theme-colors: (
     "primary": $primary,
@@ -28,13 +29,12 @@ $table-cell-padding-y: 1rem;
 
 @import "bootstrap/scss/bootstrap";
 
-#top-bar {
-    height: 55px;
+.navbar {
     background-color: $thead;
 }
 
 thead tr th {
-    background-color: $thead !important;
+    background-color: $thead-light !important;
     color: $primary-text-emphasis !important;
 }
 
@@ -49,6 +49,6 @@ thead tr th {
 }
 
 .panel-general {
-    background-color: $thead;
+    background-color: $thead-light;
     border: 1px solid $primary-text-emphasis;
 }

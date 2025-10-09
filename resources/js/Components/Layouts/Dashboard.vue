@@ -8,10 +8,8 @@ defineProps({
 
 <template>
     <Main>
-        <div style="padding-top: 55px;">
-            <div class="pt-4 pb-2">
-                <h3 class="mb-4">{{ title }}</h3>
-            </div>
+        <div class="py-4">
+            <h3 class="mb-4" v-if="title">{{ title }}</h3>
 
             <slot />
         </div>

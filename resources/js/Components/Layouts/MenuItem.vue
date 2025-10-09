@@ -14,7 +14,7 @@ defineProps({
 </script>
 
 <template>
-    <Link :href="link" class="fs-4 fw-semibold text-primary-emphasis text-decoration-none">
+    <Link :href="link" class="nav-link fs-4 fw-semibold text-primary-emphasis">
         {{ title }}
     </Link>
 </template>

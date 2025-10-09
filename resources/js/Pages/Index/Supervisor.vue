@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link } from "@inertiajs/vue3";
+import { Head } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import Usuarios from '@/Components/Pages/Usuarios.vue';
 
@@ -18,7 +18,7 @@ defineProps({
     <Dashboard>
         <div class="row">
             <div class="col-12 mb-4">
-                <div class="panel-general text-primary-emphasis p-4 rounded-3">
+                <div class="panel-general text-primary-emphasis p-4 pb-md-5 rounded-3">
                     <h4 class="mb-4">Panel general</h4>
                     <div class="row">
                         <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0 text-center">
