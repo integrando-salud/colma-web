@@ -67,11 +67,17 @@ class DashboardService
             'orderDir' => 'asc',
         ])->get();
 
+        $supervisores = $usuarioService->queryGetUsuarios([
+            'rol' => 'supervisor',
+            'orderBy' => 'name',
+        ])->get();
+
         return [
             'usuarios' => UserResource::collection($usuarios),
             'roles' => RolResource::collection($roles),
             'paises' => PaisResource::collection($paises),
             'centros_salud' => CentroSaludResource::collection($centrosSalud),
+            'supervisores' => UserResource::collection($supervisores),
             'filtros' => $filters,
         ];
     }

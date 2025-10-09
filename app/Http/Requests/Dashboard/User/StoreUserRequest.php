@@ -29,7 +29,8 @@ class StoreUserRequest extends FormRequest
             'password' => ['nullable', 'required_without:id', 'min:8'],
             'rol' => ['required', 'exists:roles,name'],
             'pais_id' => ['required', 'exists:paises,id'],
-            'centro_salud_id' => ['nullable', 'exists:centros_salud,id'],
+            'centro_salud_id' => ['nullable', 'required_if:rol,promotor', 'exists:centros_salud,id'],
+            'supervisor_id' => ['nullable', 'required_if:rol,promotor', 'exists:users,id'],
         ];
     }
 
@@ -49,7 +50,10 @@ class StoreUserRequest extends FormRequest
             'rol.exists' => 'El rol seleccionado no es válido.',
             'pais_id.required' => 'Seleccione un país para el usuario.',
             'pais_id.exists' => 'El país seleccionado no es válido.',
-            'centro_salud_id.exists' => 'El centro de salud seleccionado no es válido.'
+            'centro_salud_id.exists' => 'El centro de salud seleccionado no es válido.',
+            'centro_salud_id.required_if' => 'Seleccione un centro de salud.',
+            'supervisor_id.exists' => 'El supervisor seleccionado no es válido.',
+            'supervisor_id.required_if' => 'Seleccione un supervisor.',
         ];
     }
 }

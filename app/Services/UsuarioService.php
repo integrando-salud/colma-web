@@ -35,6 +35,7 @@ class UsuarioService
         $user->email = $data['email'];
         $user->pais_id = $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
+        $user->supervisor_id = $data['supervisor_id'] ?? null;
 
         if (empty($data['id'])) {
             $user->password = $data['password'];

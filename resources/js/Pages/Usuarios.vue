@@ -5,9 +5,22 @@ import Usuarios from '@/Components/Pages/Usuarios.vue';
 
 defineProps({
     usuarios: Object,
-    roles: Array,
-    paises: Array,
-    centros_salud: Array,
+    roles: {
+        type: Array,
+        default: () => [],
+    },
+    paises: {
+        type: Array,
+        default: () => [],
+    },
+    centros_salud: {
+        type: Array,
+        default: () => [],
+    },
+    supervisores: {
+        type: Array,
+        default: () => [],
+    },
     filtros: Object,
 });
 </script>
@@ -16,7 +29,7 @@ defineProps({
     <Head title="Usuarios" />
 
     <Dashboard title="Administración de usuarios">
-        <Usuarios :usuarios :roles :paises :centros_salud :filtros :urlBase="route('dashboard.usuarios.index')" />
+        <Usuarios :usuarios :roles :paises :centros_salud :supervisores :filtros :urlBase="route('dashboard.usuarios.index')" />
     </Dashboard>
 </template>
 

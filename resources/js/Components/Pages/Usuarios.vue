@@ -7,9 +7,22 @@ import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
     usuarios: Object,
-    roles: Array,
-    paises: Array,
-    centros_salud: Array,
+    roles: {
+        type: Array,
+        default: () => [],
+    },
+    paises: {
+        type: Array,
+        default: () => [],
+    },
+    centros_salud: {
+        type: Array,
+        default: () => [],
+    },
+    supervisores: {
+        type: Array,
+        default: () => [],
+    },
     filtros: Object,
     urlBase: String,
 });
@@ -22,6 +35,7 @@ const formUsuario = reactive({
     nombre: '',
     pais_id: '',
     centro_salud_id: '',
+    supervisor_id: '',
     errors: {},
 });
 
@@ -77,6 +91,7 @@ const resetFormUsuario = () => {
     formUsuario.nombre = '';
     formUsuario.pais_id = '';
     formUsuario.centro_salud_id = '';
+    formUsuario.supervisor_id = '';
     resetErroresFormUsuario();
 };
 
@@ -143,6 +158,11 @@ const fillDataFormEditarUsuario = () => {
     formUsuario.nombre = userSelected.value.name;
     formUsuario.pais_id = userSelected.value.pais.id;
     formUsuario.centro_salud_id = userSelected.value.centro_salud?.id;
+    formUsuario.supervisor_id = userSelected.value.supervisor?.id;
+};
+
+const resetSupervisor = () => {
+    formUsuario.supervisor_id = userSelected.value ? userSelected.value.supervisor?.id : '';
 };
 </script>
 
@@ -235,12 +255,26 @@ const fillDataFormEditarUsuario = () => {
                         <div class="row mb-3">
                             <label for="tipo" class="col-12 col-xl-4 col-form-label">Tipo usuario</label>
                             <div class="col-12 col-xl-8">
-                                <select id="tipo" name="tipo" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.rol }" v-model="formUsuario.rol">
+                                <select id="tipo" name="tipo" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.rol }" v-model="formUsuario.rol" @change="resetSupervisor">
                                     <option value="">Seleccionar tipo</option>
                                     <option v-for="rol in roles" :key="rol.id" :value="rol.name">{{ rol.title }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.rol">
                                     {{ formUsuario.errors.rol }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" v-if="formUsuario.rol === 'promotor'">
+                        <div class="row mb-3">
+                            <label for="supervisor" class="col-12 col-xl-4 col-form-label">Supervisor</label>
+                            <div class="col-12 col-xl-8">
+                                <select id="supervisor" name="supervisor" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.supervisor_id }" v-model="formUsuario.supervisor_id">
+                                    <option value="">Seleccionar supervisor</option>
+                                    <option v-for="supervisor in supervisores" :key="supervisor.id" :value="supervisor.id">{{ supervisor.name }}</option>
+                                </select>
+                                <div class="invalid-feedback" v-if="formUsuario.errors?.supervisor_id">
+                                    {{ formUsuario.errors.supervisor_id }}
                                 </div>
                             </div>
                         </div>
