@@ -1,9 +1,10 @@
 <script setup>
 import { reactive, ref, useTemplateRef } from "vue";
 import { router } from "@inertiajs/vue3";
-import { useNotificationStore } from '@/Stores/notification';
-import Table from '@/Components/Table.vue';
-import Modal from '@/Components/Modal.vue';
+import { useNotificationStore } from "@/Stores/notification";
+import Table from "@/Components/Table.vue";
+import Modal from "@/Components/Modal.vue";
+import Password from "@/Components/Form/Password.vue";
 
 const props = defineProps({
     usuarios: Object,
@@ -47,6 +48,11 @@ const formFiltros = reactive({
     orderDir: props.filtros.orderDir || null,
 });
 
+const formEditarPassword = reactive({
+    password: '',
+    errors: {},
+});
+
 const notification = useNotificationStore();
 const modalUsuario = useTemplateRef('modalUsuario');
 const titleModalUsuario = ref('Nuevo usuario');
@@ -54,6 +60,8 @@ const modalEliminar = useTemplateRef('modalEliminar');
 const userSelected = ref(null);
 const guardando = ref(false);
 const eliminando = ref(false);
+const modalEditarPassword = useTemplateRef('modalEditarPassword');
+const guardandoPassword = ref(false);
 
 const showModalUsuario = () => {
     modalUsuario.value.showModal();
@@ -82,6 +90,21 @@ const hideModalEliminar = () => {
 
 const handleCloseModalEliminar = () => {
     userSelected.value = null;
+};
+
+const showModalEditarPassword = (usuario) => {
+    userSelected.value = usuario;
+    modalEditarPassword.value.showModal();
+};
+
+const hideModalEditarPassword = () => {
+    modalEditarPassword.value.hideModal();
+};
+
+const handleCloseModalEditarPassword = () => {
+    userSelected.value = null;
+    formEditarPassword.password = '';
+    formEditarPassword.errors = {};
 };
 
 const resetFormUsuario = () => {
@@ -172,6 +195,33 @@ const fillDataFormEditarUsuario = () => {
 const resetSupervisor = () => {
     formUsuario.supervisor_id = userSelected.value ? userSelected.value.supervisor?.id : '';
 };
+
+const updatePassword = async () => {
+    guardandoPassword.value = true;
+    formEditarPassword.errors = {};
+
+    try {
+        await axios.put(route('dashboard.usuarios.updatePassword', userSelected.value.id), formEditarPassword);
+        hideModalEditarPassword();
+        notification.successNotification('Contraseña actualizada correctamente.');
+    } catch (error) {
+        switch (error.status) {
+            case 422:
+                const errors = error.response.data.errors;
+                for (const key in errors) {
+                    formEditarPassword.errors[key] = errors[key][0];
+                }
+
+                notification.errorNotification('El formulario contiene errores.');
+                return;
+            default:
+                notification.errorNotification('Se produjo un error al actualizar la contraseña.');
+                return;
+        }
+    } finally {
+        guardandoPassword.value = false;
+    }
+}
 </script>
 
 <template>
@@ -290,6 +340,7 @@ const resetSupervisor = () => {
                             <ul class="dropdown-menu">
                                 <li>
                                     <a href="#" class="dropdown-item" @click="handleEditarUsuario(usuario)">Editar</a>
+                                    <a href="#" class="dropdown-item" @click="showModalEditarPassword(usuario)">Cambiar contraseña</a>
                                     <a href="#" class="dropdown-item text-danger" @click="showModalEliminar(usuario)">Eliminar</a>
                                 </li>
                             </ul>
@@ -350,10 +401,7 @@ const resetSupervisor = () => {
                         <div class="row mb-3">
                             <label for="password" class="col-12 col-xl-4 col-form-label">Contraseña</label>
                             <div class="col-12 col-xl-8">
-                                <input type="text" id="password" name="password" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.password }" v-model="formUsuario.password" />
-                                <div class="invalid-feedback" v-if="formUsuario.errors?.password">
-                                    {{ formUsuario.errors.password }}
-                                </div>
+                                <Password id="password" name="password" :error="formUsuario.errors?.password" v-model="formUsuario.password" />
                             </div>
                         </div>
                     </div>
@@ -439,6 +487,37 @@ const resetSupervisor = () => {
                 <button type="button" class="btn btn-secondary text-white fw-semibold shadow" disabled>
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                     Eliminando usuario, espere...
+                </button>
+            </template>
+        </template>
+    </Modal>
+
+    <Modal id="modalEditarPassword" ref="modalEditarPassword" title="Cambiar contraseña" :loading="guardandoPassword" @modalClosed="handleCloseModalEditarPassword">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    Se cambiará la contraseña del usuario: <span class="fw-bold text-primary">{{ userSelected?.name }}</span>.
+                </p>
+            </div>
+            <div class="col-12">
+                <label for="newPassword" class="form-label">Nueva contraseña</label>
+                <Password id="newPassword" name="new_password" :error="formEditarPassword.errors?.password" v-model="formEditarPassword.password" />
+            </div>
+        </div>
+
+        <template #footer>
+            <template v-if="guardandoPassword === false">
+                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardandoPassword" @click="hideModalEditarPassword">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardandoPassword" @click="updatePassword">
+                    Confirmar
+                </button>
+            </template>
+            <template v-else>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Cambiando contraseña, espere...
                 </button>
             </template>
         </template>

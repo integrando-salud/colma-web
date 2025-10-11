@@ -22,5 +22,7 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.usuarios.store');
         Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
             ->name('dashboard.usuarios.delete');
+        Route::put('actualizar-contrasena/{user}', [UsuarioController::class, 'updatePassword'])
+            ->name('dashboard.usuarios.updatePassword');
     });
 });

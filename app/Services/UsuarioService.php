@@ -91,4 +91,10 @@ class UsuarioService
     {
         return $user->delete();
     }
+
+    public function updatePassword(User $user, string $password): bool
+    {
+        $user->password = $password;
+        return $user->save();
+    }
 }

@@ -52,3 +52,7 @@ thead tr th {
     background-color: $thead-light;
     border: 1px solid $primary-text-emphasis;
 }
+
+.input-group .btn {
+    border: 1px solid $input-border-color;
+}

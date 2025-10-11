@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\User\FilterUserRequest;
 use App\Http\Requests\Dashboard\User\StoreUserRequest;
+use App\Http\Requests\Dashboard\User\UpdatePasswordRequest;
 use App\Models\User;
 use App\Services\DashboardService;
 use App\Services\UsuarioService;
@@ -48,6 +49,21 @@ class UsuarioController extends Controller
             return response()->json();
         } catch (Throwable $th) {
             Log::error('Error al eliminar usuario: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([], 500);
+        }
+    }
+
+    public function updatePassword(UpdatePasswordRequest $request, UsuarioService $usuarioService, User $user)
+    {
+        try {
+            $usuarioService->updatePassword($user, $request->password);
+
+            return response()->json();
+        } catch (Throwable $th) {
+            Log::error('Error al actualizar la contraseña: ' . $th->getMessage(), [
                 'stack' => $th->getTraceAsString(),
             ]);
 

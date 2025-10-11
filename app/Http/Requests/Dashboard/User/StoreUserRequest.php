@@ -26,7 +26,7 @@ class StoreUserRequest extends FormRequest
             'id' => ['nullable', 'exists:users,id'],
             'nombre' => ['required', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->id)],
-            'password' => ['nullable', 'required_without:id', 'min:8'],
+            'password' => ['nullable', 'required_without:id', 'min:6'],
             'rol' => ['required', 'exists:roles,name'],
             'pais_id' => ['required', 'exists:paises,id'],
             'centro_salud_id' => ['nullable', 'required_if:rol,promotor', 'exists:centros_salud,id'],
