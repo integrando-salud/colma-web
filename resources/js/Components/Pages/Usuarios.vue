@@ -43,6 +43,8 @@ const formFiltros = reactive({
     rol: props.filtros.rol || '',
     pais: props.filtros.pais || '',
     nombre: props.filtros.nombre || '',
+    orderBy: props.filtros.orderBy || null,
+    orderDir: props.filtros.orderDir || null,
 });
 
 const notification = useNotificationStore();
@@ -130,6 +132,12 @@ const filterUsuarios = () => {
     router.get(props.urlBase, formFiltros, { preserveState: true, replace: true });
 };
 
+const orderBy = (column) => {
+    formFiltros.orderDir = (column === formFiltros.orderBy && formFiltros.orderDir === 'asc') ? 'desc' : 'asc';
+    formFiltros.orderBy = column;
+    filterUsuarios();
+}
+
 const deleteUsuario = async () => {
     eliminando.value = true;
 
@@ -205,14 +213,62 @@ const resetSupervisor = () => {
             <Table v-if="usuarios.data.length > 0">
                 <template #header>
                     <tr>
-                        <th>Usuario</th>
-                        <th>Tipo</th>
-                        <th>País</th>
-                        <th>Centro de salud</th>
-                        <th>Supervisor</th>
-                        <th>Pacientes asignados</th>
-                        <th>Último ingreso</th>
-                        <th>Alertas</th>
+                        <th>
+                            <span class="me-3">Usuario</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'name' || formFiltros.orderBy === 'name' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'name' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('name')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Tipo</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'tipo' || formFiltros.orderBy === 'tipo' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'tipo' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('tipo')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">País</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'pais' || formFiltros.orderBy === 'pais' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'pais' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('pais')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Centro de salud</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'centro_salud' || formFiltros.orderBy === 'centro_salud' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'centro_salud' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('centro_salud')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Supervisor</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'supervisor' || formFiltros.orderBy === 'supervisor' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'supervisor' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('supervisor')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Pacientes asignados</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'pacientes' || formFiltros.orderBy === 'pacientes' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'pacientes' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('pacientes')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Último ingreso</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'last_login' || formFiltros.orderBy === 'last_login' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'last_login' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('last_login')"></i>
+                        </th>
+                        <th>
+                            <span class="me-3">Alertas</span>
+                            <i class="fa order" :class="{
+                                'fa-chevron-down': formFiltros.orderBy !== 'alertas' || formFiltros.orderBy === 'alertas' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'alertas' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('alertas')"></i>
+                        </th>
                         <th></th>
                     </tr>
                 </template>
@@ -390,5 +446,7 @@ const resetSupervisor = () => {
 </template>
 
 <style scoped>
-
+.order {
+    cursor: pointer;
+}
 </style>

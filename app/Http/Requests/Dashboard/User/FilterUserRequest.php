@@ -25,6 +25,8 @@ class FilterUserRequest extends FormRequest
             'rol' => ['nullable', 'exists:roles,name'],
             'pais' => ['nullable', 'exists:paises,id'],
             'nombre' => ['nullable'],
+            'orderBy' => ['nullable'],
+            'orderDir' => ['nullable', 'in:asc,desc'],
         ];
     }
 }

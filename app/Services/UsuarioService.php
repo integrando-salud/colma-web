@@ -25,7 +25,47 @@ class UsuarioService
             $query->where('name', 'like', '%' . $filters['nombre'] . '%');
         }
 
-        return $query->orderBy(data_get($filters, 'orderBy', 'id'), data_get($filters, 'orderDir', 'asc'));
+        $orderBy = data_get($filters, 'orderBy', 'id');
+        $orderDir = data_get($filters, 'orderDir', 'desc');
+
+        switch ($orderBy) {
+            case 'tipo':
+                $query->select('users.*')
+                    ->leftJoin('assigned_roles', function ($join) {
+                        $join->on('users.id', '=', 'assigned_roles.entity_id')
+                            ->where('assigned_roles.entity_type', '=', User::class);
+                    })
+                    ->leftJoin('roles', 'roles.id', '=', 'assigned_roles.role_id')
+                    ->orderBy('roles.title', $orderDir);
+                break;
+            case 'pais':
+                $query->select('users.*')
+                    ->leftJoin('paises', 'paises.id', '=', 'users.pais_id')
+                    ->orderBy('paises.name', $orderDir);
+                break;
+            case 'centro_salud':
+                $query->select('users.*')
+                    ->leftJoin('centros_salud', 'centros_salud.id', '=', 'users.centro_salud_id')
+                    ->orderBy('centros_salud.name', $orderDir);
+                break;
+            case 'supervisor':
+                $query->select('users.*')
+                    ->leftJoin('users as supervisors', 'supervisors.id', '=', 'users.supervisor_id')
+                    ->orderBy('supervisors.name', $orderDir);
+                break;
+            case 'pacientes':
+//                $query->withCount('pacientes')
+//                    ->orderBy('pacientes_count', $orderDir);
+                break;
+            case 'alertas':
+//                $query->withCount('alertas')
+//                    ->orderBy('alertas_count', $orderDir);
+                break;
+            default:
+                $query->orderBy($orderBy, $orderDir);
+        }
+
+        return $query;
     }
 
     public function storeUsuario(array $data): User

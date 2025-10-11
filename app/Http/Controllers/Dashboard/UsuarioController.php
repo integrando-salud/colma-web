@@ -16,7 +16,7 @@ class UsuarioController extends Controller
 {
     public function index(FilterUserRequest $request, DashboardService $dashboardService)
     {
-        $viewData = $dashboardService->getDataForIndexSupervisor($request->validated());
+        $viewData = $dashboardService->getDataForUsuariosPage($request->validated());
 
         return Inertia::render('Usuarios', $viewData);
     }

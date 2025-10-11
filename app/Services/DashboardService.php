@@ -16,7 +16,7 @@ class DashboardService
         switch (auth()->user()->roles->first()->name) {
             case 'superadmin':
                 $viewName = 'Index/Supervisor';
-                $viewData = $this->getDataForIndexSupervisor($request->only(['rol', 'pais', 'nombre']));
+                $viewData = $this->getDataForUsuariosPage($request->only(['rol', 'pais', 'nombre', 'orderBy', 'orderDir']));
                 break;
             case 'supervisor':
                 $viewName = 'Index/Supervisor';
@@ -38,14 +38,14 @@ class DashboardService
         ];
     }
 
-    public function getDataForIndexSupervisor(array $filters = [])
+    public function getDataForUsuariosPage(array $filters = [])
     {
         $usuarioService = new UsuarioService();
         $rolService = new RolService();
         $paisService = new PaisService();
         $centroSaludService = new CentroSaludService();
 
-        $usuarios = $usuarioService->queryGetUsuarios(['orderDir' => 'desc'] + $filters)
+        $usuarios = $usuarioService->queryGetUsuarios($filters)
             ->paginate(10)
             ->withQueryString();
 
@@ -70,6 +70,7 @@ class DashboardService
         $supervisores = $usuarioService->queryGetUsuarios([
             'rol' => 'supervisor',
             'orderBy' => 'name',
+            'orderDir' => 'asc',
         ])->get();
 
         return [
