@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Dashboard\Auth\LoginController;
+use App\Http\Controllers\Dashboard\IndexController;
+use App\Http\Controllers\Dashboard\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('ingresar', [LoginController::class, 'index'])
@@ -10,7 +12,17 @@ Route::get('salir', [LoginController::class, 'logout'])
     ->name('dashboard.logout');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return view('dashboard.index');
-    })->name('dashboard.index');
+    Route::get('/', [IndexController::class, 'showIndex'])
+        ->name('dashboard.index');
+
+    Route::prefix('usuarios')->group(function () {
+        Route::get('/', [UsuarioController::class, 'index'])
+            ->name('dashboard.usuarios.index');
+        Route::post('guardar', [UsuarioController::class, 'store'])
+            ->name('dashboard.usuarios.store');
+        Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
+            ->name('dashboard.usuarios.delete');
+        Route::put('actualizar-contrasena/{user}', [UsuarioController::class, 'updatePassword'])
+            ->name('dashboard.usuarios.updatePassword');
+    });
 });

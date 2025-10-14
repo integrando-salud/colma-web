@@ -1,5 +1,5 @@
 <script setup>
-import { Head, useForm, Link } from "@inertiajs/vue3";
+import { Head, useForm } from "@inertiajs/vue3";
 import Main from "@/Components/Layouts/Main.vue";
 
 const form = useForm({
@@ -19,7 +19,7 @@ const login = () => {
 
     <Main>
         <div class="row">
-            <div class="col-12 vh-100 d-flex flex-column justify-content-center align-items-center" style="padding-top: 55px;">
+            <div class="col-12 vh-100 d-flex flex-column justify-content-center align-items-center">
                 <div class="w-100 mb-1" style="max-width: 300px;">
                     <div class="mb-5 text-center">
                         <img :src="$page.props.logo_url" class="img-fluid" :alt="$page.props.app_name">

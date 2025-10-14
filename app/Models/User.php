@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -12,7 +13,7 @@ use Silber\Bouncer\Database\HasRolesAndAbilities;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasRolesAndAbilities, HasFactory, Notifiable;
+    use HasApiTokens, HasRolesAndAbilities, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -23,6 +24,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'pais_id',
+        'centro_salud_id',
+        'supervisor_id',
+        'last_login',
     ];
 
     /**
@@ -45,6 +50,22 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_login' => 'datetime',
         ];
+    }
+
+    public function pais()
+    {
+        return $this->belongsTo(Pais::class);
+    }
+
+    public function centroSalud()
+    {
+        return $this->belongsTo(CentroSalud::class, 'centro_salud_id');
+    }
+
+    public function supervisor()
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
     }
 }

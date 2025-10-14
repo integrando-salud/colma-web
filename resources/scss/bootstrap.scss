@@ -5,6 +5,8 @@ $secondary: #ED217C;
 $success: #22ab62;
 $danger: #c00f0c;
 $info: #c4eae3;
+$thead: #7dd1c1;
+$thead-light: #c4eae3;
 
 $theme-colors: (
     "primary": $primary,
@@ -17,23 +19,40 @@ $theme-colors: (
     "dark": #212529
 );
 
-$primary-text-emphasis: #1F5E7A;
+$primary-text-emphasis: #145b62;
 $font-weight-semibold: 500;
 $form-label-font-weight: $font-weight-semibold;
 $font-family-sans-serif: 'Roboto', sans-serif;
 $link-color: $primary;
+$table-th-font-weight: $font-weight-semibold;
+$table-cell-padding-y: 1rem;
 
 @import "bootstrap/scss/bootstrap";
 
-* {
-    letter-spacing: 1px;
+.navbar {
+    background-color: $thead;
 }
 
-#top-bar {
-    height: 55px;
-    background-color: #52C6B7;
+thead tr th {
+    background-color: $thead-light !important;
+    color: $primary-text-emphasis !important;
 }
 
-.btn {
-    font-weight: 600;
+.btn-grey {
+    background-color: #a0a3b3;
+    color: white;
+
+    &:hover, &:focus, &:active {
+        background-color: darken(#a0a3b3, 10%) !important;
+        color: white !important;
+    }
+}
+
+.panel-general {
+    background-color: $thead-light;
+    border: 1px solid $primary-text-emphasis;
+}
+
+.input-group .btn {
+    border: 1px solid $input-border-color;
 }
