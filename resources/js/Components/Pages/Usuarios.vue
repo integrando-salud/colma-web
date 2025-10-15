@@ -16,7 +16,7 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    centros_salud: {
+    centrosSalud: {
         type: Array,
         default: () => [],
     },
@@ -184,9 +184,9 @@ const handleEditarUsuario = (usuario) => {
 
 const fillDataFormEditarUsuario = () => {
     formUsuario.id = userSelected.value.id;
-    formUsuario.rol = userSelected.value.rol.name;
+    formUsuario.rol = userSelected.value.rol.nombre;
     formUsuario.email = userSelected.value.email;
-    formUsuario.nombre = userSelected.value.name;
+    formUsuario.nombre = userSelected.value.nombre;
     formUsuario.pais_id = userSelected.value.pais.id;
     formUsuario.centro_salud_id = userSelected.value.centro_salud?.id;
     formUsuario.supervisor_id = userSelected.value.supervisor?.id;
@@ -242,13 +242,13 @@ const updatePassword = async () => {
                 <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
                     <select name="rol" id="filtroTipo" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.rol" @change="filterUsuarios">
                         <option value="">Tipo</option>
-                        <option v-for="rol in roles" :key="rol.id" :value="rol.name">{{ rol.title }}</option>
+                        <option v-for="rol in roles" :key="rol.id" :value="rol.nombre">{{ rol.titulo }}</option>
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
                     <select name="pais" id="filtroPais" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.pais"  @change="filterUsuarios">
                         <option value="">País</option>
-                        <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.name }}</option>
+                        <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.nombre }}</option>
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
@@ -266,9 +266,9 @@ const updatePassword = async () => {
                         <th>
                             <span class="me-3">Usuario</span>
                             <i class="fa order" :class="{
-                                'fa-chevron-down': formFiltros.orderBy !== 'name' || formFiltros.orderBy === 'name' && formFiltros.orderDir === 'asc',
-                                'fa-chevron-up': formFiltros.orderBy === 'name' && formFiltros.orderDir === 'desc'
-                            }" @click="orderBy('name')"></i>
+                                'fa-chevron-down': formFiltros.orderBy !== 'nombre' || formFiltros.orderBy === 'nombre' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'nombre' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('nombre')"></i>
                         </th>
                         <th>
                             <span class="me-3">Tipo</span>
@@ -324,13 +324,13 @@ const updatePassword = async () => {
                 </template>
 
                 <tr v-for="usuario in usuarios.data" :key="usuario.id">
-                    <td>{{ usuario.name }}</td>
-                    <td>{{ usuario.rol.title }}</td>
-                    <td>{{ usuario.pais?.name }}</td>
-                    <td>{{ usuario.centro_salud?.name }}</td>
-                    <td>{{ usuario.supervisor?.name }}</td>
+                    <td>{{ usuario.nombre }}</td>
+                    <td>{{ usuario.rol.titulo }}</td>
+                    <td>{{ usuario.pais?.nombre }}</td>
+                    <td>{{ usuario.centro_salud?.nombre }}</td>
+                    <td>{{ usuario.supervisor?.nombre }}</td>
                     <td>{{ usuario.numero_pacientes }}</td>
-                    <td>{{ usuario.ultimo_ingreso }}</td>
+                    <td>{{ usuario.ultimo_acceso }}</td>
                     <td></td>
                     <td>
                         <div class="dropdown">
@@ -364,7 +364,7 @@ const updatePassword = async () => {
                             <div class="col-12 col-xl-8">
                                 <select id="tipo" name="tipo" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.rol }" v-model="formUsuario.rol" @change="resetSupervisor">
                                     <option value="">Seleccionar tipo</option>
-                                    <option v-for="rol in roles" :key="rol.id" :value="rol.name">{{ rol.title }}</option>
+                                    <option v-for="rol in roles" :key="rol.id" :value="rol.nombre">{{ rol.titulo }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.rol">
                                     {{ formUsuario.errors.rol }}
@@ -378,7 +378,7 @@ const updatePassword = async () => {
                             <div class="col-12 col-xl-8">
                                 <select id="supervisor" name="supervisor" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.supervisor_id }" v-model="formUsuario.supervisor_id">
                                     <option value="">Seleccionar supervisor</option>
-                                    <option v-for="supervisor in supervisores" :key="supervisor.id" :value="supervisor.id">{{ supervisor.name }}</option>
+                                    <option v-for="supervisor in supervisores" :key="supervisor.id" :value="supervisor.id">{{ supervisor.nombre }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.supervisor_id">
                                     {{ formUsuario.errors.supervisor_id }}
@@ -426,7 +426,7 @@ const updatePassword = async () => {
                             <div class="col-12 col-xl-8">
                                 <select id="pais" name="pais" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.pais_id }" v-model="formUsuario.pais_id">
                                     <option value="">Seleccionar país</option>
-                                    <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.name }}</option>
+                                    <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.nombre }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.pais_id">
                                     {{ formUsuario.errors.pais_id }}
@@ -440,7 +440,7 @@ const updatePassword = async () => {
                             <div class="col-12 col-xl-8">
                                 <select id="centro_salud" name="centro_salud" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.centro_salud_id }" v-model="formUsuario.centro_salud_id">
                                     <option value="">Seleccionar centro</option>
-                                    <option v-for="centro in centros_salud" :key="centro.id" :value="centro.id ">{{ centro.name }}</option>
+                                    <option v-for="centro in centrosSalud" :key="centro.id" :value="centro.id ">{{ centro.nombre }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.centro_salud_id">
                                     {{ formUsuario.errors.centro_salud_id }}
@@ -471,7 +471,7 @@ const updatePassword = async () => {
     </Modal>
 
     <Modal id="modalEliminar" ref="modalEliminar" title="Eliminar usuario" :loading="eliminando" @modalClosed="handleCloseModalEliminar">
-        <p>Se eliminará el usuario <strong>{{ userSelected?.name }}</strong>.</p>
+        <p>Se eliminará el usuario <strong>{{ userSelected?.nombre }}</strong>.</p>
         <p>¿Desea continuar?</p>
 
         <template #footer>
@@ -496,7 +496,7 @@ const updatePassword = async () => {
         <div class="row">
             <div class="col-12">
                 <p>
-                    Se cambiará la contraseña del usuario: <span class="fw-bold text-primary">{{ userSelected?.name }}</span>.
+                    Se cambiará la contraseña del usuario: <span class="fw-bold text-primary">{{ userSelected?.nombre }}</span>.
                 </p>
             </div>
             <div class="col-12">

@@ -14,15 +14,15 @@ class UsersSeeder extends Seeder
     public function run(): void
     {
         if (config('app.env') === 'local') {
-            $superadmin = User::firstOrCreate([
-                'email' => 'superadmin@correo.com'
+            $superusuario = User::firstOrCreate([
+                'email' => 'superusuario@correo.com'
             ], [
-                'name' => 'Usuario Super Admin',
+                'nombre' => 'Super Usuario',
                 'password' => 123456,
                 'pais_id' => 1
             ]);
 
-            $superadmin->assign('superadmin');
+            $superusuario->assign('superusuario');
         }
     }
 }

@@ -11,12 +11,12 @@ class CentroSalud extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'name',
-        'active',
+        'nombre',
+        'activo',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'activo' => 'boolean',
     ];
 
     public function pais()

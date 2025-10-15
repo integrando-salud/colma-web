@@ -16,15 +16,15 @@ class PaisesSeeder extends Seeder
         Pais::firstOrCreate([
             'id' => 1
         ], [
-            'name' => 'Argentina',
-            'code' => 'AR',
+            'nombre' => 'Argentina',
+            'codigo' => 'AR',
         ]);
 
         Pais::firstOrCreate([
             'id' => 2
         ], [
-            'name' => 'Perú',
-            'code' => 'PE',
+            'nombre' => 'Perú',
+            'codigo' => 'PE',
         ]);
     }
 }

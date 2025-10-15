@@ -10,10 +10,13 @@ class CentroSaludService
     {
         $query = CentroSalud::query();
 
-        if (isset($filters['active'])) {
-            $query->where('active', $filters['active']);
+        if (isset($filters['activo'])) {
+            $query->where('activo', $filters['activo']);
         }
 
-        return $query->orderBy(data_get($filters, 'orderBy', 'id'), data_get($filters, 'orderDir', 'asc'));
+        $orderBy = data_get($filters, 'orderBy', 'id');
+        $orderDir = data_get($filters, 'orderDir', 'asc');
+
+        return $query->orderBy($orderBy, $orderDir);
     }
 }

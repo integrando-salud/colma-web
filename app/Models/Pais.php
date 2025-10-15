@@ -11,12 +11,12 @@ class Pais extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'name',
-        'code',
-        'active',
+        'nombre',
+        'codigo',
+        'activo',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'activo' => 'boolean',
     ];
 }

@@ -15,9 +15,8 @@ return new class extends Migration {
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('nombre');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->foreignIdFor(Pais::class, 'pais_id')
                 ->nullable()
@@ -34,7 +33,7 @@ return new class extends Migration {
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('set null');
-            $table->dateTime('last_login')->nullable();
+            $table->dateTime('ultimo_acceso')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

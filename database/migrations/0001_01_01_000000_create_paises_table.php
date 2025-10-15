@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('paises', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 100);
-            $table->string('code', 10)->nullable()->unique();
-            $table->boolean('active')->default(true);
+            $table->string('nombre', 100);
+            $table->string('codigo', 10)->nullable()->unique();
+            $table->boolean('activo')->default(true);
         });
     }
 
