@@ -7,6 +7,7 @@ $danger: #c00f0c;
 $info: #c4eae3;
 $thead: #7dd1c1;
 $thead-light: #c4eae3;
+$light: #f8f9fa;
 
 $theme-colors: (
     "primary": $primary,
@@ -15,7 +16,7 @@ $theme-colors: (
     "danger": $danger,
     "warning": #ffc107,
     "info": $info,
-    "light": #f8f9fa,
+    "light": $light,
     "dark": #212529
 );
 
@@ -26,6 +27,8 @@ $font-family-sans-serif: 'Roboto', sans-serif;
 $link-color: $primary;
 $table-th-font-weight: $font-weight-semibold;
 $table-cell-padding-y: 1rem;
+$nav-tabs-border-radius: 0;
+$nav-tabs-link-active-bg: $light;
 
 @import "bootstrap/scss/bootstrap";
 

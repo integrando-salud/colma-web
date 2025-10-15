@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Dashboard\Auth\LoginController;
 use App\Http\Controllers\Dashboard\IndexController;
+use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,5 +25,12 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.usuarios.delete');
         Route::put('actualizar-contrasena/{user}', [UsuarioController::class, 'updatePassword'])
             ->name('dashboard.usuarios.updatePassword');
+    });
+
+    Route::prefix('pacientes')->group(function () {
+        Route::get('/', [PacienteController::class, 'index'])
+            ->name('dashboard.pacientes.index');
+        Route::get('crear', [PacienteController::class, 'create'])
+            ->name('dashboard.pacientes.create');
     });
 });

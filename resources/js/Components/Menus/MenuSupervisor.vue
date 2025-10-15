@@ -6,7 +6,7 @@ import MenuItem from "@/Components/Layouts/MenuItem.vue";
 <template>
     <Menu>
         <li class="nav-item me-md-3">
-            <MenuItem link="#" title="Pacientes" />
+            <MenuItem :link="route('dashboard.pacientes.index')" title="Pacientes" />
         </li>
         <li class="nav-item">
             <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
