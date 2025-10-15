@@ -13,25 +13,27 @@ class CentrosSaludSeeder extends Seeder
      */
     public function run(): void
     {
-        CentroSalud::firstOrCreate([
-            'id' => 1
-        ], [
-            'name' => 'Centro de Salud 1',
-            'pais_id' => 1
-        ]);
+        if (config('app.env') === 'local') {
+            CentroSalud::firstOrCreate([
+                'id' => 1
+            ], [
+                'nombre' => 'Centro de Salud 1',
+                'pais_id' => 1
+            ]);
 
-        CentroSalud::firstOrCreate([
-            'id' => 2
-        ], [
-            'name' => 'Centro de Salud 2',
-            'pais_id' => 2
-        ]);
+            CentroSalud::firstOrCreate([
+                'id' => 2
+            ], [
+                'nombre' => 'Centro de Salud 2',
+                'pais_id' => 2
+            ]);
 
-        CentroSalud::firstOrCreate([
-            'id' => 3
-        ], [
-            'name' => 'Centro de Salud 3',
-            'pais_id' => 2
-        ]);
+            CentroSalud::firstOrCreate([
+                'id' => 3
+            ], [
+                'nombre' => 'Centro de Salud 3',
+                'pais_id' => 2
+            ]);
+        }
     }
 }

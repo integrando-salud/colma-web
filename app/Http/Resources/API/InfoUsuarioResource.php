@@ -16,7 +16,7 @@ class InfoUsuarioResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'nombre' => $this->name,
+            'nombre' => $this->nombre,
             'email' => $this->email,
         ];
     }

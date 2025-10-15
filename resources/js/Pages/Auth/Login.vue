@@ -22,7 +22,7 @@ const login = () => {
             <div class="col-12 vh-100 d-flex flex-column justify-content-center align-items-center">
                 <div class="w-100 mb-1" style="max-width: 300px;">
                     <div class="mb-5 text-center">
-                        <img :src="$page.props.logo_url" class="img-fluid" :alt="$page.props.app_name">
+                        <img :src="$page.props.app.logo" class="img-fluid" :alt="$page.props.app.nombre">
                     </div>
                     <div>
                         <form @submit.prevent="login">

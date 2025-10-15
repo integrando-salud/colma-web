@@ -16,9 +16,9 @@ class PaisResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'code' => $this->code,
-            'active' => $this->active,
+            'nombre' => $this->nombre,
+            'codigo' => $this->codigo,
+            'activo' => $this->activo,
         ];
     }
 }

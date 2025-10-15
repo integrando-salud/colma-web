@@ -14,8 +14,8 @@ class RolesSeeder extends Seeder
     public function run(): void
     {
         Bouncer::role()->firstOrCreate([
-            'name' => 'superadmin',
-            'title' => 'Super Administrador',
+            'name' => 'superusuario',
+            'title' => 'Superusuario',
         ]);
 
         Bouncer::role()->firstOrCreate([

@@ -41,9 +41,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'success' => session('success'),
             'error' => session('error'),
-            'user' => auth()->check() ? new UserResource(auth()->user()) : null,
-            'app_name' => config('app.name'),
-            'logo_url' => asset(Storage::url('logo.webp')),
+            'usuario' => auth()->check() ? new UserResource(auth()->user()) : null,
+            'app' => [
+                'nombre' => config('app.name'),
+                'logo' => asset(Storage::url('logo.webp')),
+            ],
         ];
     }
 }
