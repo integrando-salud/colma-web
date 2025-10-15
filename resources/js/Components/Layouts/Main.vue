@@ -34,7 +34,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <MenuSupervisor v-if="$page.props.user?.rol.name.includes('superadmin', 'supervisor')" />
+    <MenuSupervisor v-if="$page.props.usuario?.rol.nombre.includes('superusuario', 'supervisor')" />
 
     <div class="container-fluid">
         <slot />

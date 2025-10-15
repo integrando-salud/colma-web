@@ -13,7 +13,7 @@ defineProps({
         type: Array,
         default: () => [],
     },
-    centros_salud: {
+    centrosSalud: {
         type: Array,
         default: () => [],
     },
@@ -55,9 +55,9 @@ defineProps({
             </div>
         </div>
 
-        <h3 class="mb-4">Usuarios</h3>
+        <h3 class="mb-4 text-primary-emphasis">Usuarios</h3>
 
-        <Usuarios :usuarios :roles :paises :centros_salud :supervisores :filtros :urlBase="route('dashboard.index')" />
+        <Usuarios :usuarios :roles :paises :centrosSalud :supervisores :filtros :urlBase="route('dashboard.index')" />
     </Dashboard>
 </template>
 

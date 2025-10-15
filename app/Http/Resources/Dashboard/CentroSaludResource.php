@@ -16,7 +16,7 @@ class CentroSaludResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'nombre' => $this->nombre,
             'pais' => $this->pais ? new PaisResource($this->pais) : null,
         ];
     }

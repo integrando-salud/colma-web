@@ -10,10 +10,13 @@ class RolService
     {
         $query = Bouncer::role()->newQuery();
 
-        if (isset($filters['exclude'])) {
-            $query->whereNotIn('name', (array) $filters['exclude']);
+        if (isset($filters['excepto'])) {
+            $query->whereNotIn('name', (array) $filters['excepto']);
         }
 
-        return $query->orderBy(data_get($filters, 'orderBy', 'id'), data_get($filters, 'orderDir', 'asc'));
+        $orderBy = data_get($filters, 'orderBy', 'id');
+        $orderDir = data_get($filters, 'orderDir', 'asc');
+
+        return $query->orderBy($orderBy, $orderDir);
     }
 }

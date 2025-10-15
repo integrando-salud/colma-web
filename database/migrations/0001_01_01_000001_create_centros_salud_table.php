@@ -14,13 +14,13 @@ return new class extends Migration
     {
         Schema::create('centros_salud', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 150);
+            $table->string('nombre', 150);
             $table->foreignIdFor(Pais::class, 'pais_id')
                 ->nullable()
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('set null');
-            $table->boolean('active')->default(true);
+            $table->boolean('activo')->default(true);
         });
     }
 

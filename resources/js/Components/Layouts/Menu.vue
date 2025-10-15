@@ -5,7 +5,7 @@ import MenuItem from "@/Components/Layouts/MenuItem.vue";
 <template>
     <nav class="navbar navbar-expand-md">
         <div class="container-fluid">
-            <MenuItem :link="route('dashboard.index')" :title="$page.props.app_name" class="mx-md-5 fw-bold" />
+            <MenuItem :link="route('dashboard.index')" :title="$page.props.app.nombre" class="mx-md-5 fw-bold" />
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar">
                 <span class="navbar-toggler-icon"></span>
             </button>

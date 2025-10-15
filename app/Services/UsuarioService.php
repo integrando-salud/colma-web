@@ -22,7 +22,7 @@ class UsuarioService
         }
 
         if (!empty($filters['nombre'])) {
-            $query->where('name', 'like', '%' . $filters['nombre'] . '%');
+            $query->where('nombre', 'like', '%' . $filters['nombre'] . '%');
         }
 
         $orderBy = data_get($filters, 'orderBy', 'id');
@@ -41,17 +41,17 @@ class UsuarioService
             case 'pais':
                 $query->select('users.*')
                     ->leftJoin('paises', 'paises.id', '=', 'users.pais_id')
-                    ->orderBy('paises.name', $orderDir);
+                    ->orderBy('paises.nombre', $orderDir);
                 break;
             case 'centro_salud':
                 $query->select('users.*')
                     ->leftJoin('centros_salud', 'centros_salud.id', '=', 'users.centro_salud_id')
-                    ->orderBy('centros_salud.name', $orderDir);
+                    ->orderBy('centros_salud.nombre', $orderDir);
                 break;
             case 'supervisor':
                 $query->select('users.*')
                     ->leftJoin('users as supervisors', 'supervisors.id', '=', 'users.supervisor_id')
-                    ->orderBy('supervisors.name', $orderDir);
+                    ->orderBy('supervisors.nombre', $orderDir);
                 break;
             case 'pacientes':
 //                $query->withCount('pacientes')
@@ -71,7 +71,7 @@ class UsuarioService
     public function storeUsuario(array $data): User
     {
         $user = empty($data['id']) ? new User() : User::find($data['id']);
-        $user->name = $data['nombre'];
+        $user->nombre = $data['nombre'];
         $user->email = $data['email'];
         $user->pais_id = $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
