@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('diagnosticos', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 150)->unique();
-            $table->boolean('active')->default(true);
+            $table->string('nombre', 150)->unique();
+            $table->boolean('activo')->default(true);
         });
     }
 

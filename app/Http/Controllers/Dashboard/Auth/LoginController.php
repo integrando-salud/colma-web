@@ -31,7 +31,10 @@ class LoginController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
-        $user->update(['ultimo_acceso' => now()]);
+        $user->update([
+            'accesos' => $user->accesos + 1,
+            'ultimo_acceso' => now()
+        ]);
 
         return redirect()->intended(route('dashboard.index'));
     }

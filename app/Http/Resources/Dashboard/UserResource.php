@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'centro_salud' => $this->centroSalud ? new CentroSaludResource($this->centroSalud) : null,
             'supervisor' => $this->supervisor ? new UserResource($this->supervisor) : null,
             'numero_pacientes' => 0,
+            'numero_accesos' => $this->accesos,
             'ultimo_acceso' => $this->ultimo_acceso?->format('d/m/Y H:i'),
         ];
     }

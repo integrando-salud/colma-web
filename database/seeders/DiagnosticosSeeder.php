@@ -14,15 +14,15 @@ class DiagnosticosSeeder extends Seeder
     public function run(): void
     {
         Diagnostico::firstOrCreate([
-            'name' => 'Diabetes',
+            'nombre' => 'Diabetes',
         ]);
 
         Diagnostico::firstOrCreate([
-            'name' => 'Hipertensión arterial',
+            'nombre' => 'Hipertensión arterial',
         ]);
 
         Diagnostico::firstOrCreate([
-            'name' => 'Depresión',
+            'nombre' => 'Depresión',
         ]);
     }
 }

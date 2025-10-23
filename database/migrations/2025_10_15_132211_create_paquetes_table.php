@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('paquetes', function (Blueprint $table) {
             $table->id();
+            $table->string('nombre', 100);
+            $table->boolean('activo')->default(true);
             $table->timestamps();
         });
     }

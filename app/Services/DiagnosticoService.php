@@ -10,8 +10,8 @@ class DiagnosticoService
     {
         $query = Diagnostico::query();
 
-        if (isset($filters['active'])) {
-            $query->where('active', $filters['active']);
+        if (isset($filters['activo'])) {
+            $query->where('activo', $filters['activo']);
         }
 
         $orderBy = data_get($filters, 'orderBy', 'id');

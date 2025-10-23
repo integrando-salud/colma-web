@@ -8,6 +8,7 @@ $info: #c4eae3;
 $thead: #7dd1c1;
 $thead-light: #c4eae3;
 $light: #f8f9fa;
+$darkGrey: #8C8C8C;
 
 $theme-colors: (
     "primary": $primary,
@@ -58,4 +59,8 @@ thead tr th {
 
 .input-group .btn {
     border: 1px solid $input-border-color;
+}
+
+.bg-dark-grey {
+    background-color: $darkGrey;
 }

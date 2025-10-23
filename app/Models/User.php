@@ -26,6 +26,7 @@ class User extends Authenticatable
         'pais_id',
         'centro_salud_id',
         'supervisor_id',
+        'accesos',
         'ultimo_acceso',
     ];
 

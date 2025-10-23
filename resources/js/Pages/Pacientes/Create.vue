@@ -1,9 +1,10 @@
 <script setup>
-import { ref, reactive, computed } from "vue";
-import { Head, Link } from "@inertiajs/vue3";
+import { ref, computed } from "vue";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
-import { FORM_PACIENTE } from "@/Services/pacienteService";
+import { FORM_PACIENTE } from "@/Constants/paciente";
 import Password from "@/Components/Form/Password.vue";
+import { useNotificationStore } from "@/Stores/notification";
 
 const props = defineProps({
     centrosSalud: Array,
@@ -12,12 +13,13 @@ const props = defineProps({
     paquetes: Array,
 });
 
+const notification = useNotificationStore();
 const step = ref('datos_paciente');
-const formPaciente = reactive(structuredClone(FORM_PACIENTE));
+const formPaciente = useForm(structuredClone(FORM_PACIENTE));
 const guardandoDatosPaciente = ref(false);
 
 const promotoresFiltered = computed(() => {
-    return props.promotores.filter(promotor => promotor.centro_salud_id === formPaciente.centro_salud_id);
+    return props.promotores.filter(promotor => promotor.centro_salud.id === formPaciente.centro_salud_id);
 });
 
 const goTo = (stepName) => {
@@ -28,8 +30,17 @@ const resetPromotor = () => {
     formPaciente.promotor_id = '';
 };
 
-const saveDatosPaciente = () => {
-    console.log('Guardar datos del paciente');
+const saveDatosPaciente = async () => {
+    guardandoDatosPaciente.value = true;
+
+    formPaciente.post(route('dashboard.pacientes.store'), {
+        onError: () => {
+            notification.errorNotification('El formulario contiene errores.');
+        },
+        onFinish: () => {
+            guardandoDatosPaciente.value = false;
+        }
+    });
 };
 </script>
 
@@ -69,7 +80,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_nombre" class="col-12 col-sm-4 col-xl-4 col-form-label">Nombre</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_nombre" id="paciente_nombre" class="form-control" v-model="formPaciente.nombre" />
+                                                    <input type="text" name="paciente_nombre" id="paciente_nombre" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.nombre }" v-model="formPaciente.nombre" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.nombre">
+                                                        {{ formPaciente.errors.nombre }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -77,7 +91,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_apellido" class="col-12 col-sm-4 col-xl-4 col-form-label">Apellido</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_apellido" id="paciente_apellido" class="form-control" v-model="formPaciente.apellido" />
+                                                    <input type="text" name="paciente_apellido" id="paciente_apellido" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.apellido }" v-model="formPaciente.apellido" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.apellido">
+                                                        {{ formPaciente.errors.apellido }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -85,7 +102,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_fecha_nacimiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de nacimiento</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_fecha_nacimiento" id="paciente_fecha_nacimiento" class="form-control" v-model="formPaciente.fecha_nacimiento" />
+                                                    <input type="date" name="paciente_fecha_nacimiento" id="paciente_fecha_nacimiento" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }" v-model="formPaciente.fecha_nacimiento" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_nacimiento">
+                                                        {{ formPaciente.errors.fecha_nacimiento }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -93,7 +113,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_telefono" class="col-12 col-sm-4 col-xl-4 col-form-label">Teléfono</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_telefono" id="paciente_telefono" class="form-control" v-model="formPaciente.telefono" />
+                                                    <input type="text" name="paciente_telefono" id="paciente_telefono" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.telefono }" v-model="formPaciente.telefono" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.telefono">
+                                                        {{ formPaciente.errors.telefono }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -101,7 +124,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_email" class="col-12 col-sm-4 col-xl-4 col-form-label">Correo electrónico</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_email" id="paciente_email" class="form-control" v-model="formPaciente.email" />
+                                                    <input type="text" name="paciente_email" id="paciente_email" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.email }" v-model="formPaciente.email" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.email">
+                                                        {{ formPaciente.errors.email }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -109,7 +135,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_direccion" class="col-12 col-sm-4 col-xl-4 col-form-label">Dirección</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_direccion" id="paciente_direccion" class="form-control" v-model="formPaciente.direccion" />
+                                                    <input type="text" name="paciente_direccion" id="paciente_direccion" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.direccion }" v-model="formPaciente.direccion" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.direccion">
+                                                        {{ formPaciente.errors.direccion }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -124,12 +153,15 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_centro_salud" class="col-12 col-sm-4 col-xl-4 col-form-label">Centro de salud</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <select name="paciente_centro_salud" id="paciente_centro_salud" class="form-select" v-model="formPaciente.centro_salud_id" @change="resetPromotor">
+                                                    <select name="paciente_centro_salud" id="paciente_centro_salud" class="form-select" :class="{ 'is-invalid': formPaciente.errors?.centro_salud_id }" v-model="formPaciente.centro_salud_id" @change="resetPromotor">
                                                         <option value="">Seleccionar centro</option>
                                                         <option v-for="centro in centrosSalud" :key="centro.id" :value="centro.id">
-                                                            {{ centro.name }}
+                                                            {{ centro.nombre }}
                                                         </option>
                                                     </select>
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.centro_salud_id">
+                                                        {{ formPaciente.errors.centro_salud_id }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -137,12 +169,15 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_promotor" class="col-12 col-sm-4 col-xl-4 col-form-label">Promotor asignado</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <select name="paciente_promotor" id="paciente_promotor" class="form-select" v-model="formPaciente.promotor_id">
+                                                    <select name="paciente_promotor" id="paciente_promotor" class="form-select" :class="{ 'is-invalid': formPaciente.errors?.promotor_id }" v-model="formPaciente.promotor_id">
                                                         <option value="">Seleccionar</option>
                                                         <option v-for="promotor in promotoresFiltered" :key="promotor.id" :value="promotor.id">
-                                                            {{ promotor.name }}
+                                                            {{ promotor.nombre }}
                                                         </option>
                                                     </select>
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.promotor_id">
+                                                        {{ formPaciente.errors.promotor_id }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -150,7 +185,10 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha enrolamiento</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <input type="text" name="paciente_fecha_enrolamiento" id="paciente_fecha_enrolamiento" class="form-control" v-model="formPaciente.fecha_enrolamiento" />
+                                                    <input type="date" name="paciente_fecha_enrolamiento" id="paciente_fecha_enrolamiento" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }" v-model="formPaciente.fecha_enrolamiento" />
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_enrolamiento">
+                                                        {{ formPaciente.errors.fecha_enrolamiento }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -158,11 +196,14 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label class="col-12 col-sm-4 col-xl-4 col-form-label">Diagnósticos</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <div class="form-check" v-for="diagnostico in diagnosticos" :key="diagnostico.id">
+                                                    <div class="form-check" :class="{ 'is-invalid': formPaciente.errors.diagnosticos }" v-for="diagnostico in diagnosticos" :key="diagnostico.id">
                                                         <input type="checkbox" class="form-check-input" :value="diagnostico.id" :id="`diagnostico-${diagnostico.id}`" v-model="formPaciente.diagnosticos" />
                                                         <label :for="`diagnostico-${diagnostico.id}`" class="form-check-label">
-                                                            {{ diagnostico.name }}
+                                                            {{ diagnostico.nombre }}
                                                         </label>
+                                                    </div>
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.diagnosticos">
+                                                        {{ formPaciente.errors.diagnosticos }}
                                                     </div>
                                                 </div>
                                             </div>
@@ -171,12 +212,15 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_paquete" class="col-12 col-sm-4 col-xl-4 col-form-label">Paquete asignado</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <select name="paciente_paquete" id="paciente_paquete" class="form-select" v-model="formPaciente.paquete_id">
+                                                    <select name="paciente_paquete" id="paciente_paquete" class="form-select" :class="{ 'is-invalid': formPaciente.errors.paquete_id }" v-model="formPaciente.paquete_id">
                                                         <option value="">Seleccionar</option>
-                                                        <option v-for="promotor in promotoresFiltered" :key="promotor.id" :value="promotor.id">
-                                                            {{ promotor.name }}
+                                                        <option v-for="paquete in paquetes" :key="paquete.id" :value="paquete.id">
+                                                            {{ paquete.nombre }}
                                                         </option>
                                                     </select>
+                                                    <div class="invalid-feedback" v-if="formPaciente.errors?.paquete_id">
+                                                        {{ formPaciente.errors.paquete_id }}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -203,7 +247,7 @@ const saveDatosPaciente = () => {
                                             <div class="row">
                                                 <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
                                                 <div class="col-12 col-sm-8 col-xl-6">
-                                                    <Password name="paciente_password" id="paciente_password" v-model="formPaciente.password" />
+                                                    <Password name="paciente_password" id="paciente_password" :error="formPaciente.errors.password" v-model="formPaciente.password" />
                                                 </div>
                                             </div>
                                         </div>

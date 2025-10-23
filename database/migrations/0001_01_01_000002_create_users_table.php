@@ -33,6 +33,7 @@ return new class extends Migration {
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('set null');
+            $table->integer('accesos')->default(0);
             $table->dateTime('ultimo_acceso')->nullable();
             $table->rememberToken();
             $table->timestamps();

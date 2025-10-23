@@ -21,16 +21,18 @@ class Paciente extends Model
         'promotor_id',
         'fecha_enrolamiento',
         'paquete_id',
+        'activo',
     ];
 
     public $casts = [
         'fecha_nacimiento' => 'date',
         'fecha_enrolamiento' => 'date',
+        'activo' => 'boolean',
     ];
 
-    public function user()
+    public function usuario()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function centroSalud()
@@ -46,5 +48,10 @@ class Paciente extends Model
     public function paquete()
     {
         return $this->belongsTo(Paquete::class);
+    }
+
+    public function diagnosticos()
+    {
+        return $this->belongsToMany(Diagnostico::class, 'pacientes_diagnosticos');
     }
 }

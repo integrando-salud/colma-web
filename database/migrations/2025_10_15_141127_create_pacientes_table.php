@@ -40,6 +40,7 @@ return new class extends Migration {
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('set null');
+            $table->boolean('activo')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });

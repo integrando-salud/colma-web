@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('paciente_diagnosticos', function (Blueprint $table) {
+        Schema::create('pacientes_diagnosticos', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(Paciente::class)
                 ->constrained()
@@ -31,11 +31,11 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('paciente_diagnosticos', function (Blueprint $table) {
+        Schema::table('pacientes_diagnosticos', function (Blueprint $table) {
             $table->dropForeign(['paciente_id']);
             $table->dropForeign(['diagnostico_id']);
         });
 
-        Schema::dropIfExists('paciente_diagnosticos');
+        Schema::dropIfExists('pacientes_diagnosticos');
     }
 };
