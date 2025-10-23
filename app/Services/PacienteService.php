@@ -13,6 +13,18 @@ class PacienteService
     {
         $query = Paciente::query();
 
+        if (!empty($filters['nombre'])) {
+            $query->where(function ($query) use ($filters) {
+                $nombre = '%' . $filters['nombre'] . '%';
+                $query->where('nombre', 'like', $nombre)
+                    ->orWhere('apellido', 'like', $nombre);
+            });
+        }
+
+        if (isset($filters['estado']) && is_numeric($filters['estado'])) {
+            $query->where('activo', $filters['estado']);
+        }
+
         $orderBy = data_get($filters, 'orderBy', 'id');
         $orderDir = data_get($filters, 'orderDir', 'desc');
 

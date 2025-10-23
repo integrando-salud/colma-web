@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\Paciente\FilterPacienteRequest;
 use App\Http\Requests\Dashboard\Paciente\StorePacienteRequest;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
@@ -14,16 +15,15 @@ use App\Services\DiagnosticoService;
 use App\Services\PacienteService;
 use App\Services\PaqueteService;
 use App\Services\UsuarioService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Throwable;
 
 class PacienteController extends Controller
 {
-    public function index(Request $request, DashboardService $dashboardService)
+    public function index(FilterPacienteRequest $request, DashboardService $dashboardService)
     {
-        $viewData = $dashboardService->getDataForPacientesPage($request->all());
+        $viewData = $dashboardService->getDataForPacientesPage($request->validated());
 
         return Inertia::render('Pacientes/Index', $viewData);
     }

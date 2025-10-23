@@ -235,7 +235,7 @@ const updatePassword = async () => {
 
     <div class="row">
         <div class="col-12 mb-4">
-            <form class="row justify-content-md-end align-items-center">
+            <form class="row justify-content-md-end align-items-center" @submit.prevent="filterUsuarios">
                 <div class="col-12 col-md-2 mb-2 mb-md-0 text-md-end">
                     Filtros:
                 </div>

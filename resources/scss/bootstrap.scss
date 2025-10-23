@@ -6,7 +6,6 @@ $success: #22ab62;
 $danger: #c00f0c;
 $info: #c4eae3;
 $thead: #7dd1c1;
-$thead-light: #c4eae3;
 $light: #f8f9fa;
 $darkGrey: #8C8C8C;
 
@@ -38,7 +37,7 @@ $nav-tabs-link-active-bg: $light;
 }
 
 thead tr th {
-    background-color: $thead-light !important;
+    background-color: $info !important;
     color: $primary-text-emphasis !important;
 }
 
@@ -53,7 +52,7 @@ thead tr th {
 }
 
 .panel-general {
-    background-color: $thead-light;
+    background-color: $info;
     border: 1px solid $primary-text-emphasis;
 }
 
@@ -63,4 +62,17 @@ thead tr th {
 
 .bg-dark-grey {
     background-color: $darkGrey;
+}
+
+.table.table-patient-details * {
+    padding: 0;
+}
+
+.table-patient-details td {
+    vertical-align: bottom;
+}
+
+.table > :not(caption) > * > * {
+    color: inherit;
+    background-color: inherit;
 }

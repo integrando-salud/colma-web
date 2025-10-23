@@ -18,7 +18,7 @@ defineProps({
 
         <h3 class="mb-4 text-primary-emphasis">Pacientes</h3>
 
-        <Pacientes :pacientes :filtros />
+        <Pacientes :pacientes :filtros :urlBase="route('dashboard.index')" />
     </Dashboard>
 </template>
 

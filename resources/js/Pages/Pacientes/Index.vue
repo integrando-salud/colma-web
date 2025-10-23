@@ -13,7 +13,7 @@ defineProps({
     <Head title="Pacientes" />
 
     <Dashboard title="Pacientes">
-        <Pacientes :filtros :pacientes />
+        <Pacientes :filtros :pacientes :urlBase="route('dashboard.pacientes.index')" />
     </Dashboard>
 </template>
 
