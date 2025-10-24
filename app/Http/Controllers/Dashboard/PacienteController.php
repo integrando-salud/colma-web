@@ -5,16 +5,10 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\Paciente\FilterPacienteRequest;
 use App\Http\Requests\Dashboard\Paciente\StorePacienteRequest;
-use App\Http\Resources\Dashboard\CentroSaludResource;
-use App\Http\Resources\Dashboard\DiagnosticoResource;
-use App\Http\Resources\Dashboard\PaqueteResource;
-use App\Http\Resources\Dashboard\UserResource;
-use App\Services\CentroSaludService;
+use App\Http\Resources\Dashboard\PacienteResource;
+use App\Models\Paciente;
 use App\Services\DashboardService;
-use App\Services\DiagnosticoService;
 use App\Services\PacienteService;
-use App\Services\PaqueteService;
-use App\Services\UsuarioService;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Throwable;
@@ -28,41 +22,9 @@ class PacienteController extends Controller
         return Inertia::render('Pacientes/Index', $viewData);
     }
 
-    public function create(
-        CentroSaludService $centroSaludService,
-        UsuarioService $usuarioService,
-        DiagnosticoService $diagnosticoService,
-        PaqueteService $paqueteService
-    )
+    public function create()
     {
-        $centrosSalud = $centroSaludService->queryGetCentrosSalud([
-            'activo' => true,
-            'orderBy' => 'nombre',
-            'orderDir' => 'asc',
-        ])->get();
-
-        $promotores = $usuarioService->queryGetUsuarios([
-            'rol' => 'promotor',
-            'orderBy' => 'nombre',
-            'orderDir' => 'asc',
-        ])->get();
-
-        $diagnosticos = $diagnosticoService->queryGetDiagnosticos([
-            'activo' => true,
-        ])->get();
-
-        $paquetes = $paqueteService->queryGetPaquetes([
-            'activo' => true,
-            'orderBy' => 'nombre',
-            'orderDir' => 'asc',
-        ])->get();
-
-        return Inertia::render('Pacientes/Create', [
-            'centrosSalud' => CentroSaludResource::collection($centrosSalud),
-            'promotores' => UserResource::collection($promotores),
-            'diagnosticos' => DiagnosticoResource::collection($diagnosticos),
-            'paquetes' => PaqueteResource::collection($paquetes),
-        ]);
+        return Inertia::render('Pacientes/Create');
     }
 
     public function store(StorePacienteRequest $request, PacienteService $pacienteService)
@@ -70,8 +32,12 @@ class PacienteController extends Controller
         try {
             $pacienteService->storePaciente($request->validated());
 
-            return redirect()->route('dashboard.pacientes.index')
-                ->with('success', 'Paciente ' . ($request->filled('id') ? 'actualizado' : 'creado') . ' con éxito.');
+            if ($request->filled('id')) {
+                return back()->with('success', 'Paciente actualizado con éxito.');
+            } else {
+                return redirect()->route('dashboard.pacientes.index')
+                    ->with('success', 'Paciente creado con éxito.');
+            }
         } catch (Throwable $th) {
             Log::error('Error al guardar paciente: ' . $th->getMessage(), [
                 'stack' => $th->getTraceAsString(),
@@ -79,5 +45,12 @@ class PacienteController extends Controller
 
             return back()->with('error', 'Se produjo un error al guardar el paciente.');
         }
+    }
+
+    public function edit(Paciente $paciente)
+    {
+        return Inertia::render('Pacientes/Create', [
+            'paciente' => new PacienteResource($paciente)
+        ]);
     }
 }

@@ -1,4 +1,5 @@
 export const FORM_PACIENTE = {
+    id: null,
     nombre: null,
     apellido: null,
     fecha_nacimiento: null,

@@ -258,9 +258,9 @@ const orderBy = (column) => {
                                         <span class="fw-semibold">Fecha de enrolamiento:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
                                     </td>
                                     <td class="p-3 text-end">
-                                        <button class="btn btn-link text-decoration-none text-primary">
+                                        <a class="btn btn-link text-decoration-none text-primary" :href="route('dashboard.pacientes.edit', paciente.id)">
                                             Ver detalle <i class="fa-solid fa-arrow-right"></i>
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             </table>

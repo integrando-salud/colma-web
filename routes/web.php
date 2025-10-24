@@ -34,5 +34,7 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.create');
         Route::post('guardar', [PacienteController::class, 'store'])
             ->name('dashboard.pacientes.store');
+        Route::get('editar/{paciente}', [PacienteController::class, 'edit'])
+            ->name('dashboard.pacientes.edit');
     });
 });

@@ -70,6 +70,8 @@ class PacienteService
             if (empty($data['id'])) {
                 $usuario = $this->createUsuario($paciente, $data['password']);
                 $paciente->user_id = $usuario->id;
+            } else {
+                $this->updateUsuario($paciente);
             }
 
             $paciente->save();
@@ -86,16 +88,34 @@ class PacienteService
     private function createUsuario(Paciente $paciente, string $password): User
     {
         $usuarioService = new UsuarioService();
+        $data = $this->fillDataUsuario($paciente, $password);
+
+        return $usuarioService->storeUsuario($data);
+    }
+
+    private function updateUsuario(Paciente $paciente)
+    {
+        $usuarioService = new UsuarioService();
+        $data = array_merge($this->fillDataUsuario($paciente), ['id' => $paciente->usuario->id]);
+
+        return $usuarioService->storeUsuario($data);
+    }
+
+    private function fillDataUsuario(Paciente $paciente, ?string $password = null): array
+    {
         $data = [
             'rol' => 'paciente',
             'nombre' => "$paciente->nombre $paciente->apellido",
             'email' => $paciente->email,
             'pais_id' => $paciente->centroSalud->pais_id,
             'centro_salud_id' => $paciente->centro_salud_id,
-            'password' => $password
         ];
 
-        return $usuarioService->storeUsuario($data);
+        if ($password) {
+            $data['password'] = $password;
+        }
+
+        return $data;
     }
 
     private function syncDiagnosticos(Paciente $paciente, array $diagnosticos)
