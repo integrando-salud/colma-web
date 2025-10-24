@@ -50,7 +50,7 @@ class DashboardService
         }
 
         $usuarios = $usuarioService->queryGetUsuarios($filters)
-            ->paginate(10)
+            ->paginate(config('app.rpp'))
             ->withQueryString();
 
         $roles = $rolService->queryGetRoles([
@@ -100,7 +100,7 @@ class DashboardService
         }
 
         $pacientes = $pacienteService->queryGetPacientes($filters)
-            ->paginate(10)
+            ->paginate(config('app.rpp'))
             ->withQueryString();
 
         return [
