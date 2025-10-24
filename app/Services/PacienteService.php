@@ -29,19 +29,19 @@ class PacienteService
         $orderDir = data_get($filters, 'orderDir', 'desc');
 
         switch ($orderBy) {
-            case 'nombre':
-                break;
-            case 'fecha_enrolamiento':
-                break;
             case 'sesiones':
                 break;
             case 'alertas':
                 break;
             case 'ingresos':
+                $query->select('pacientes.*')
+                    ->leftJoin('users', 'pacientes.user_id', '=', 'users.id')
+                    ->orderBy('users.accesos', $orderDir);
                 break;
             case 'ultimo_ingreso':
-                break;
-            case 'estado':
+                $query->select('pacientes.*')
+                    ->leftJoin('users', 'pacientes.user_id', '=', 'users.id')
+                    ->orderBy('users.ultimo_acceso', $orderDir);
                 break;
             default:
                 $query->orderBy($orderBy, $orderDir);

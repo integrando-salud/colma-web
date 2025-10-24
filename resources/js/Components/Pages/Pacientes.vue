@@ -137,9 +137,9 @@ const orderBy = (column) => {
                         <th>
                             <span class="me-3">Estado</span>
                             <i class="fa order" :class="{
-                                'fa-chevron-down': formFiltros.orderBy !== 'estado' || formFiltros.orderBy === 'estado' && formFiltros.orderDir === 'asc',
-                                'fa-chevron-up': formFiltros.orderBy === 'estado' && formFiltros.orderDir === 'desc'
-                            }" @click="orderBy('estado')"></i>
+                                'fa-chevron-down': formFiltros.orderBy !== 'activo' || formFiltros.orderBy === 'activo' && formFiltros.orderDir === 'asc',
+                                'fa-chevron-up': formFiltros.orderBy === 'activo' && formFiltros.orderDir === 'desc'
+                            }" @click="orderBy('activo')"></i>
                         </th>
                         <th>Interacciones</th>
                         <th></th>
