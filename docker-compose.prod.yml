@@ -1,0 +1,45 @@
+services:
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+  nginx:
+    restart: unless-stopped
+    image: selva123is/servers:nginx
+    volumes:
+      - ./:/var/www/html:delegated
+      - ./docker/config/nginx/:/etc/nginx/conf.d/
+    depends_on:
+      - php84
+
+  php84:
+    restart: unless-stopped
+    image: selva123is/servers:php84
+    volumes:
+      - ./config/php/php.ini:/usr/local/etc/php/php.ini
+      - ./:/var/www/html:delegated
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - 9000
+    depends_on:
+      - mysql
+
+  mysql:
+    restart: unless-stopped
+    image: mysql:8.0.26
+    command: --default-authentication-plugin=mysql_native_password --sql-mode=""
+    volumes:
+      - ./db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    ports:
+      - ${MYSQL_HOST_PORT}:3306
