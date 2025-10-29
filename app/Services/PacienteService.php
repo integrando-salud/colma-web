@@ -62,8 +62,10 @@ class PacienteService
             $paciente->sexo = $data['sexo'];
             $paciente->documento = $data['documento'];
             $paciente->telefono = $data['telefono'];
+            $paciente->telefono2 = data_get($data, 'telefono2');
             $paciente->email = $data['email'];
             $paciente->direccion = $data['direccion'];
+            $paciente->referencia = data_get($data, 'referencia');
             $paciente->centro_salud_id = $data['centro_salud_id'];
             $paciente->promotor_id = $data['promotor_id'];
             $paciente->fecha_enrolamiento = $data['fecha_enrolamiento'];

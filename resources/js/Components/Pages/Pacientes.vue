@@ -174,7 +174,7 @@ const orderBy = (column) => {
                             </td>
                         </tr>
                         <tr v-if="pacienteSelected === paciente">
-                            <td colspan="10" class="bg-info px-4">
+                            <td colspan="10" class="px-4 table-patient-details-container">
                                 <table class="table table-patient-details text-start">
                                     <tr>
                                         <td class="text-primary-emphasis p-3" colspan="2">
@@ -191,9 +191,7 @@ const orderBy = (column) => {
                                         <td class="p-3">
                                             <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
                                         </td>
-                                        <td class="text-end p-3">
-                                            <i class="fa-solid fa-triangle-exclamation fa-2x text-danger p-0"></i>
-                                        </td>
+                                        <td class="text-end p-3"></td>
                                     </tr>
                                     <tr>
                                         <td class="text-primary-emphasis fw-semibold p-3">Datos de contacto</td>
@@ -260,8 +258,11 @@ const orderBy = (column) => {
                                             <span class="fw-semibold">Fecha de enrolamiento:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
                                         </td>
                                         <td class="p-3 text-end">
-                                            <a class="btn btn-link text-decoration-none text-primary" :href="route('dashboard.pacientes.edit', paciente.id)">
-                                                Ver detalle <i class="fa-solid fa-arrow-right"></i>
+<!--                                            <a class="btn btn-primary text-primary px-3 py-2 shadow" href="#">-->
+<!--                                                Ir a alertas <i class="fa-solid fa-triangle-exclamation"></i>-->
+<!--                                            </a>-->
+                                            <a class="btn bg-primary text-white px-3 py-2 shadow" :href="route('dashboard.pacientes.edit', paciente.id)">
+                                                Ir a paciente <i class="fa-solid fa-arrow-right"></i>
                                             </a>
                                         </td>
                                     </tr>

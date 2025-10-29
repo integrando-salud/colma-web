@@ -121,9 +121,12 @@ const fillDataPaciente = () => {
     formPaciente.apellido = props.paciente.apellido;
     formPaciente.fecha_nacimiento = props.paciente.fecha_nacimiento;
     formPaciente.sexo = props.paciente.sexo;
+    formPaciente.documento = props.paciente.documento;
     formPaciente.telefono = props.paciente.telefono;
+    formPaciente.telefono2 = props.paciente.telefono2;
     formPaciente.email = props.paciente.email;
     formPaciente.direccion = props.paciente.direccion;
+    formPaciente.referencia = props.paciente.referencia;
     formPaciente.centro_salud_id = props.paciente.centro_salud.id;
     formPaciente.promotor_id = props.paciente.promotor.id;
     formPaciente.fecha_enrolamiento = props.paciente.fecha_enrolamiento;
@@ -202,11 +205,22 @@ onMounted(async () => {
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="paciente_telefono" class="col-12 col-sm-4 col-xl-4 col-form-label">Teléfono</label>
+                        <label for="paciente_telefono" class="col-12 col-sm-4 col-xl-4 col-form-label">Teléfono 1</label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <input type="text" name="paciente_telefono" id="paciente_telefono" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.telefono }" v-model="formPaciente.telefono" />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.telefono">
                                 {{ formPaciente.errors.telefono }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="paciente_telefono_2" class="col-12 col-sm-4 col-xl-4 col-form-label">Teléfono 2</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <input type="text" name="paciente_telefono_2" id="paciente_telefono_2" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.telefono2 }" v-model="formPaciente.telefono2" />
+                            <div class="invalid-feedback" v-if="formPaciente.errors?.telefono2">
+                                {{ formPaciente.errors.telefono2 }}
                             </div>
                         </div>
                     </div>
@@ -229,6 +243,17 @@ onMounted(async () => {
                             <input type="text" name="paciente_direccion" id="paciente_direccion" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.direccion }" v-model="formPaciente.direccion" />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.direccion">
                                 {{ formPaciente.errors.direccion }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="paciente_referencia" class="col-12 col-sm-4 col-xl-4 col-form-label">Referencia</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <input type="text" name="paciente_referencia" id="paciente_referencia" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.referencia }" v-model="formPaciente.referencia" />
+                            <div class="invalid-feedback" v-if="formPaciente.errors?.referencia">
+                                {{ formPaciente.errors.referencia }}
                             </div>
                         </div>
                     </div>
@@ -347,35 +372,36 @@ onMounted(async () => {
                 </div>
             </div>
         </div>
-        <template v-if="!props.paciente">
-            <div class="col-12 mt-3 mt-sm-0">
-                <h4 class="fs-5 text-primary-emphasis">Asignar usuario y contraseña</h4>
-            </div>
-            <div class="col-12">
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                        <div class="row">
-                            <label for="paciente_usuario" class="col-12 col-sm-4 col-xl-4 col-form-label">Usuario</label>
-                            <div class="col-12 col-sm-8 col-xl-6">
-                                <input type="text" name="paciente_usuario" id="paciente_usuario" class="form-control" v-model="formPaciente.email" disabled />
+        <div class="col-12 mt-3 mt-sm-0">
+            <h4 class="fs-5 text-primary-emphasis">Asignar usuario y contraseña</h4>
+        </div>
+        <div class="col-12">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="paciente_documento" class="col-12 col-sm-4 col-xl-4 col-form-label">DNI</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <input type="text" name="paciente_documento" id="paciente_documento" class="form-control" :class="{ 'is-invalid': formPaciente.errors.documento }" v-model="formPaciente.documento" />
+                            <div class="invalid-feedback" v-if="formPaciente.errors?.documento">
+                                {{ formPaciente.errors.documento }}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-12">
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <div class="row">
-                            <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
-                            <div class="col-12 col-sm-8 col-xl-6">
-                                <Password name="paciente_password" id="paciente_password" :error="formPaciente.errors.password" v-model="formPaciente.password" />
-                            </div>
+        </div>
+        <div class="col-12" v-if="!paciente">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="row">
+                        <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <Password name="paciente_password" id="paciente_password" :error="formPaciente.errors.password" v-model="formPaciente.password" />
                         </div>
                     </div>
                 </div>
             </div>
-        </template>
+        </div>
     </div>
 </template>
 

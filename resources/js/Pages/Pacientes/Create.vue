@@ -45,6 +45,11 @@ const saveDatosPaciente = async () => {
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="#" class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body" :class="{ active: step === 'alertas', 'fw-bold': step === 'alertas' }" @click="goTo('alertas')">
+                                Alertas
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="#" class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body" :class="{ active: step === 'interacciones', 'fw-bold': step === 'interacciones' }" @click="goTo('interacciones')">
                                 Interacciones
                             </a>
@@ -56,6 +61,9 @@ const saveDatosPaciente = async () => {
                         </template>
                         <template v-else-if="step === 'datos_clinicos'">
                             <h4 class="fs-5 text-primary-emphasis">Datos clínicos</h4>
+                        </template>
+                        <template v-else-if="step === 'alertas'">
+                            <h4 class="fs-5 text-primary-emphasis">Alertas</h4>
                         </template>
                         <template v-else-if="step === 'interacciones'">
                             <h4 class="fs-5 text-primary-emphasis">Interacciones</h4>

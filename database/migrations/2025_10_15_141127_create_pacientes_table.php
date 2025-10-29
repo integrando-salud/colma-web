@@ -25,8 +25,10 @@ return new class extends Migration {
             $table->enum('sexo', ['M', 'F']);
             $table->string('documento', 20)->unique();
             $table->string('telefono', 30);
+            $table->string('telefono2', 30)->nullable();
             $table->string('email', 100);
             $table->string('direccion');
+            $table->string('referencia')->nullable();
             $table->foreignIdFor(CentroSalud::class, 'centro_salud_id')
                 ->constrained()
                 ->onUpdate('cascade')
