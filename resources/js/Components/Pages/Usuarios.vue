@@ -35,6 +35,8 @@ const formUsuario = reactive({
     email: '',
     password: '',
     nombre: '',
+    sexo: '',
+    documento: '',
     pais_id: '',
     centro_salud_id: '',
     supervisor_id: '',
@@ -115,6 +117,8 @@ const resetFormUsuario = () => {
     formUsuario.email = '';
     formUsuario.password = '';
     formUsuario.nombre = '';
+    formUsuario.sexo = '';
+    formUsuario.documento = '';
     formUsuario.pais_id = '';
     formUsuario.centro_salud_id = '';
     formUsuario.supervisor_id = '';
@@ -188,6 +192,8 @@ const fillDataFormEditarUsuario = () => {
     formUsuario.rol = userSelected.value.rol.nombre;
     formUsuario.email = userSelected.value.email;
     formUsuario.nombre = userSelected.value.nombre;
+    formUsuario.sexo = userSelected.value.sexo;
+    formUsuario.documento = userSelected.value.documento;
     formUsuario.pais_id = userSelected.value.pais.id;
     formUsuario.centro_salud_id = userSelected.value.centro_salud?.id;
     formUsuario.supervisor_id = userSelected.value.supervisor?.id;
@@ -400,6 +406,17 @@ const updatePassword = async () => {
                     </div>
                     <div class="col-12">
                         <div class="row mb-3">
+                            <label for="documento" class="col-12 col-xl-4 col-form-label">DNI</label>
+                            <div class="col-12 col-xl-8">
+                                <input type="text" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.documento }" v-model="formUsuario.documento" />
+                                <div class="invalid-feedback" v-if="formUsuario.errors?.documento">
+                                    {{ formUsuario.errors.documento }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="row mb-3">
                             <label for="email" class="col-12 col-xl-4 col-form-label">Correo electrónico</label>
                             <div class="col-12 col-xl-8">
                                 <input type="email" id="email" name="email" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.email }" v-model="formUsuario.email" />
@@ -428,6 +445,21 @@ const updatePassword = async () => {
                                 <input type="text" id="nombre" name="nombre" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.nombre }" v-model="formUsuario.nombre" />
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.nombre">
                                     {{ formUsuario.errors.nombre }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="row mb-3">
+                            <label for="sexo" class="col-12 col-xl-4 col-form-label">Género</label>
+                            <div class="col-12 col-xl-8">
+                                <select id="sexo" name="sexo" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.sexo }" v-model="formUsuario.sexo">
+                                    <option value="">Seleccionar género</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="M">Masculino</option>
+                                </select>
+                                <div class="invalid-feedback" v-if="formUsuario.errors?.sexo">
+                                    {{ formUsuario.errors.sexo }}
                                 </div>
                             </div>
                         </div>

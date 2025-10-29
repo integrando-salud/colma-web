@@ -21,12 +21,12 @@ class LoginController extends Controller
     public function login(LoginRequest $request): RedirectResponse
     {
         $credentials = $request->validated();
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::where('documento', $credentials['documento'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password) || $user->isA('paciente')) {
             return back()->withErrors([
-                'login' => 'Usuario o contraseña incorrectos.',
-            ])->onlyInput('email');
+                'login' => 'Documento o contraseña incorrectos.',
+            ])->onlyInput('documento');
         }
 
         Auth::login($user);

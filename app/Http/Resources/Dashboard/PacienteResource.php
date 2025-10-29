@@ -21,6 +21,12 @@ class PacienteResource extends JsonResource
             'fecha_nacimiento' => $this->fecha_nacimiento->format('Y-m-d'),
             'fecha_nacimiento_format' => $this->fecha_nacimiento->format('d/m/Y'),
             'edad' => $this->fecha_nacimiento->age,
+            'sexo' => $this->sexo,
+            'sexo_descripcion' => match ($this->sexo) {
+                'M' => 'Masculino',
+                'F' => 'Femenino',
+            },
+            'documento' => $this->documento,
             'telefono' => $this->telefono,
             'email' => $this->email,
             'direccion' => $this->direccion,

@@ -16,6 +16,8 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
+            $table->enum('sexo', ['M', 'F']);
+            $table->string('documento', 20)->unique();
             $table->string('email')->unique();
             $table->string('password');
             $table->foreignIdFor(Pais::class, 'pais_id')

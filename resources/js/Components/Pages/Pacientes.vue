@@ -180,7 +180,7 @@ const orderBy = (column) => {
                                         <td class="text-primary-emphasis p-3" colspan="2">
                                             <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
                                             <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
-                                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años)</span>
+                                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
                                         </td>
                                         <td class="p-3">
                                             <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}

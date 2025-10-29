@@ -3,6 +3,7 @@ export const FORM_PACIENTE = {
     nombre: null,
     apellido: null,
     fecha_nacimiento: null,
+    sexo: '',
     telefono: null,
     email: null,
     direccion: null,

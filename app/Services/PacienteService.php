@@ -59,6 +59,8 @@ class PacienteService
             $paciente->nombre = $data['nombre'];
             $paciente->apellido = $data['apellido'];
             $paciente->fecha_nacimiento = $data['fecha_nacimiento'];
+            $paciente->sexo = $data['sexo'];
+            $paciente->documento = $data['documento'];
             $paciente->telefono = $data['telefono'];
             $paciente->email = $data['email'];
             $paciente->direccion = $data['direccion'];
@@ -106,6 +108,8 @@ class PacienteService
         $data = [
             'rol' => 'paciente',
             'nombre' => "$paciente->nombre $paciente->apellido",
+            'sexo' => "$paciente->sexo",
+            'documento' => "$paciente->documento",
             'email' => $paciente->email,
             'pais_id' => $paciente->centroSalud->pais_id,
             'centro_salud_id' => $paciente->centro_salud_id,

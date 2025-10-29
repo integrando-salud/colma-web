@@ -17,6 +17,12 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
+            'sexo' => $this->sexo,
+            'sexo_descripcion' => match ($this->sexo) {
+                'M' => 'Masculino',
+                'F' => 'Femenino',
+            },
+            'documento' => $this->documento,
             'email' => $this->email,
             'rol' => $this->roles ? new RolResource($this->roles->first()) : null,
             'pais' => $this->pais ? new PaisResource($this->pais) : null,

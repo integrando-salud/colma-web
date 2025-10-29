@@ -22,6 +22,8 @@ return new class extends Migration {
             $table->string('nombre', 100);
             $table->string('apellido', 100);
             $table->date('fecha_nacimiento');
+            $table->enum('sexo', ['M', 'F']);
+            $table->string('documento', 20)->unique();
             $table->string('telefono', 30);
             $table->string('email', 100);
             $table->string('direccion');

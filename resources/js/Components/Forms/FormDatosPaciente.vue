@@ -120,6 +120,7 @@ const fillDataPaciente = () => {
     formPaciente.nombre = props.paciente.nombre;
     formPaciente.apellido = props.paciente.apellido;
     formPaciente.fecha_nacimiento = props.paciente.fecha_nacimiento;
+    formPaciente.sexo = props.paciente.sexo;
     formPaciente.telefono = props.paciente.telefono;
     formPaciente.email = props.paciente.email;
     formPaciente.direccion = props.paciente.direccion;
@@ -180,6 +181,21 @@ onMounted(async () => {
                             <input type="date" name="paciente_fecha_nacimiento" id="paciente_fecha_nacimiento" class="form-control" :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }" v-model="formPaciente.fecha_nacimiento" />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_nacimiento">
                                 {{ formPaciente.errors.fecha_nacimiento }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="paciente_sexo" class="col-12 col-sm-4 col-xl-4 col-form-label">Género</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <select name="paciente_sexo" id="paciente_sexo" class="form-select" :class="{ 'is-invalid': formPaciente.errors?.sexo }" v-model="formPaciente.sexo">
+                                <option value="">Seleccionar género</option>
+                                <option value="F">Femenino</option>
+                                <option value="M">Masculino</option>
+                            </select>
+                            <div class="invalid-feedback" v-if="formPaciente.errors?.sexo">
+                                {{ formPaciente.errors.sexo }}
                             </div>
                         </div>
                     </div>

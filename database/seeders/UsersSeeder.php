@@ -18,6 +18,8 @@ class UsersSeeder extends Seeder
                 'email' => 'superusuario@correo.com'
             ], [
                 'nombre' => 'Super Usuario',
+                'sexo' => 'M',
+                'documento' => '12345678',
                 'password' => 123456,
                 'pais_id' => 1
             ]);
