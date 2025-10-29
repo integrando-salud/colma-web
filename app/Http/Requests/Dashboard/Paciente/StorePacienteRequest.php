@@ -28,7 +28,7 @@ class StorePacienteRequest extends FormRequest
             'apellido' => ['required', 'string', 'max:100'],
             'fecha_nacimiento' => ['required', 'date'],
             'sexo' => ['required', 'in:F,M'],
-            'documento' => ['required', 'max:20', 'unique:pacientes,documento'],
+            'documento' => ['required', 'max:20', Rule::unique('pacientes', 'documento')->ignore($this->id)],
             'telefono' => ['required', 'max:30'],
             'telefono2' => ['nullable', 'max:30'],
             'email' => ['required', 'email', 'max:100', Rule::unique('pacientes', 'email')->ignore($this->id)],
