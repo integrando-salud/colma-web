@@ -194,15 +194,23 @@ const orderBy = (column) => {
                                         <td class="text-end p-3"></td>
                                     </tr>
                                     <tr>
-                                        <td class="text-primary-emphasis fw-semibold p-3">Datos de contacto</td>
+                                        <td class="text-primary-emphasis fw-semibold align-top p-3">Datos de contacto</td>
                                         <td class="p-3">
+                                            <p>
+                                                <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
+                                            </p>
+                                            <p class="mb-0">
+                                                <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
+                                            </p>
+                                        </td>
+                                        <td class="p-3 align-top">
                                             <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
                                         </td>
-                                        <td class="p-3">
-                                            <span class="fw-semibold">Teléfono:</span> {{ pacienteSelected.telefono }}
-                                        </td>
-                                        <td colspan="3" class="p-3">
+                                        <td class="p-3 align-top">
                                             <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
+                                        </td>
+                                        <td class="p-3 align-top">
+                                            <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
                                         </td>
                                     </tr>
                                     <tr>
@@ -227,8 +235,9 @@ const orderBy = (column) => {
                                             </table>
                                         </td>
                                         <td class="text-primary-emphasis fw-semibold align-top p-3">
-                                            <button class="btn btn-link py-0 text-decoration-none text-primary">
-                                                Ver gráficos <i class="fa-solid fa-chart-line"></i>
+                                            <button class="btn bg-primary text-white p-1">
+                                                <i class="fa-solid fa-chart-line"></i>
+                                                Ver gráficos
                                             </button>
                                         </td>
                                         <td class="text-primary-emphasis fw-semibold align-top p-3">Puntos de contacto</td>
