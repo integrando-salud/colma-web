@@ -388,11 +388,7 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-12" v-if="!paciente">
-            <div class="row">
-                <div class="col-12 col-md-6 col-lg-4">
+                <div class="col-12 col-md-6 col-lg-4" v-if="!paciente">
                     <div class="row">
                         <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
                         <div class="col-12 col-sm-8 col-xl-6">
