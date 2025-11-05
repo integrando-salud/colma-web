@@ -72,6 +72,8 @@ class UsuarioService
     {
         $user = empty($data['id']) ? new User() : User::find($data['id']);
         $user->nombre = $data['nombre'];
+        $user->sexo = $data['sexo'];
+        $user->documento = $data['documento'];
         $user->email = $data['email'];
         $user->pais_id = $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;

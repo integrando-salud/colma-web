@@ -1,5 +1,19 @@
 <script setup>
+import { computed } from "vue";
+import { usePage } from "@inertiajs/vue3";
 import MenuItem from "@/Components/Layouts/MenuItem.vue";
+
+const page = usePage();
+
+const showMenuUsuarios = computed(() => {
+    if (!page.props.usuario) {
+        return false;
+    }
+
+    const roles = ['superusuario', 'supervisor', 'supervisor_pais'];
+
+    return roles.find((role) => role === page.props.usuario.rol.nombre);
+});
 </script>
 
 <template>
@@ -11,7 +25,12 @@ import MenuItem from "@/Components/Layouts/MenuItem.vue";
             </button>
             <div class="collapse navbar-collapse" id="navbar">
                 <ul class="navbar-nav me-auto mb-2 mb-md-0">
-                    <slot />
+                    <li class="nav-item" :class="{ 'me-md-3': showMenuUsuarios }">
+                        <MenuItem :link="route('dashboard.pacientes.index')" title="Pacientes" />
+                    </li>
+                    <li class="nav-item" v-if="showMenuUsuarios">
+                        <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
+                    </li>
                 </ul>
                 <a :href="route('dashboard.logout')" class="text-primary-emphasis text-decoration-none fs-6 me-md-1">
                     <i class="fa fa-sign-out"></i>

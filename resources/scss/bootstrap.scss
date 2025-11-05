@@ -6,7 +6,8 @@ $success: #22ab62;
 $danger: #c00f0c;
 $info: #c4eae3;
 $thead: #7dd1c1;
-$thead-light: #c4eae3;
+$light: #f8f9fa;
+$darkGrey: #8C8C8C;
 
 $theme-colors: (
     "primary": $primary,
@@ -15,7 +16,7 @@ $theme-colors: (
     "danger": $danger,
     "warning": #ffc107,
     "info": $info,
-    "light": #f8f9fa,
+    "light": $light,
     "dark": #212529
 );
 
@@ -26,6 +27,8 @@ $font-family-sans-serif: 'Roboto', sans-serif;
 $link-color: $primary;
 $table-th-font-weight: $font-weight-semibold;
 $table-cell-padding-y: 1rem;
+$nav-tabs-border-radius: 0;
+$nav-tabs-link-active-bg: $light;
 
 @import "bootstrap/scss/bootstrap";
 
@@ -34,7 +37,7 @@ $table-cell-padding-y: 1rem;
 }
 
 thead tr th {
-    background-color: $thead-light !important;
+    background-color: $info !important;
     color: $primary-text-emphasis !important;
 }
 
@@ -49,10 +52,31 @@ thead tr th {
 }
 
 .panel-general {
-    background-color: $thead-light;
+    background-color: $info;
     border: 1px solid $primary-text-emphasis;
 }
 
 .input-group .btn {
     border: 1px solid $input-border-color;
+}
+
+.bg-dark-grey {
+    background-color: $darkGrey;
+}
+
+.table.table-patient-details * {
+    padding: 0;
+}
+
+.table-patient-details td {
+    vertical-align: bottom;
+}
+
+.table-patient-details-container {
+    background-color: #f6f8fc;
+}
+
+.table > :not(caption) > * > * {
+    color: inherit;
+    background-color: inherit;
 }

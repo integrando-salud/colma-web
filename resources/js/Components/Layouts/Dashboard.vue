@@ -9,7 +9,7 @@ defineProps({
 <template>
     <Main>
         <div class="py-4">
-            <h3 class="mb-4" v-if="title">{{ title }}</h3>
+            <h3 class="mb-4 text-primary-emphasis" v-if="title">{{ title }}</h3>
 
             <slot />
         </div>

@@ -2,13 +2,15 @@
 import { computed, watch, onMounted } from "vue";
 import { usePage } from "@inertiajs/vue3";
 import { useNotificationStore } from '@/Stores/notification';
-import MenuSupervisor from '@/Components/Menus/MenuSupervisor.vue';
+import Menu from '@/Components/Layouts/Menu.vue';
 import Notification from "@/Components/Notification.vue";
 
 const page = usePage();
 const notification = useNotificationStore();
 const successNotification = computed(() => page.props.success);
 const errorNotification = computed(() => page.props.error);
+
+const showMenu = computed(() => page.props.usuario);
 
 watch(successNotification, (value) => {
     if (value) {
@@ -34,7 +36,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <MenuSupervisor v-if="$page.props.usuario?.rol.nombre.includes('superusuario', 'supervisor')" />
+    <Menu v-if="showMenu" />
 
     <div class="container-fluid">
         <slot />

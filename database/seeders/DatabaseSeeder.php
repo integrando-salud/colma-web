@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             PaisesSeeder::class,
             CentrosSaludSeeder::class,
             UsersSeeder::class,
+            DiagnosticosSeeder::class,
         ]);
     }
 }

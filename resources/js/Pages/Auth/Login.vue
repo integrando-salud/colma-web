@@ -3,7 +3,7 @@ import { Head, useForm } from "@inertiajs/vue3";
 import Main from "@/Components/Layouts/Main.vue";
 
 const form = useForm({
-    email: null,
+    documento: null,
     password: null
 });
 
@@ -28,9 +28,9 @@ const login = () => {
                         <form @submit.prevent="login">
                             <div class="alert alert-danger" v-if="form.errors.login">{{ form.errors.login }}</div>
                             <div class="mb-3">
-                                <label for="email" class="form-label">Correo electrónico:</label>
-                                <input type="email" id="email" name="email" class="form-control" :class="{ 'is-invalid': form.errors.email }" v-model="form.email">
-                                <div class="invalid-feedback" v-if="form.errors.email">{{ form.errors.email }}</div>
+                                <label for="documento" class="form-label">DNI:</label>
+                                <input type="text" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': form.errors.documento }" v-model="form.documento">
+                                <div class="invalid-feedback" v-if="form.errors.documento">{{ form.errors.documento }}</div>
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña:</label>

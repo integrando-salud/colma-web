@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Http\Resources\Dashboard\CentroSaludResource;
+use App\Http\Resources\Dashboard\PacienteResource;
 use App\Http\Resources\Dashboard\PaisResource;
 use App\Http\Resources\Dashboard\RolResource;
 use App\Http\Resources\Dashboard\UserResource;
@@ -12,22 +13,18 @@ class DashboardService
 {
     public function handleIndexView(Request $request)
     {
-        switch (auth()->user()->roles->first()->name) {
+        $rolName = auth()->user()->roles->first()->name;
+
+        switch ($rolName) {
             case 'superusuario':
-                $viewName = 'Index/Supervisor';
+            case 'supervisor':
+            case 'supervisor_pais':
+                $viewName = 'Index/UsuariosIndex';
                 $viewData = $this->getDataForUsuariosPage($request->only(['rol', 'pais', 'nombre', 'orderBy', 'orderDir']));
                 break;
-            case 'supervisor':
-                $viewName = 'Index/Supervisor';
-                $viewData = [];
-                break;
-            case 'supervisor_pais':
-                $viewName = 'Index/Supervisor';
-                $viewData = [];
-                break;
             case 'promotor':
-                $viewName = 'Index/Promotor';
-                $viewData = [];
+                $viewName = 'Index/PacientesIndex';
+                $viewData = $this->getDataForPacientesPage($request->only('estado', 'alertas', 'nombre', 'orderBy', 'orderDir'));
                 break;
         }
 
@@ -53,7 +50,7 @@ class DashboardService
         }
 
         $usuarios = $usuarioService->queryGetUsuarios($filters)
-            ->paginate(10)
+            ->paginate(config('app.rpp'))
             ->withQueryString();
 
         $roles = $rolService->queryGetRoles([
@@ -86,6 +83,28 @@ class DashboardService
             'paises' => PaisResource::collection($paises),
             'centrosSalud' => CentroSaludResource::collection($centrosSalud),
             'supervisores' => UserResource::collection($supervisores),
+            'filtros' => $filters,
+        ];
+    }
+
+    public function getDataForPacientesPage(array $filters = [])
+    {
+        $pacienteService = new PacienteService();
+
+        if (empty($filters['orderBy'])) {
+            $filters['orderBy'] = 'id';
+        }
+
+        if (empty($filters['orderDir'])) {
+            $filters['orderDir'] = 'desc';
+        }
+
+        $pacientes = $pacienteService->queryGetPacientes($filters)
+            ->paginate(config('app.rpp'))
+            ->withQueryString();
+
+        return [
+            'pacientes' => PacienteResource::collection($pacientes),
             'filtros' => $filters,
         ];
     }

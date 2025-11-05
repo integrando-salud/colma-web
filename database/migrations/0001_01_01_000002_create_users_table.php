@@ -16,6 +16,8 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
+            $table->enum('sexo', ['M', 'F']);
+            $table->string('documento', 20)->unique();
             $table->string('email')->unique();
             $table->string('password');
             $table->foreignIdFor(Pais::class, 'pais_id')
@@ -33,6 +35,7 @@ return new class extends Migration {
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('set null');
+            $table->integer('accesos')->default(0);
             $table->dateTime('ultimo_acceso')->nullable();
             $table->rememberToken();
             $table->timestamps();
