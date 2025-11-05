@@ -58,4 +58,19 @@ class Paciente extends Model
     {
         return $this->belongsToMany(Diagnostico::class, 'pacientes_diagnosticos');
     }
+
+    public function glucosa()
+    {
+        return $this->hasMany(Glucosa::class);
+    }
+
+    public function presionArterial()
+    {
+        return $this->hasMany(PresionArterial::class);
+    }
+
+    public function estadoAnimo()
+    {
+        return $this->hasMany(EstadoAnimo::class);
+    }
 }
