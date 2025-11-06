@@ -3,27 +3,47 @@ import { ref, useTemplateRef, computed } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
+import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
 
 const props = defineProps({
     paciente: Object,
 });
 
 const title = computed(() => {
-    return (props.paciente ? 'Editar' : 'Nuevo') + ' paciente';
+    if (!props.paciente) {
+        return 'Nuevo paciente';
+    } else {
+        return `Paciente: ${props.paciente.nombre} ${props.paciente.apellido} (${props.paciente.edad} años, ${props.paciente.sexo})`;
+    }
 });
 const step = ref('datos_paciente');
 const formPaciente = useTemplateRef('formPaciente');
-const guardandoDatosPaciente = ref(false);
+const guardando = ref(false);
 
 const goTo = (stepName) => {
     step.value = stepName;
 };
 
-const saveDatosPaciente = async () => {
-    guardandoDatosPaciente.value = true;
-    await formPaciente.value.submit();
-    guardandoDatosPaciente.value = false;
+const guardar = () => {
+    switch (step.value) {
+        case 'datos_paciente':
+            saveDatosPaciente();
+            break;
+        case 'interacciones':
+            saveInteraccion();
+            break;
+    }
 };
+
+const saveDatosPaciente = async () => {
+    guardando.value = true;
+    await formPaciente.value.submit();
+    guardando.value = false;
+};
+
+const saveInteraccion = async () => {
+    console.log('Guardar interacción');
+}
 </script>
 
 <template>
@@ -66,24 +86,24 @@ const saveDatosPaciente = async () => {
                             <h4 class="fs-5 text-primary-emphasis">Alertas</h4>
                         </template>
                         <template v-else-if="step === 'interacciones'">
-                            <h4 class="fs-5 text-primary-emphasis">Interacciones</h4>
+                            <FormInteraccionesPaciente />
                         </template>
                     </div>
                 </div>
             </div>
             <div class="col-12 text-end mt-3">
-                <template v-if="guardandoDatosPaciente">
+                <template v-if="guardando">
                     <span class="text-primary-emphasis">
                         <i class="fa-solid fa-spinner fa-spin"></i>
                         Guardando
                     </span>
                 </template>
                 <template v-else>
-                    <template v-if="step === 'datos_paciente'">
+                    <template v-if="step === 'datos_paciente' || step === 'interacciones'">
                         <Link :href="route('dashboard.pacientes.index')" class="btn btn-grey fw-semibold shadow me-2">
                             Cancelar
                         </Link>
-                        <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="saveDatosPaciente">
+                        <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="guardar">
                             Guardar
                         </button>
                     </template>
