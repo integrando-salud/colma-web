@@ -17,3 +17,16 @@ export const FORM_PACIENTE = {
     paquete_id: '',
     password: null,
 };
+
+export const FORM_CONTACTO = {
+    resultado: '',
+    resultado_razon: '',
+    fecha: null,
+    hora: null,
+    modalidad: '',
+    motivo: '',
+    observaciones: null,
+    accion: '',
+    fecha_reprogramacion: null,
+    motivo_reprogramacion: '',
+};

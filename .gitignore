@@ -25,3 +25,5 @@ Thumbs.db
 /db
 /docker/config/nginx/default.conf
 /docker/config/php/php.ini
+/data
+/letsencrypt
