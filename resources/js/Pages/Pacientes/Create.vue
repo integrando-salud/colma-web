@@ -4,6 +4,7 @@ import { Head, Link } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
 import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
+import Alertas from "@/Components/Pacientes/Alertas.vue";
 
 const props = defineProps({
     paciente: Object,
@@ -44,6 +45,10 @@ const saveDatosPaciente = async () => {
 const saveInteraccion = async () => {
     console.log('Guardar interacción');
 }
+
+const goToInteracciones = (alerta) => {
+    console.log('Ir a interacciones: ' + alerta);
+}
 </script>
 
 <template>
@@ -83,7 +88,7 @@ const saveInteraccion = async () => {
                             <h4 class="fs-5 text-primary-emphasis">Datos clínicos</h4>
                         </template>
                         <template v-else-if="step === 'alertas'">
-                            <h4 class="fs-5 text-primary-emphasis">Alertas</h4>
+                            <Alertas @ver-formulario="goToInteracciones" />
                         </template>
                         <template v-else-if="step === 'interacciones'">
                             <FormInteraccionesPaciente />
