@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\Paciente\FilterPacienteRequest;
 use App\Http\Requests\Dashboard\Paciente\StorePacienteRequest;
+use App\Http\Resources\Dashboard\InteraccionResource;
 use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Paciente;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Throwable;
@@ -24,7 +26,7 @@ class PacienteController extends Controller
 
     public function create()
     {
-        return Inertia::render('Pacientes/Create');
+        return Inertia::render('Pacientes/Detalle');
     }
 
     public function store(StorePacienteRequest $request, PacienteService $pacienteService)
@@ -49,8 +51,27 @@ class PacienteController extends Controller
 
     public function edit(Paciente $paciente)
     {
-        return Inertia::render('Pacientes/Create', [
+        return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente)
+        ]);
+    }
+
+    public function interacciones(Request $request, Paciente $paciente)
+    {
+        $interacciones = $paciente->interacciones()->orderByDesc('fecha')->paginate(10);
+
+        return Inertia::render('Pacientes/Detalle', [
+            'paciente' => new PacienteResource($paciente),
+            'step' => 'historial-interacciones',
+            'interacciones' => InteraccionResource::collection($interacciones),
+        ]);
+    }
+
+    public function createInteraccion(Paciente $paciente)
+    {
+        return Inertia::render('Pacientes/Detalle', [
+            'paciente' => new PacienteResource($paciente),
+            'step' => 'nueva-interaccion',
         ]);
     }
 }

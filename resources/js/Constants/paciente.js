@@ -19,8 +19,11 @@ export const FORM_PACIENTE = {
 };
 
 export const FORM_CONTACTO = {
-    resultado: '',
-    resultado_razon: '',
+    paciente_id: null,
+    alerta_id: null,
+    alerta_tipo: null,
+    contactado: '',
+    razon_no_contacto: '',
     fecha: null,
     hora: null,
     modalidad: '',
