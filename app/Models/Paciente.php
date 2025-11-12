@@ -73,4 +73,9 @@ class Paciente extends Model
     {
         return $this->hasMany(EstadoAnimo::class);
     }
+
+    public function interacciones()
+    {
+        return $this->hasMany(Interaccion::class);
+    }
 }
