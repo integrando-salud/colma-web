@@ -149,12 +149,15 @@ const orderBy = (column) => {
                     </template>
 
                     <template v-for="paciente in pacientes.data" :key="paciente.id">
-                        <tr>
+                        <tr :class="{ 'row-alerta': paciente.alertas_pendientes > 0 }">
                             <td>{{ paciente.id }}</td>
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
                             <td>{{ paciente.sesiones.completadas }}/{{ paciente.sesiones.total }}</td>
-                            <td>-</td>
+                            <td>
+                                {{ paciente.alertas_pendientes ? paciente.alertas_pendientes : '-' }}
+                                <i class="fa fa-warning text-danger" v-if="paciente.alertas_pendientes"></i>
+                            </td>
                             <td>{{ paciente.usuario.numero_accesos }}</td>
                             <td>{{ paciente.usuario.ultimo_acceso }}</td>
                             <td>
@@ -168,7 +171,7 @@ const orderBy = (column) => {
                                 </button>
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-decoration-none" @click="pacienteSelected === paciente ? hideDetails() : showDetails(paciente)">
+                                <button type="button" class="btn btn-link btn-ver-mas text-decoration-none" @click="pacienteSelected === paciente ? hideDetails() : showDetails(paciente)">
                                     Ver {{ (pacienteSelected === paciente ? 'menos' : 'más') }}
                                 </button>
                             </td>
@@ -301,5 +304,15 @@ const orderBy = (column) => {
 </template>
 
 <style scoped>
+.row-alerta {
+    background-color: #F98080;
+}
 
+.row-alerta .fa-warning {
+    font-size: 1.5rem;
+}
+
+.row-alerta .btn-ver-mas {
+    color: #205BF1;
+}
 </style>
