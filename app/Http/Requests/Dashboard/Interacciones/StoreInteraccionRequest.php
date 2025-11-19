@@ -25,7 +25,6 @@ class StoreInteraccionRequest extends FormRequest
         return [
             'paciente_id' => ['required', 'exists:pacientes,id'],
             'alerta_id' => ['nullable', 'integer'],
-            'alerta_tipo' => ['nullable', 'in:' . implode(',', Interaccion::TIPOS_ALERTA)],
             'contactado' => ['required', 'boolean'],
             'razon_no_contacto' => ['nullable', 'in:' . implode(',', Interaccion::RAZONES_NO_CONTACTO)],
             'fecha' => ['required', 'date'],
@@ -45,7 +44,6 @@ class StoreInteraccionRequest extends FormRequest
             'paciente_id.required' => 'El campo paciente es obligatorio.',
             'paciente_id.exists' => 'El paciente seleccionado no existe.',
             'alerta_id.integer' => 'El campo alerta_id debe ser un número entero.',
-            'alerta_tipo.in' => 'El campo alerta tipo debe ser una opción de las siguientes: ' . implode(',', Interaccion::TIPOS_ALERTA),
             'contactado.required' => 'El campo resultado del contacto es obligatorio.',
             'contactado.boolean' => 'El campo resultado del contacto debe ser 0 o 1',
             'razon_no_contacto.in' => 'El campo razón de no contacto debe ser una opción de las siguientes: ' . implode(',', Interaccion::RAZONES_NO_CONTACTO),

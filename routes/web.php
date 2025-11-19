@@ -37,11 +37,18 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.store');
         Route::get('{paciente}/editar', [PacienteController::class, 'edit'])
             ->name('dashboard.pacientes.edit');
+        Route::get('{paciente}/alertas', [PacienteController::class, 'alertas'])
+            ->name('dashboard.pacientes.alertas');
+        Route::get('{paciente}/alertas/historial', [PacienteController::class, 'alertasHistorial'])
+            ->name('dashboard.pacientes.alertas.historial');
         Route::get('{paciente}/interacciones', [PacienteController::class, 'interacciones'])
             ->name('dashboard.pacientes.interacciones');
         Route::get('{paciente}/interacciones/crear', [PacienteController::class, 'createInteraccion'])
             ->name('dashboard.pacientes.createInteraccion');
     });
+
+    Route::post('interacciones/guardar', [InteraccionController::class, 'store'])
+        ->name('interacciones.store');
 
     Route::prefix('ajax')->group(function () {
         Route::prefix('interacciones')->group(function () {
@@ -55,8 +62,6 @@ Route::middleware('auth')->group(function () {
                 ->name('ajax.interacciones.motivosContacto');
             Route::get('motivos-reprogramacion', [InteraccionController::class, 'getMotivosReprogramacion'])
                 ->name('ajax.interacciones.motivosReprogramacion');
-            Route::post('crear', [InteraccionController::class, 'create'])
-                ->name('ajax.interacciones.create');
         });
     });
 });

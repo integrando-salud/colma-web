@@ -27,7 +27,7 @@ return new class extends Migration
             $table->integer('pregunta_7');
             $table->integer('pregunta_8');
             $table->integer('pregunta_9');
-            $table->boolean('alerta');
+            $table->integer('valor');
             $table->timestamp('fecha_registro');
             $table->timestamp('fecha_sincronizacion');
         });

@@ -80,3 +80,8 @@ thead tr th {
     color: inherit;
     background-color: inherit;
 }
+
+.btn-outline-primary:hover {
+    background-color: inherit;
+    color: $primary;
+}

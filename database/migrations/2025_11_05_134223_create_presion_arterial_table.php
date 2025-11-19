@@ -20,7 +20,6 @@ return new class extends Migration
                 ->onDelete('cascade');
             $table->integer('presion_sistolica');
             $table->integer('presion_diastolica');
-            $table->boolean('alerta');
             $table->timestamp('fecha_registro');
             $table->timestamp('fecha_sincronizacion');
         });

@@ -19,18 +19,19 @@ class EstadoAnimo extends Model
         'pregunta_7',
         'pregunta_8',
         'pregunta_9',
-        'alerta',
+        'valor',
         'fecha_registro',
         'fecha_sincronizacion',
     ];
 
     protected $casts = [
-        'alerta' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 
     public $timestamps = false;
+
+    public const RANGO_NORMAL = '7 - 10';
 
     public function paciente()
     {

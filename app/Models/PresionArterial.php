@@ -12,21 +12,26 @@ class PresionArterial extends Model
         'paciente_id',
         'presion_sistolica',
         'presion_diastolica',
-        'alerta',
         'fecha_registro',
         'fecha_sincronizacion',
     ];
 
     protected $casts = [
-        'alerta' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 
     public $timestamps = false;
 
+    public const RANGO_NORMAL = '120 - 80';
+
     public function paciente()
     {
         return $this->belongsTo(Paciente::class);
+    }
+
+    public function getValorAttribute()
+    {
+        return "$this->presion_sistolica - $this->presion_diastolica";
     }
 }

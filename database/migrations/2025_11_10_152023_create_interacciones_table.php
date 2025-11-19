@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Alerta;
 use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
@@ -24,8 +25,11 @@ return new class extends Migration
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('cascade');
-            $table->unsignedInteger('alerta_id')->nullable();
-            $table->enum('alerta_tipo', Interaccion::TIPOS_ALERTA)->nullable();
+            $table->foreignIdFor(Alerta::class)
+                ->nullable()
+                ->constrained()
+                ->onUpdate('cascade')
+                ->onDelete('cascade');
             $table->boolean('contactado');
             $table->enum('razon_no_contacto', Interaccion::RAZONES_NO_CONTACTO)->nullable();
             $table->date('fecha');
@@ -49,6 +53,7 @@ return new class extends Migration
         Schema::table('interacciones', function (Blueprint $table) {
             $table->dropForeign(['paciente_id']);
             $table->dropForeign(['user_id']);
+            $table->dropForeign(['alerta_id']);
         });
 
         Schema::dropIfExists('interacciones');
