@@ -9,13 +9,6 @@ class Interaccion extends Model
 {
     use SoftDeletes;
 
-    public const TIPOS_ALERTA = [
-        'glucosa',
-        'presion_arterial',
-        'estado_animo',
-        'operativa'
-    ];
-
     public const RAZONES_NO_CONTACTO = [
         'No contesta',
         'Teléfono inválido'
@@ -61,7 +54,6 @@ class Interaccion extends Model
         'paciente_id',
         'user_id',
         'alerta_id',
-        'alerta_tipo',
         'contactado',
         'razon_no_contacto',
         'fecha',

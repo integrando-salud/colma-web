@@ -12,19 +12,19 @@ class Glucosa extends Model
         'paciente_id',
         'valor',
         'ayuno',
-        'alerta',
         'fecha_registro',
         'fecha_sincronizacion',
     ];
 
     protected $casts = [
         'ayuno' => 'boolean',
-        'alerta' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 
     public $timestamps = false;
+
+    public const RANGO_NORMAL = '70 - 99';
 
     public function paciente()
     {

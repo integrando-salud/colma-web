@@ -12,7 +12,6 @@ class InteraccionService
             'paciente_id' => $data['paciente_id'],
             'user_id' => auth()->user()->id,
             'alerta_id' => data_get($data, 'alerta_id'),
-            'alerta_tipo' => data_get($data, 'alerta_tipo'),
             'contactado' => $data['contactado'],
             'razon_no_contacto' => data_get($data, 'razon_no_contacto'),
             'fecha' => $data['fecha'],

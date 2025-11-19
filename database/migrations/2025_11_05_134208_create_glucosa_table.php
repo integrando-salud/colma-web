@@ -19,7 +19,6 @@ return new class extends Migration {
                 ->onDelete('cascade');
             $table->integer('valor');
             $table->boolean('ayuno');
-            $table->boolean('alerta');
             $table->timestamp('fecha_registro');
             $table->timestamp('fecha_sincronizacion');
         });

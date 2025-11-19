@@ -36,7 +36,7 @@ class InteraccionController extends Controller
         return Interaccion::MOTIVOS_REPROGRAMACION;
     }
 
-    public function create(StoreInteraccionRequest $request, InteraccionService $interaccionService)
+    public function store(StoreInteraccionRequest $request, InteraccionService $interaccionService)
     {
         try {
             $interaccionService->storeInteraccion($request->validated());

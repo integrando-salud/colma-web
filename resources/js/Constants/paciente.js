@@ -21,7 +21,6 @@ export const FORM_PACIENTE = {
 export const FORM_CONTACTO = {
     paciente_id: null,
     alerta_id: null,
-    alerta_tipo: null,
     contactado: '',
     razon_no_contacto: '',
     fecha: null,

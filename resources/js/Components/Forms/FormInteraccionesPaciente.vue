@@ -8,6 +8,10 @@ const props = defineProps({
     idPaciente: {
         type: Number,
         required: true,
+    },
+    alerta: {
+        type: Object,
+        default: () => ([]),
     }
 });
 
@@ -94,7 +98,7 @@ const getMotivosReprogramacion = async () => {
 };
 
 const submit = async () => {
-    formContacto.post(route('ajax.interacciones.create'), {
+    formContacto.post(route('interacciones.store'), {
         onError: () => {
             notification.errorNotification('El formulario contiene errores.');
         }
@@ -110,6 +114,15 @@ onMounted(async () => {
     await getMotivosContacto();
     await getMotivosReprogramacion();
     formContacto.paciente_id = props.idPaciente;
+
+    if (props.alerta.id) {
+        formContacto.alerta_id = props.alerta.id;
+        formContacto.motivo = 'Alerta clínica';
+    }
+
+    if (props.alerta.tipo) {
+        formContacto.alerta_tipo = props.alerta.tipo;
+    }
 });
 </script>
 

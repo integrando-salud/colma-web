@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Services\AlertaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,9 @@ class PacienteResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $alertaService = new AlertaService();
+        $alertasPendientes = $alertaService->countAlertasPendientes($this->id);
+
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
@@ -45,6 +49,7 @@ class PacienteResource extends JsonResource
             ],
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
+            'alertas_pendientes' => $alertasPendientes
         ];
     }
 }

@@ -5,6 +5,8 @@ import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
 import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
 import HistorialInteraccionesPaciente from "@/Components/HistorialInteraccionesPaciente.vue";
+import AlertasPendientes from "@/Components/Pacientes/Alertas/AlertasPendientes.vue";
+import AlertasHistorial from "@/Components/Pacientes/Alertas/AlertasHistorial.vue";
 
 const props = defineProps({
     paciente: Object,
@@ -13,6 +15,18 @@ const props = defineProps({
         default: 'datos_paciente',
     },
     interacciones: {
+        type: Object,
+        default: () => [],
+    },
+    alertasPendientes: {
+        type: Object,
+        default: () => [],
+    },
+    alertasHistoricas: {
+        type: Object,
+        default: () => [],
+    },
+    alerta: {
         type: Object,
         default: () => [],
     }
@@ -92,16 +106,24 @@ const saveInteraccion = async () => {
                         <li class="nav-item">
                             <a
                                 href="#"
-                                class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body"
+                                class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
                                     active: step === 'alertas',
                                     'fw-bold': step === 'alertas',
                                     disabled: !paciente,
                                     'opacity-25': !paciente,
                                 }"
+                                data-bs-toggle="dropdown"
                             >
                                 Alertas
+                                <span class="badge bg-secondary ms-1" v-if="paciente && paciente.alertas_pendientes">{{ paciente.alertas_pendientes }}</span>
                             </a>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a :href="paciente ? route('dashboard.pacientes.alertas', paciente.id) : '#'" class="dropdown-item">Pendientes de revisión</a>
+                                    <a :href="paciente ? route('dashboard.pacientes.alertas.historial', paciente.id) : '#'" class="dropdown-item">Historial de alertas</a>
+                                </li>
+                            </ul>
                         </li>
                         <li class="nav-item dropdown">
                             <a
@@ -117,7 +139,7 @@ const saveInteraccion = async () => {
                             >
                                 Interacciones
                             </a>
-                            <ul class="dropdown-menu" id="menu-interacciones">
+                            <ul class="dropdown-menu">
                                 <li>
                                     <a :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nueva interacción</a>
                                     <a :href="paciente ? route('dashboard.pacientes.interacciones', paciente.id) : '#'" class="dropdown-item">Historial de interacciones</a>
@@ -133,10 +155,13 @@ const saveInteraccion = async () => {
                             <h4 class="fs-5 text-primary-emphasis">Datos clínicos</h4>
                         </template>
                         <template v-else-if="step === 'alertas'">
-                            <h4 class="fs-5 text-primary-emphasis">Alertas</h4>
+                            <AlertasPendientes :alertas="alertasPendientes" />
+                        </template>
+                        <template v-else-if="step === 'alertas-historial'">
+                            <AlertasHistorial :alertas="alertasHistoricas" />
                         </template>
                         <template v-else-if="step === 'nueva-interaccion'">
-                            <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" />
+                            <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta />
                         </template>
                         <template v-else-if="step === 'historial-interacciones'">
                             <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones />
