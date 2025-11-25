@@ -14,6 +14,16 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasRolesAndAbilities, HasFactory, Notifiable, SoftDeletes;
 
+    public const ROL_SUPERUSUARIO = 'superusuario';
+
+    public const ROL_SUPERVISOR = 'supervisor';
+
+    public const ROL_SUPERVISOR_PAIS = 'supervisor_pais';
+
+    public const ROL_PROMOTOR = 'promotor';
+
+    public const ROL_PACIENTE = 'paciente';
+
     /**
      * The attributes that are mass assignable.
      *

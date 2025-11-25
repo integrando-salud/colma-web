@@ -16,6 +16,7 @@ return new class extends Migration {
         Schema::create('pacientes', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(User::class, 'user_id')
+                ->nullable()
                 ->constrained()
                 ->onUpdate('cascade')
                 ->onDelete('cascade');

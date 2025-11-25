@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PresionArterial extends Model
 {
+    use HasFactory;
+
     protected $table = 'presion_arterial';
 
     protected $fillable = [
