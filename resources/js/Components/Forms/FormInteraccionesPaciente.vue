@@ -11,7 +11,7 @@ const props = defineProps({
     },
     alerta: {
         type: Object,
-        default: () => ([]),
+        default: null,
     }
 });
 
@@ -30,6 +30,10 @@ const loadingMotivosReprogramacion = ref(false);
 
 const verRazonNoContacto = computed(() => {
     return formContacto.contactado !== '' && formContacto.contactado == 0;
+});
+
+const disableMotivo = computed(() => {
+    return props.alerta && props.alerta.tipo === 'clinica';
 });
 
 const getRazonesNoContacto = async () => {
@@ -115,13 +119,12 @@ onMounted(async () => {
     await getMotivosReprogramacion();
     formContacto.paciente_id = props.idPaciente;
 
-    if (props.alerta.id) {
+    if (props.alerta?.id) {
         formContacto.alerta_id = props.alerta.id;
-        formContacto.motivo = 'Alerta clínica';
-    }
 
-    if (props.alerta.tipo) {
-        formContacto.alerta_tipo = props.alerta.tipo;
+        if (props.alerta.tipo === 'clinica') {
+            formContacto.motivo = 'Alerta clínica';
+        }
     }
 });
 </script>
@@ -130,6 +133,32 @@ onMounted(async () => {
     <div class="row">
         <div class="col-12">
             <h4 class="fs-5 text-primary-emphasis">Formulario de contacto</h4>
+        </div>
+        <div class="col-12 mb-3" v-if="alerta">
+            <div class="accordion" id="accordionInfoAlerta">
+                <div class="accordion-item border-danger">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button bg-danger text-white" type="button" data-bs-toggle="collapse" data-bs-target="#alertaInfo">
+                            <i class="fa fa-warning me-2"></i> {{ alerta.descripcion }}
+                        </button>
+                    </h3>
+                    <div id="alertaInfo" class="accordion-collapse collapse show" data-bs-parent="#accordionInfoAlerta">
+                        <div class="accordion-body">
+                            <div class="row">
+                                <div class="col-12 col-md-auto" v-if="alerta.valor">
+                                    <strong>Valor:</strong> {{ alerta.valor }}
+                                </div>
+                                <div class="col-12 col-md-auto" v-if="alerta.rango_normal">
+                                    <strong>Rango normal:</strong> {{ alerta.rango_normal }}
+                                </div>
+                                <div class="col-12 col-md-auto" v-if="alerta.fecha">
+                                    <strong>Fecha:</strong> {{ alerta.fecha }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col-12">
             <div class="row">
@@ -239,7 +268,7 @@ onMounted(async () => {
                                         class="form-select"
                                         :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                         v-model="formContacto.motivo"
-                                        :disabled="loadingMotivosContacto"
+                                        :disabled="loadingMotivosContacto || disableMotivo"
                                     >
                                         <option value="">Seleccionar motivo</option>
                                         <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
@@ -330,5 +359,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.accordion-button::after {
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round'><path d='m2 5 6 6 6-6'/></svg>");
+}
 
+.accordion-button:not(.collapsed)::after {
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round'><path d='m2 5 6 6 6-6'/></svg>");
+}
 </style>

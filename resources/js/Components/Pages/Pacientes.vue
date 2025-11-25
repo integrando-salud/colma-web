@@ -166,9 +166,9 @@ const orderBy = (column) => {
                                 </span>
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link text-body fs-5">
+                                <a :href="route('dashboard.pacientes.createInteraccion', paciente.id)" class="btn btn-link text-body fs-5">
                                     <i class="fa-regular fa-pen-to-square"></i>
-                                </button>
+                                </a>
                             </td>
                             <td>
                                 <button type="button" class="btn btn-link btn-ver-mas text-decoration-none" @click="pacienteSelected === paciente ? hideDetails() : showDetails(paciente)">

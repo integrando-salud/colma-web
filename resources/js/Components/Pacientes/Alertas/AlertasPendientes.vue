@@ -12,6 +12,9 @@ const props = defineProps({
 <template>
     <div class="row">
         <div class="col-12">
+            <h4 class="text-primary-emphasis">Alertas pendientes</h4>
+        </div>
+        <div class="col-12">
             <h5 class="text-primary-emphasis">Alertas clínicas</h5>
         </div>
         <div class="col-12">
