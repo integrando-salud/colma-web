@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\CentroSalud;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -11,34 +13,46 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
-
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
+        $sexo = fake()->randomElement(['M', 'F']);
+        $nombre = fake()->firstName($sexo === 'M' ? 'male' : 'female') . ' ' . fake()->lastName;
+        $email = Str::lower(Str::replace(' ', '.', $nombre)) . '@correo.com';
+        $centroSalud = CentroSalud::inRandomOrder()->first();
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'nombre' => $nombre,
+            'sexo' => $sexo,
+            'documento' => fake()->unique()->numerify('########'),
+            'email' => $email,
+            'password' => Hash::make('123456'),
+            'pais_id' => $centroSalud->pais_id,
+            'centro_salud_id' => $centroSalud->id,
+            'supervisor_id' => null,
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
+    public function configure()
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->afterCreating(function (User $user) {
+            $rol = fake()->randomElement([
+                User::ROL_SUPERVISOR,
+                User::ROL_SUPERVISOR_PAIS,
+                User::ROL_PROMOTOR,
+            ]);
+
+            $user->assign($rol);
+
+            if ($rol === User::ROL_PROMOTOR) {
+                $supervisor = User::whereHas('roles', function ($query) {
+                    $query->where('name', User::ROL_SUPERVISOR);
+                })->inRandomOrder()->first();
+
+                if ($supervisor) {
+                    $user->supervisor_id = $supervisor->id;
+                    $user->save();
+                }
+            }
+        });
     }
 }

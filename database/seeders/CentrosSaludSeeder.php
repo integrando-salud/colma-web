@@ -34,6 +34,13 @@ class CentrosSaludSeeder extends Seeder
                 'nombre' => 'Centro de Salud 3',
                 'pais_id' => 2
             ]);
+
+            CentroSalud::firstOrCreate([
+                'id' => 4
+            ], [
+                'nombre' => 'Centro de Salud 4',
+                'pais_id' => 1
+            ]);
         }
     }
 }
