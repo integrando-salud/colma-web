@@ -41,7 +41,9 @@ class InteraccionController extends Controller
         try {
             $interaccionService->storeInteraccion($request->validated());
 
-            return to_route(route('dashboard.pacientes.interacciones'), $request->paciente_id);
+            return to_route('dashboard.pacientes.interacciones', [
+                'paciente' => $request->paciente_id,
+            ])->with('success', 'Interacción guardada con éxito.');
         } catch (Throwable $th) {
             Log::error('Error al guardar interacción: ' . $th->getMessage(), [
                 'stack' => $th->getTraceAsString(),
