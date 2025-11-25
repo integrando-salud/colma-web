@@ -28,7 +28,7 @@ const props = defineProps({
     },
     alerta: {
         type: Object,
-        default: () => [],
+        default: null,
     }
 });
 
