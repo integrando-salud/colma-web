@@ -29,7 +29,8 @@ const props = defineProps({
     alerta: {
         type: Object,
         default: null,
-    }
+    },
+    interaccion: null
 });
 
 const title = computed(() => {
@@ -164,7 +165,7 @@ const saveInteraccion = async () => {
                             <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta />
                         </template>
                         <template v-else-if="step === 'historial-interacciones'">
-                            <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones />
+                            <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones :interaccion />
                         </template>
                     </div>
                 </div>

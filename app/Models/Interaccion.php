@@ -82,4 +82,9 @@ class Interaccion extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function alerta()
+    {
+        return $this->belongsTo(Alerta::class);
+    }
 }

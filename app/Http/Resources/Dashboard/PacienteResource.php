@@ -49,7 +49,13 @@ class PacienteResource extends JsonResource
             ],
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
-            'alertas_pendientes' => $alertasPendientes
+            'alertas_pendientes' => $alertasPendientes,
+            'interacciones' => $this->interacciones()->orderByDesc('id')->take(3)->get(['id', 'fecha'])->map(function ($interaccion) {
+                return [
+                    'id' => $interaccion->id,
+                    'fecha' => $interaccion->fecha->format('d/m/Y'),
+                ];
+            }),
         ];
     }
 }

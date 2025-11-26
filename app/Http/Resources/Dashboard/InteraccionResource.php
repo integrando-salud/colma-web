@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Dashboard;
 
 use App\Models\Interaccion;
+use App\Services\AlertaService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,6 +16,18 @@ class InteraccionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        if ($this->alerta) {
+            $alertaService = new AlertaService();
+            $entidad = $alertaService->getEntidad($this->alerta->id);
+            $alertaData = [
+                'id' => $this->alerta->id,
+                'descripcion' => $this->alerta->descripcion,
+                'fecha' => $this->alerta->fecha->format('d/m/Y'),
+                'valor' => $entidad?->valor ?? null,
+                'rango_normal' => $entidad ? $entidad::RANGO_NORMAL : null,
+            ];
+        }
+
         return [
             'id' => $this->id,
             'paciente' => [
@@ -25,8 +38,7 @@ class InteraccionResource extends JsonResource
                 'id' => $this->user_id,
                 'nombre' => $this->user->nombre,
             ],
-            'alerta_id' => $this->alerta_id,
-            'alerta_tipo' => $this->alerta_tipo,
+            'alerta' => $this->alerta ? $alertaData : null,
             'contactado' => $this->contactado,
             'contactado_descripcion' => Interaccion::DESCRIPCION_CONTACTO[$this->contactado],
             'razon_no_contacto' => $this->razon_no_contacto,

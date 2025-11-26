@@ -116,6 +116,7 @@ class PacienteController extends Controller
             'paciente' => new PacienteResource($paciente),
             'step' => 'historial-interacciones',
             'interacciones' => InteraccionResource::collection($interacciones),
+            'interaccion' => $request->contacto ?? null,
         ]);
     }
 
