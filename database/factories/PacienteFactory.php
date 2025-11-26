@@ -77,9 +77,13 @@ class PacienteFactory extends Factory
 
             switch ($diagnosticoId) {
                 case 1:
-                    $registros = Glucosa::factory()->count(rand(1, 3))->create([
+                    $registros = Glucosa::factory()
+                        ->count(rand(1, 3))
+                        ->state(fn () => [
+                            'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
+                        ])
+                        ->create([
                         'paciente_id' => $paciente->id,
-                        'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
                     ]);
 
                     foreach ($registros as $registro) {
@@ -99,9 +103,13 @@ class PacienteFactory extends Factory
 
                     break;
                 case 2:
-                    $registros = PresionArterial::factory()->count(rand(1, 3))->create([
+                    $registros = PresionArterial::factory()
+                        ->count(rand(1, 3))
+                        ->state(fn () => [
+                            'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
+                        ])
+                        ->create([
                         'paciente_id' => $paciente->id,
-                        'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
                     ]);
 
                     foreach ($registros as $registro) {

@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useNotificationStore } from "@/Stores/notification";
 import Pagination from "@/Components/Pagination.vue";
-import DetalleAlertaInteraccion from "@/Components/DetalleAlertaInteraccion.vue";
+import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 
 const props = defineProps({
     idPaciente: {

@@ -219,26 +219,35 @@ const orderBy = (column) => {
                                     <tr>
                                         <td class="text-primary-emphasis fw-semibold align-top p-3">Datos clínicos</td>
                                         <td class="p-3">
-                                            <table class="table table-bordered bg-white text-center">
+                                            <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
                                                 <tr>
                                                     <th class="p-1">Registros</th>
-                                                    <th class="p-1">23/07/2025</th>
-                                                    <th class="p-1">20/08/2025</th>
+                                                    <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                        {{ registro.fecha }}
+                                                    </th>
                                                 </tr>
                                                 <tr>
                                                     <td class="p-1">Glucosa</td>
-                                                    <td class="p-1">120 <i class="fa-solid fa-arrow-up text-danger p-0"></i></td>
-                                                    <td class="p-1">90</td>
+                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                        {{ registro.glucosa_valor ?? '-' }}
+                                                    </td>
                                                 </tr>
                                                 <tr>
-                                                    <td class="p-1">Peso</td>
-                                                    <td class="p-1">90</td>
-                                                    <td class="p-1">90</td>
+                                                    <td class="p-1">Presión sistólica</td>
+                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                        {{ registro.presion_sistolica ?? '-' }}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="p-1">Presión diastólica</td>
+                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                        {{ registro.presion_diastolica ?? '-' }}
+                                                    </td>
                                                 </tr>
                                             </table>
                                         </td>
                                         <td class="text-primary-emphasis fw-semibold align-top p-3">
-                                            <button class="btn bg-primary text-white p-1">
+                                            <button v-if="pacienteSelected.datos_clinicos.length" class="btn bg-primary text-white p-1">
                                                 <i class="fa-solid fa-chart-line"></i>
                                                 Ver gráficos
                                             </button>
