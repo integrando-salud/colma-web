@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Dashboard;
 
 use App\Services\AlertaService;
+use App\Services\PacienteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,9 @@ class PacienteResource extends JsonResource
     {
         $alertaService = new AlertaService();
         $alertasPendientes = $alertaService->countAlertasPendientes($this->id);
+
+        $pacienteService = new PacienteService();
+        $registros = $pacienteService->getDatosClinicos($this->id, 2);
 
         return [
             'id' => $this->id,
@@ -56,6 +60,7 @@ class PacienteResource extends JsonResource
                     'fecha' => $interaccion->fecha->format('d/m/Y'),
                 ];
             }),
+            'datos_clinicos' => $registros
         ];
     }
 }

@@ -139,4 +139,15 @@ class PacienteController extends Controller
 
         return Inertia::render('Pacientes/Detalle', $viewData);
     }
+
+    public function datosClinicos(Request $request, Paciente $paciente, PacienteService $pacienteService)
+    {
+        $registros = $pacienteService->getDatosClinicos($paciente, 10, $request->desde ?? null, $request->hasta ?? null);
+
+        return Inertia::render('Pacientes/Detalle', [
+            'paciente' => new PacienteResource($paciente),
+            'step' => 'datos-clinicos',
+            'datosClinicos' => $registros
+        ]);
+    }
 }

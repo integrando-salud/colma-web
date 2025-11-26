@@ -128,4 +128,93 @@ class PacienteService
     {
         $paciente->diagnosticos()->sync($diagnosticos);
     }
+
+    public function getDatosClinicos(Paciente|int $paciente, $cantidad = 10, $fechaDesde = null, $fechaHasta = null)
+    {
+        if (is_int($paciente)) {
+            $paciente = Paciente::find($paciente);
+        }
+
+        if (!$fechaDesde) {
+            $fechaDesde = $paciente->fecha_enrolamiento;
+        }
+
+        if (!$fechaHasta) {
+            $fechaHasta = now();
+        }
+
+        $cantidad = (int) $cantidad;
+
+        return DB::select("
+            WITH fecha_base AS (
+                SELECT DATE(fecha_registro) AS fecha
+                FROM glucosa
+                WHERE paciente_id = :paciente_id_fechas_glucosa
+                    AND fecha_registro BETWEEN :fecha_inicio_fechas_glucosa AND :fecha_fin_fechas_glucosa
+
+                UNION
+
+                SELECT DATE(fecha_registro) AS fecha
+                FROM presion_arterial
+                WHERE paciente_id = :paciente_id_fechas_presion
+                    AND fecha_registro BETWEEN :fecha_inicio_fechas_presion AND :fecha_fin_fechas_presion
+            ),
+            fechas AS (
+                SELECT fecha
+                FROM fecha_base
+                GROUP BY fecha
+                ORDER BY fecha DESC
+                LIMIT $cantidad
+            ),
+            ult_glucosa AS (
+                SELECT * FROM (
+                    SELECT
+                        id, paciente_id, valor, ayuno,
+                        DATE(fecha_registro) AS fecha,
+                        fecha_registro,
+                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
+                    FROM glucosa
+                    WHERE paciente_id = :paciente_id_ultima_glucosa
+                        AND fecha_registro BETWEEN :fecha_inicio_ultima_glucosa AND :fecha_fin_ultima_glucosa
+                ) t
+                WHERE rn = 1
+            ),
+            ult_presion AS (
+                SELECT * FROM (
+                    SELECT
+                        id, paciente_id, presion_sistolica, presion_diastolica,
+                        DATE(fecha_registro) AS fecha,
+                        fecha_registro,
+                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
+                    FROM presion_arterial
+                    WHERE paciente_id = :paciente_id_ultima_presion
+                      AND fecha_registro BETWEEN :fecha_inicio_ultima_presion AND :fecha_fin_ultima_presion
+                ) t
+                WHERE rn = 1
+            )
+            SELECT
+                DATE_FORMAT(f.fecha, '%d/%m/%Y') AS fecha,
+                g.valor AS glucosa_valor,
+                g.ayuno AS glucosa_ayuno,
+                p.presion_sistolica,
+                p.presion_diastolica
+            FROM fechas f
+            LEFT JOIN ult_glucosa g ON g.fecha = f.fecha
+            LEFT JOIN ult_presion p ON p.fecha = f.fecha
+            ORDER BY f.fecha DESC
+        ", [
+            'paciente_id_fechas_glucosa' => $paciente->id,
+            'fecha_inicio_fechas_glucosa' => $fechaDesde,
+            'fecha_fin_fechas_glucosa' => $fechaHasta,
+            'paciente_id_fechas_presion' => $paciente->id,
+            'fecha_inicio_fechas_presion' => $fechaDesde,
+            'fecha_fin_fechas_presion' => $fechaHasta,
+            'paciente_id_ultima_glucosa' => $paciente->id,
+            'fecha_inicio_ultima_glucosa' => $fechaDesde,
+            'fecha_fin_ultima_glucosa' => $fechaHasta,
+            'paciente_id_ultima_presion' => $paciente->id,
+            'fecha_inicio_ultima_presion' => $fechaDesde,
+            'fecha_fin_ultima_presion' => $fechaHasta,
+        ]);
+    }
 }

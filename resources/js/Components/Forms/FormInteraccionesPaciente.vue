@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
-import DetalleAlertaInteraccion from "@/Components/DetalleAlertaInteraccion.vue";
+import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 
 const props = defineProps({
     idPaciente: {

@@ -45,6 +45,8 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.interacciones');
         Route::get('{paciente}/interacciones/crear', [PacienteController::class, 'createInteraccion'])
             ->name('dashboard.pacientes.createInteraccion');
+        Route::get('{paciente}/datos-clinicos', [PacienteController::class, 'datosClinicos'])
+            ->name('dashboard.pacientes.datosClinicos');
     });
 
     Route::post('interacciones/guardar', [InteraccionController::class, 'store'])

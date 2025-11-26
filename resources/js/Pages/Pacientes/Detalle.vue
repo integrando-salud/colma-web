@@ -4,9 +4,10 @@ import { Head, Link } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
 import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
-import HistorialInteraccionesPaciente from "@/Components/HistorialInteraccionesPaciente.vue";
+import HistorialInteraccionesPaciente from "@/Components/Pacientes/HistorialInteraccionesPaciente.vue";
 import AlertasPendientes from "@/Components/Pacientes/Alertas/AlertasPendientes.vue";
 import AlertasHistorial from "@/Components/Pacientes/Alertas/AlertasHistorial.vue";
+import DatosClinicos from "@/Components/Pacientes/DatosClinicos.vue";
 
 const props = defineProps({
     paciente: Object,
@@ -30,7 +31,11 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    interaccion: null
+    interaccion: null,
+    datosClinicos: {
+        type: Object,
+        default: () => [],
+    }
 });
 
 const title = computed(() => {
@@ -92,11 +97,11 @@ const saveInteraccion = async () => {
                         </li>
                         <li class="nav-item">
                             <a
-                                href="#"
+                                :href="route('dashboard.pacientes.datosClinicos', paciente.id)"
                                 class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
-                                    active: step === 'datos_clinicos',
-                                    'fw-bold': step === 'datos_clinicos',
+                                    active: step === 'datos-clinicos',
+                                    'fw-bold': step === 'datos-clinicos',
                                     disabled: !paciente,
                                     'opacity-25': !paciente,
                                 }"
@@ -152,8 +157,8 @@ const saveInteraccion = async () => {
                         <template v-if="step === 'datos_paciente'">
                             <FormDatosPaciente ref="formPaciente" :paciente />
                         </template>
-                        <template v-else-if="step === 'datos_clinicos'">
-                            <h4 class="fs-5 text-primary-emphasis">Datos clínicos</h4>
+                        <template v-else-if="step === 'datos-clinicos'">
+                            <DatosClinicos :datos-clinicos />
                         </template>
                         <template v-else-if="step === 'alertas'">
                             <AlertasPendientes :alertas="alertasPendientes" />
