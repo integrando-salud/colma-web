@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useNotificationStore } from "@/Stores/notification";
 import Pagination from "@/Components/Pagination.vue";
+import DetalleAlertaInteraccion from "@/Components/DetalleAlertaInteraccion.vue";
 
 const props = defineProps({
     idPaciente: {
@@ -11,11 +12,18 @@ const props = defineProps({
     interacciones: {
         type: Object,
         required: true,
-    }
+    },
+    interaccion: null
 });
 
 const notification = useNotificationStore();
 const interaccionSelected = ref(null);
+
+onMounted(() => {
+    if (props.interaccion) {
+        interaccionSelected.value = props.interacciones.data.find((item) => item.id == props.interaccion);
+    }
+});
 </script>
 
 <template>
@@ -27,20 +35,26 @@ const interaccionSelected = ref(null);
             <div class="alert alert-secondary" v-if="interacciones?.data?.length === 0">No se encontraron interacciones</div>
             <template v-else-if="interacciones?.data?.length > 0">
                 <div class="row">
-                    <div class="col-12 col-md-6 col-lg-5 col-xl-4">
+                    <div class="col-12">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Fecha</th>
+                                        <th>Fecha y hora</th>
+                                        <th>Usuario</th>
                                         <th>Estado</th>
+                                        <th>Modalidad</th>
+                                        <th>Motivo</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="interaccion in interacciones.data" :key="interaccion.id">
-                                        <td>{{ interaccion.fecha }}</td>
+                                        <td>{{ interaccion.fecha + ' ' + interaccion.hora }}</td>
+                                        <td>{{ interaccion.usuario.nombre }}</td>
                                         <td>{{ interaccion.contactado_descripcion }}</td>
+                                        <td>{{ interaccion.modalidad }}</td>
+                                        <td>{{ interaccion.motivo }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-secondary btn-sm text-white" @click="interaccionSelected = interaccion">Ver más</button>
                                         </td>
@@ -48,7 +62,7 @@ const interaccionSelected = ref(null);
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="3" class="text-center small border-top">
+                                        <td colspan="6" class="text-center small border-top">
                                             Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} interacciones
                                         </td>
                                     </tr>
@@ -63,12 +77,27 @@ const interaccionSelected = ref(null);
     </div>
     <div class="row" v-else>
         <div class="col-12 mb-2">
-            <button type="button" class="btn btn-secondary text-white text-decoration-none" @click="interaccionSelected = null">
+            <a :href="route('dashboard.pacientes.interacciones', idPaciente)" class="btn btn-secondary text-white text-decoration-none" @click="interaccionSelected = null">
                 <i class="fa fa-arrow-left"></i>
                 Volver al historial de interacciones
-            </button>
+            </a>
         </div>
+
+        <DetalleAlertaInteraccion v-if="interaccionSelected.alerta" :alerta="interaccionSelected.alerta" />
+
         <div class="col-12">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Usuario
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.usuario.nombre }}
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
@@ -141,7 +170,7 @@ const interaccionSelected = ref(null);
                     </div>
                 </div>
                 <div class="col-12 col-lg-8 mb-sm-3">
-                    <div class="row h-100">
+                    <div class="row">
                         <div class="col-12 col-sm-4 col-md-2 py-2 align-content-center fw-bold">
                             Observaciones
                         </div>

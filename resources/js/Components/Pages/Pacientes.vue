@@ -244,16 +244,17 @@ const orderBy = (column) => {
                                             </button>
                                         </td>
                                         <td class="text-primary-emphasis fw-semibold align-top p-3">Puntos de contacto</td>
-                                        <td class="p-3">
-                                            <table class="table table-bordered bg-white text-center">
-                                                <tr>
-                                                    <td class="p-1">20/08/2025</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="p-1">20/08/2025</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="p-1">20/08/2025</td>
+                                        <td class="p-3 align-top">
+                                            <table v-if="pacienteSelected.interacciones.length" class="table table-bordered bg-white text-center">
+                                                <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
+                                                    <td class="p-1">
+                                                        <a
+                                                            :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
+                                                            class="text-decoration-none d-block text-body"
+                                                        >
+                                                            {{ interaccion.fecha }}
+                                                        </a>
+                                                    </td>
                                                 </tr>
                                             </table>
                                         </td>
