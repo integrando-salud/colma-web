@@ -99,4 +99,58 @@ class UsuarioService
         $user->password = $password;
         return $user->save();
     }
+
+    /**
+     * Obtiene el número de pacientes de un usuario
+     * Si el usuario es un Promotor, devuelve el número de pacientes que tiene asociados
+     * Si el usuario es un Supervisor, devuelve la suma del número de pacientes que tiene asociado cada uno de sus promotores a cargo
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countPacientes(int $userId): int
+    {
+        $user = User::find($userId);
+
+        if ($user->isA('promotor')) {
+            return $user->pacientes->count();
+        }
+
+        if ($user->isA('supervisor')) {
+            return $user->promotores->reduce(function ($carry, $promotor) {
+                return $carry + $promotor->pacientes->count();
+            }, 0);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Obtiene el número de alertas de los pacientes asignados a un usuario
+     * Si el usuario es un Promotor, devuelve la suma del número de alertas de los pacientes que tiene asociados
+     * Si el usuario es un Supervisor, devuelve la suma del número de alertas de todos los pacientes de todos los promotores que tiene asociados
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countAlertas(int $userId): int
+    {
+        $user = User::find($userId);
+
+        if ($user->isA('promotor')) {
+            return $user->pacientes->reduce(function ($carry, $paciente) {
+                return $carry + $paciente->alertas->whereNull('revisado')->count();
+            }, 0);
+        }
+
+        if ($user->isA('supervisor')) {
+            return $user->promotores->reduce(function ($carryPromotor, $promotor) {
+                return $carryPromotor + $promotor->pacientes->reduce(function ($carryPaciente, $paciente) {
+                    return $carryPaciente + $paciente->alertas->whereNull('revisado')->count();
+                }, 0);
+            }, 0);
+        }
+
+        return 0;
+    }
 }

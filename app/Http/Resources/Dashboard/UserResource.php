@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Services\UsuarioService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,8 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $usuarioService = new UsuarioService();
+
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
@@ -28,8 +31,9 @@ class UserResource extends JsonResource
             'pais' => $this->pais ? new PaisResource($this->pais) : null,
             'centro_salud' => $this->centroSalud ? new CentroSaludResource($this->centroSalud) : null,
             'supervisor' => $this->supervisor ? new UserResource($this->supervisor) : null,
-            'numero_pacientes' => 0,
+            'numero_pacientes' => $usuarioService->countPacientes($this->id),
             'numero_accesos' => $this->accesos,
+            'numero_alertas' => $usuarioService->countAlertas($this->id),
             'ultimo_acceso' => $this->ultimo_acceso?->format('d/m/Y H:i'),
         ];
     }

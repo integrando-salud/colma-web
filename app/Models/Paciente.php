@@ -79,4 +79,9 @@ class Paciente extends Model
     {
         return $this->hasMany(Interaccion::class);
     }
+
+    public function alertas()
+    {
+        return $this->hasMany(Alerta::class);
+    }
 }

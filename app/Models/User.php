@@ -79,4 +79,14 @@ class User extends Authenticatable
     {
         return $this->belongsTo(User::class, 'supervisor_id');
     }
+
+    public function promotores()
+    {
+        return $this->hasMany(User::class, 'supervisor_id');
+    }
+
+    public function pacientes()
+    {
+        return $this->hasMany(Paciente::class, 'promotor_id');
+    }
 }
