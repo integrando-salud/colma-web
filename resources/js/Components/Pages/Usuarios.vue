@@ -337,9 +337,12 @@ const updatePassword = async () => {
                         <td>{{ usuario.pais?.nombre }}</td>
                         <td>{{ usuario.centro_salud?.nombre }}</td>
                         <td>{{ usuario.supervisor?.nombre }}</td>
-                        <td>{{ usuario.numero_pacientes }}</td>
-                        <td>{{ usuario.ultimo_acceso }}</td>
-                        <td></td>
+                        <td>{{ usuario.numero_pacientes ? usuario.numero_pacientes : '-' }}</td>
+                        <td>{{ usuario.ultimo_acceso ? usuario.ultimo_acceso : '-' }}</td>
+                        <td>
+                            {{ usuario.numero_alertas ? usuario.numero_alertas : '-' }}
+                            <i v-if="usuario.numero_alertas" class="fa fa-warning text-danger"></i>
+                        </td>
                         <td>
                             <div class="dropdown">
                                 <button type="button" class="btn btn-link text-body" data-bs-toggle="dropdown">

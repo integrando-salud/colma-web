@@ -59,19 +59,16 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function alertas(Paciente $paciente, AlertaService $alertaService)
+    public function alertas(Paciente $paciente)
     {
-        $alertasClinicas = $alertaService->queryGetAlertas([
-            'paciente_id' => $paciente->id,
-            'tipo' => 'clinica',
-            'revisado' => false
-        ])->get();
-
-        $alertasOperativas = $alertaService->queryGetAlertas([
-            'paciente_id' => $paciente->id,
-            'tipo' => 'operativa',
-            'revisado' => false
-        ])->get();
+        $alertasClinicas = $paciente->alertas()
+            ->whereNull('revisado')
+            ->where('tipo', 'clinica')
+            ->get();
+        $alertasOperativas = $paciente->alertas()
+            ->whereNull('revisado')
+            ->where('tipo', 'operativa')
+            ->get();
 
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),
@@ -83,19 +80,17 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function alertasHistorial(Paciente $paciente, AlertaService $alertaService)
+    public function alertasHistorial(Paciente $paciente)
     {
-        $alertasClinicas = $alertaService->queryGetAlertas([
-            'paciente_id' => $paciente->id,
-            'tipo' => 'clinica',
-            'revisado' => true
-        ])->paginate(config('app.rpp'), ['*'], 'page-clinicas');
+        $alertasClinicas = $paciente->alertas()
+            ->whereNotNull('revisado')
+            ->where('tipo', 'clinica')
+            ->paginate(config('app.rpp'), ['*'], 'page-clinicas');
 
-        $alertasOperativas = $alertaService->queryGetAlertas([
-            'paciente_id' => $paciente->id,
-            'tipo' => 'operativa',
-            'revisado' => true
-        ])->paginate(config('app.rpp'), ['*'], 'page-operativas');
+        $alertasOperativas = $paciente->alertas()
+            ->whereNotNull('revisado')
+            ->where('tipo', 'operativa')
+            ->paginate(config('app.rpp'), ['*'], 'page-operativas');
 
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),

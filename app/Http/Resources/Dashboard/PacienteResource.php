@@ -16,9 +16,6 @@ class PacienteResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $alertaService = new AlertaService();
-        $alertasPendientes = $alertaService->countAlertasPendientes($this->id);
-
         $pacienteService = new PacienteService();
         $registros = $pacienteService->getDatosClinicos($this->id, 2);
 
@@ -53,7 +50,7 @@ class PacienteResource extends JsonResource
             ],
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
-            'alertas_pendientes' => $alertasPendientes,
+            'alertas_pendientes' => $this->alertas()->whereNull('revisado')->count(),
             'interacciones' => $this->interacciones()->orderByDesc('id')->take(3)->get(['id', 'fecha'])->map(function ($interaccion) {
                 return [
                     'id' => $interaccion->id,
