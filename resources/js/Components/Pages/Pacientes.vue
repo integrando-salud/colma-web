@@ -118,9 +118,9 @@ const orderBy = (column) => {
                             <th>
                                 <span class="me-3">Alertas</span>
                                 <i class="fa order" :class="{
-                                    'fa-chevron-down': formFiltros.orderBy !== 'alertas' || formFiltros.orderBy === 'alertas' && formFiltros.orderDir === 'asc',
-                                    'fa-chevron-up': formFiltros.orderBy === 'alertas' && formFiltros.orderDir === 'desc'
-                                }" @click="orderBy('alertas')"></i>
+                                    'fa-chevron-down': formFiltros.orderBy !== 'numero_alertas' || formFiltros.orderBy === 'numero_alertas' && formFiltros.orderDir === 'asc',
+                                    'fa-chevron-up': formFiltros.orderBy === 'numero_alertas' && formFiltros.orderDir === 'desc'
+                                }" @click="orderBy('numero_alertas')"></i>
                             </th>
                             <th>
                                 <span class="me-3">Ingresos</span>

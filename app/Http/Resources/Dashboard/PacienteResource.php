@@ -50,7 +50,7 @@ class PacienteResource extends JsonResource
             ],
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
-            'alertas_pendientes' => $this->alertas()->whereNull('revisado')->count(),
+            'alertas_pendientes' => $this->numero_alertas ?? $this->alertas()->whereNull('revisado')->count(),
             'interacciones' => $this->interacciones()->orderByDesc('id')->take(3)->get(['id', 'fecha'])->map(function ($interaccion) {
                 return [
                     'id' => $interaccion->id,
