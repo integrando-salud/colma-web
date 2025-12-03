@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Paciente;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -12,6 +13,10 @@ class PacienteService
     public function queryGetPacientes(array $filters = [])
     {
         $query = Paciente::query();
+
+        $query->withCount(['alertas AS numero_alertas' => function (Builder $query) {
+            $query->whereNull('revisado');
+        }]);
 
         if (!empty($filters['nombre'])) {
             $query->where(function ($query) use ($filters) {
@@ -25,13 +30,12 @@ class PacienteService
             $query->where('activo', $filters['estado']);
         }
 
+        $query->orderByDesc('pacientes.activo');
         $orderBy = data_get($filters, 'orderBy', 'id');
         $orderDir = data_get($filters, 'orderDir', 'desc');
 
         switch ($orderBy) {
             case 'sesiones':
-                break;
-            case 'alertas':
                 break;
             case 'ingresos':
                 $query->select('pacientes.*')
