@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CentroSaludController;
+use App\Http\Controllers\API\DescargasController;
 use App\Http\Controllers\API\DiagnosticoController;
 use App\Http\Controllers\API\PaqueteController;
 use App\Http\Controllers\API\UsuarioController;
@@ -26,3 +27,6 @@ Route::get('diagnosticos', [DiagnosticoController::class, 'get'])
 
 Route::get('paquetes', [PaqueteController::class, 'get'])
     ->name('api.paquetes.get');
+
+Route::get('descargas', [DescargasController::class, 'download'])
+    ->name('api.descargas');
