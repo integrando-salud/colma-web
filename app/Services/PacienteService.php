@@ -14,6 +14,16 @@ class PacienteService
     {
         $query = Paciente::query();
 
+        if (auth()->user()->isA('promotor')) {
+            $query->where('promotor_id', auth()->user()->id);
+        } elseif (auth()->user()->isA('supervisor')) {
+            $query->whereIn('promotor_id', auth()->user()->promotores->pluck('id'));
+        } elseif (auth()->user()->isA('supervisor_pais')) {
+            $query->whereHas('centroSalud', function (Builder $query) {
+                $query->where('pais_id', auth()->user()->pais_id);
+            });
+        }
+
         $query->withCount(['alertas AS numero_alertas' => function (Builder $query) {
             $query->whereNull('revisado');
         }]);

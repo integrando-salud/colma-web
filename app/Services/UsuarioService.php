@@ -11,6 +11,18 @@ class UsuarioService
         $query = User::with(['pais', 'centroSalud', 'roles'])
             ->whereIsNot(['paciente']);
 
+        if (auth()->user()->isA('supervisor')) {
+            $query->where('supervisor_id', auth()->user()->id);
+        } elseif (auth()->user()->isA('supervisor_pais')) {
+            $query->where('pais_id', auth()->user()->pais_id)
+                ->whereHas('roles', function ($query) {
+                    $query->whereIn('name', [
+                        'supervisor',
+                        'promotor'
+                    ]);
+                });
+        }
+
         if (!empty($filters['rol'])) {
             $query->whereHas('roles', function ($query) use ($filters) {
                 $query->where('name', $filters['rol']);

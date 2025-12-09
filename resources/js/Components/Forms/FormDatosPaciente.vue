@@ -43,7 +43,7 @@ const getCentrosSalud = async () => {
     cargandoCentrosSalud.value = true;
 
     try {
-        const response = await axios.get(route('api.centrosSalud.get'), {
+        const response = await axios.get(route('ajax.centrosSalud.get'), {
             params: {
                 activo: 1,
                 orderBy: 'nombre',
@@ -63,7 +63,7 @@ const getPromotores = async () => {
     cargandoPromotores.value = true;
 
     try {
-        const response = await axios.get(route('api.usuarios.get'), {
+        const response = await axios.get(route('ajax.usuarios.get'), {
             params: {
                 rol: 'promotor',
                 orderBy: 'nombre',
@@ -83,7 +83,7 @@ const getDiagnosticos = async () => {
     cargandoDiagnosticos.value = true;
 
     try {
-        const response = await axios.get(route('api.diagnosticos.get'), {
+        const response = await axios.get(route('ajax.diagnosticos.get'), {
             params: { activo: 1 }
         });
 
@@ -99,7 +99,7 @@ const getPaquetes = async () => {
     cargandoPaquetes.value = true;
 
     try {
-        const response = await axios.get(route('api.paquetes.get'), {
+        const response = await axios.get(route('ajax.paquetes.get'), {
             params: {
                 activo: 1,
                 orderBy: 'nombre',
