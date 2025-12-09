@@ -53,13 +53,28 @@ class DashboardService
             ->paginate(config('app.rpp'))
             ->withQueryString();
 
+        $rolesExcluidos = ['paciente'];
+        if (auth()->user()->isA('supervisor')) {
+            $rolesExcluidos = array_merge($rolesExcluidos, [
+                'superusuario',
+                'supervisor',
+                'supervisor_pais',
+            ]);
+        } elseif (auth()->user()->isA('supervisor_pais')) {
+            $rolesExcluidos = array_merge($rolesExcluidos, [
+                'superusuario',
+                'supervisor_pais',
+            ]);
+        }
+
         $roles = $rolService->queryGetRoles([
-            'excepto' => 'paciente',
+            'excepto' => $rolesExcluidos,
             'orderBy' => 'name',
             'orderDir' => 'asc',
         ])->get();
 
         $paises = $paisService->queryGetPaises([
+            'id' => auth()->user()->isA('supervisor_pais') ? auth()->user()->pais_id : null,
             'activo' => true,
             'orderBy' => 'nombre',
             'orderDir' => 'asc',

@@ -37,5 +37,16 @@ class RolesSeeder extends Seeder
             'name' => 'paciente',
             'title' => 'Paciente',
         ]);
+
+        $permisosUsuarios = [
+            'ver-usuarios',
+            'crear-usuarios',
+            'editar-usuarios',
+            'eliminar-usuarios',
+        ];
+
+        Bouncer::allow('superusuario')->to($permisosUsuarios);
+        Bouncer::allow('supervisor_pais')->to($permisosUsuarios);
+        Bouncer::allow('supervisor')->to($permisosUsuarios);
     }
 }

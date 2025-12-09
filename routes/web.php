@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Dashboard\AjaxController;
 use App\Http\Controllers\Dashboard\Auth\LoginController;
 use App\Http\Controllers\Dashboard\IndexController;
 use App\Http\Controllers\Dashboard\InteraccionController;
@@ -19,13 +20,18 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('usuarios')->group(function () {
         Route::get('/', [UsuarioController::class, 'index'])
-            ->name('dashboard.usuarios.index');
+            ->name('dashboard.usuarios.index')
+            ->can('ver-usuarios');
         Route::post('guardar', [UsuarioController::class, 'store'])
-            ->name('dashboard.usuarios.store');
+            ->name('dashboard.usuarios.store')
+            ->can('crear-usuarios')
+            ->can('editar-usuarios');
         Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
-            ->name('dashboard.usuarios.delete');
+            ->name('dashboard.usuarios.delete')
+            ->can('eliminar-usuarios');
         Route::put('actualizar-contrasena/{user}', [UsuarioController::class, 'updatePassword'])
-            ->name('dashboard.usuarios.updatePassword');
+            ->name('dashboard.usuarios.updatePassword')
+            ->can('editar-usuarios');
     });
 
     Route::prefix('pacientes')->group(function () {
@@ -65,5 +71,14 @@ Route::middleware('auth')->group(function () {
             Route::get('motivos-reprogramacion', [InteraccionController::class, 'getMotivosReprogramacion'])
                 ->name('ajax.interacciones.motivosReprogramacion');
         });
+
+        Route::get('centros-salud', [AjaxController::class, 'getCentrosSalud'])
+            ->name('ajax.centrosSalud.get');
+        Route::get('usuarios', [AjaxController::class, 'getUsuarios'])
+            ->name('ajax.usuarios.get');
+        Route::get('diagnosticos', [AjaxController::class, 'getDiagnosticos'])
+            ->name('ajax.diagnosticos.get');
+        Route::get('paquetes', [AjaxController::class, 'getPaquetes'])
+            ->name('ajax.paquetes.get');
     });
 });

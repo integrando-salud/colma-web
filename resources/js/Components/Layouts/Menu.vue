@@ -10,7 +10,7 @@ const showMenuUsuarios = computed(() => {
         return false;
     }
 
-    const roles = ['superusuario', 'supervisor', 'supervisor_pais'];
+    const roles = ['superusuario', 'supervisor_pais', 'supervisor'];
 
     return roles.find((role) => role === page.props.usuario.rol.nombre);
 });

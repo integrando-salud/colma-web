@@ -97,7 +97,7 @@ const saveInteraccion = async () => {
                         </li>
                         <li class="nav-item">
                             <a
-                                :href="route('dashboard.pacientes.datosClinicos', paciente.id)"
+                                :href="paciente ? route('dashboard.pacientes.datosClinicos', paciente.id) : '#'"
                                 class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
                                     active: step === 'datos-clinicos',

@@ -10,6 +10,10 @@ class PaisService
     {
         $query = Pais::query();
 
+        if (!empty($filters['id'])) {
+            $query->where('id', $filters['id']);
+        }
+
         if (isset($filters['activo'])) {
             $query->where('activo', $filters['activo']);
         }
