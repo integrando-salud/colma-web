@@ -80,5 +80,8 @@ Route::middleware('auth')->group(function () {
             ->name('ajax.diagnosticos.get');
         Route::get('paquetes', [AjaxController::class, 'getPaquetes'])
             ->name('ajax.paquetes.get');
+
+        Route::get('{usuario}/pacientes-activos', [AjaxController::class, 'contarPacientesActivos'])
+            ->name('ajax.usuario.pacientesActivos');
     });
 });

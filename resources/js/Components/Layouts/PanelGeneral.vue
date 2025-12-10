@@ -1,5 +1,27 @@
 <script setup>
+import { ref, onMounted } from "vue";
+import { usePage } from "@inertiajs/vue3";
+import { useNotificationStore } from "@/Stores/notification";
 
+const page = usePage();
+const pacientesActivos = ref(0);
+const notification = useNotificationStore();
+
+const countPacientesActivos = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.usuario.pacientesActivos', {
+            usuario: page.props.usuario.id
+        }));
+
+        pacientesActivos.value = data.pacientes_activos;
+    } catch (error) {
+        notification.errorNotification('Se produjo un error al contar los pacientes activos');
+    }
+};
+
+onMounted(async () => {
+    await countPacientesActivos();
+});
 </script>
 
 <template>
@@ -9,11 +31,15 @@
                 <h4 class="mb-4">Panel general</h4>
                 <div class="row">
                     <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0 text-center">
-                        <div class="fs-1 fw-semibold">12/15</div>
+                        <div class="fs-1 fw-semibold">
+                            {{ pacientesActivos }}/{{ $page.props.usuario.numero_pacientes }}
+                        </div>
                         <div>pacientes activos</div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0 text-center">
-                        <div class="fs-1 fw-semibold">5</div>
+                        <div class="fs-1 fw-semibold">
+                            {{ $page.props.usuario.numero_alertas }}
+                        </div>
                         <div>alertas</div>
                     </div>
                     <div class="col-12 col-sm-6 col-md-3 mb-3 mb-sm-0 text-center">

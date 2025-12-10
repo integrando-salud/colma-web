@@ -11,6 +11,7 @@ use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
 use App\Http\Resources\Dashboard\PaqueteResource;
 use App\Http\Resources\Dashboard\UserResource;
+use App\Models\User;
 use App\Services\CentroSaludService;
 use App\Services\DiagnosticoService;
 use App\Services\PaqueteService;
@@ -81,8 +82,20 @@ class AjaxController extends Controller
         }
     }
 
-    public function contarUsuarios(UsuarioService $usuarioService)
+    public function contarPacientesActivos(User $usuario, UsuarioService $usuarioService)
     {
+        try {
+            $pacientesActivos = $usuarioService->countPacientesActivos($usuario->id);
 
+            return response()->json(['pacientes_activos' => $pacientesActivos]);
+        } catch (Throwable $th) {
+            Log::error('Error al contar los pacientes activos: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'Se produjo un error al contar los pacientes activos.');
+
+            return response()->json([], 500);
+        }
     }
 }
