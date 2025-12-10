@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Paciente;
 use App\Models\User;
 
 class UsuarioService
@@ -116,6 +117,7 @@ class UsuarioService
      * Obtiene el número de pacientes de un usuario
      * Si el usuario es un Promotor, devuelve el número de pacientes que tiene asociados
      * Si el usuario es un Supervisor, devuelve la suma del número de pacientes que tiene asociado cada uno de sus promotores a cargo
+     * Si el usuario es un Supervisor País, devuelve el número de pacientes vinculado a un centro de salud del mismo país que el usuario
      *
      * @param int $userId
      * @return int
@@ -134,6 +136,49 @@ class UsuarioService
             }, 0);
         }
 
+        if ($user->isA('supervisor_pais')) {
+            return Paciente::whereHas('centroSalud', function ($query) use ($user) {
+                $query->where('pais_id', $user->pais_id);
+            })->count();
+        }
+
+        if ($user->isA('superusuario')) {
+            return Paciente::count();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Igual que countPacientes(), pero solo contabiliza los pacientes activos
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function countPacientesActivos(int $userId): int
+    {
+        $user = User::find($userId);
+
+        if ($user->isA('promotor')) {
+            return $user->pacientes->where('activo', true)->count();
+        }
+
+        if ($user->isA('supervisor')) {
+            return $user->promotores->reduce(function ($carry, $promotor) {
+                return $carry + $promotor->pacientes->where('activo', true)->count();
+            }, 0);
+        }
+
+        if ($user->isA('supervisor_pais')) {
+            return Paciente::where('activo', true)->whereHas('centroSalud', function ($query) use ($user) {
+                $query->where('pais_id', $user->pais_id);
+            })->count();
+        }
+
+        if ($user->isA('superusuario')) {
+            return Paciente::where('activo', true)->count();
+        }
+
         return 0;
     }
 
@@ -150,17 +195,36 @@ class UsuarioService
         $user = User::find($userId);
 
         if ($user->isA('promotor')) {
-            return $user->pacientes->reduce(function ($carry, $paciente) {
+            return $user->pacientes->where('activo', true)->reduce(function ($carry, $paciente) {
                 return $carry + $paciente->alertas->whereNull('revisado')->count();
             }, 0);
         }
 
         if ($user->isA('supervisor')) {
             return $user->promotores->reduce(function ($carryPromotor, $promotor) {
-                return $carryPromotor + $promotor->pacientes->reduce(function ($carryPaciente, $paciente) {
+                return $carryPromotor + $promotor->pacientes->where('activo', true)->reduce(function ($carryPaciente, $paciente) {
                     return $carryPaciente + $paciente->alertas->whereNull('revisado')->count();
                 }, 0);
             }, 0);
+        }
+
+        if ($user->isA('supervisor_pais')) {
+            return Paciente::where('activo', true)
+                ->whereHas('centroSalud', function ($query) use ($user) {
+                    $query->where('pais_id', $user->pais_id);
+                })
+                ->get()
+                ->reduce(function ($carry, $paciente) {
+                    return $carry + $paciente->alertas->whereNull('revisado')->count();
+                }, 0);
+        }
+
+        if ($user->isA('superusuario')) {
+            return Paciente::where('activo', true)
+                ->get()
+                ->reduce(function ($carry, $paciente) {
+                    return $carry + $paciente->alertas->whereNull('revisado')->count();
+                }, 0);
         }
 
         return 0;
