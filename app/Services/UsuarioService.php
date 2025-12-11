@@ -107,6 +107,11 @@ class UsuarioService
         return $user->delete();
     }
 
+    public function reactivateUsuario(User $user): bool
+    {
+        return $user->restore();
+    }
+
     public function updatePassword(User $user, string $password): bool
     {
         $user->password = $password;
@@ -124,7 +129,7 @@ class UsuarioService
      */
     public function countPacientes(int $userId): int
     {
-        $user = User::find($userId);
+        $user = User::withTrashed()->find($userId);
 
         if ($user->isA('promotor')) {
             return $user->pacientes->count();
@@ -157,7 +162,7 @@ class UsuarioService
      */
     public function countPacientesActivos(int $userId): int
     {
-        $user = User::find($userId);
+        $user = User::withTrashed()->find($userId);
 
         if ($user->isA('promotor')) {
             return $user->pacientes->where('activo', true)->count();
@@ -192,7 +197,7 @@ class UsuarioService
      */
     public function countAlertas(int $userId): int
     {
-        $user = User::find($userId);
+        $user = User::withTrashed()->find($userId);
 
         if ($user->isA('promotor')) {
             return $user->pacientes->where('activo', true)->reduce(function ($carry, $paciente) {

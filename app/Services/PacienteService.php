@@ -231,4 +231,11 @@ class PacienteService
             'fecha_fin_ultima_presion' => $fechaHasta,
         ]);
     }
+
+    public function cambiarEstado(Paciente $paciente): bool
+    {
+        $paciente->activo = !$paciente->activo;
+
+        return $paciente->save();
+    }
 }

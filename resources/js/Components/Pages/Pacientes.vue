@@ -1,8 +1,10 @@
 <script setup>
-import { ref, reactive, computed } from "vue";
+import { ref, reactive, computed, useTemplateRef } from "vue";
 import { router } from "@inertiajs/vue3";
 import Table from "@/Components/Table.vue";
 import Pagination from "@/Components/Pagination.vue";
+import Modal from "@/Components/Modal.vue";
+import { useNotificationStore } from "@/Stores/notification";
 
 const props = defineProps({
     pacientes: Object,
@@ -11,6 +13,31 @@ const props = defineProps({
 });
 
 const pacienteSelected = ref(null);
+const pacienteSelectedCambiarEstado = ref(null);
+const notification = useNotificationStore();
+const modalCambiarEstado = useTemplateRef('modalCambiarEstado');
+const guardandoEstado = ref(false);
+
+const mensajeCambiarEstado = computed(() => {
+    if (!pacienteSelectedCambiarEstado.value) {
+        return '';
+    }
+
+    return 'Se ' + (pacienteSelectedCambiarEstado.value.activo ? 'desactivará' : 'activará') + ` el paciente <strong>${pacienteSelectedCambiarEstado.value.nombre} ${pacienteSelectedCambiarEstado.value.apellido}</strong>.`;
+});
+
+const showModalCambiarEstado = (paciente) => {
+    pacienteSelectedCambiarEstado.value = paciente;
+    modalCambiarEstado.value.showModal();
+};
+
+const hideModalCambiarEstado = () => {
+    modalCambiarEstado.value.hideModal();
+};
+
+const handleCloseModalCambiarEstado = () => {
+    pacienteSelectedCambiarEstado.value = null;
+};
 
 const formFiltros = reactive({
     estado: props.filtros.estado || '',
@@ -45,6 +72,18 @@ const orderBy = (column) => {
     formFiltros.orderBy = column;
     filterPacientes();
 }
+
+const cambiarEstado = async () => {
+    try {
+        const { data } = await axios.patch(route('ajax.paciente.cambiarEstado', pacienteSelectedCambiarEstado.value.id));
+        notification.successNotification(data.message || 'Estado del paciente actualizado con éxito.');
+        pacienteSelectedCambiarEstado.value.activo = data.activo;
+        pacienteSelectedCambiarEstado.value.estado = data.activo ? 'Activo' : 'Inactivo';
+        hideModalCambiarEstado();
+    } catch (error) {
+        notification.errorNotification(error.response?.data?.message || 'Se produjo un error al cambiar el estado del paciente.');
+    }
+};
 </script>
 
 <template>
@@ -161,7 +200,15 @@ const orderBy = (column) => {
                             <td>{{ paciente.usuario.numero_accesos }}</td>
                             <td>{{ paciente.usuario.ultimo_acceso }}</td>
                             <td>
-                                <span class="badge py-2 px-3" :class="{ 'bg-success': paciente.activo, 'bg-dark-grey': !paciente.activo }">
+                                <span
+                                    class="badge py-2 px-3"
+                                    :class="{
+                                        'bg-success': paciente.activo,
+                                        'bg-dark-grey': !paciente.activo
+                                    }"
+                                    :style="{ cursor: 'pointer' }"
+                                    @click="showModalCambiarEstado(paciente)"
+                                >
                                     {{ paciente.estado }}
                                 </span>
                             </td>
@@ -311,6 +358,30 @@ const orderBy = (column) => {
             </div>
         </div>
     </div>
+
+    <Modal id="modalCambiarEstado" ref="modalCambiarEstado" title="Cambiar estado" :loading="guardandoEstado" @modalClosed="handleCloseModalCambiarEstado">
+        <p>
+            <span v-html="mensajeCambiarEstado"></span>
+        </p>
+        <p>¿Desea continuar?</p>
+
+        <template #footer>
+            <template v-if="guardandoEstado === false">
+                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardandoEstado" @click="hideModalCambiarEstado">
+                    No, cancelar
+                </button>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardandoEstado" @click="cambiarEstado">
+                    Si, continuar
+                </button>
+            </template>
+            <template v-else>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Cambiando estado, espere...
+                </button>
+            </template>
+        </template>
+    </Modal>
 </template>
 
 <style scoped>

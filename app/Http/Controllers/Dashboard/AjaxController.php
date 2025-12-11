@@ -11,12 +11,15 @@ use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
 use App\Http\Resources\Dashboard\PaqueteResource;
 use App\Http\Resources\Dashboard\UserResource;
+use App\Models\Paciente;
 use App\Models\User;
 use App\Services\CentroSaludService;
 use App\Services\DiagnosticoService;
+use App\Services\PacienteService;
 use App\Services\PaqueteService;
 use App\Services\UsuarioService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -96,6 +99,48 @@ class AjaxController extends Controller
             session()->flash('error', 'Se produjo un error al contar los pacientes activos.');
 
             return response()->json([], 500);
+        }
+    }
+
+    public function cambiarEstadoPaciente(Paciente $paciente, PacienteService $pacienteService, UsuarioService $usuarioService)
+    {
+        try {
+            DB::beginTransaction();
+
+            $pacienteService->cambiarEstado($paciente);
+            $paciente->refresh();
+
+            if ($paciente->activo) {
+                $usuarioService->reactivateUsuario($paciente->usuario);
+            } else {
+                $usuarioService->deleteUsuario($paciente->usuario);
+            }
+
+            DB::commit();
+
+            $accion = match ($paciente->activo) {
+                true => 'activado',
+                false => 'desactivado',
+            };
+
+            return response()->json([
+                'message' => "Paciente $accion correctamente.",
+                'activo' => $paciente->activo,
+            ]);
+        } catch (Throwable $th) {
+            DB::rollBack();
+            $accion = match ($paciente->activo) {
+                true => 'desactivar',
+                false => 'activar',
+            };
+
+            Log::error("Error $accion el paciente: " . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => "Se produjo un error al $accion el paciente.",
+            ], 500);
         }
     }
 }
