@@ -83,5 +83,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('{usuario}/pacientes-activos', [AjaxController::class, 'contarPacientesActivos'])
             ->name('ajax.usuario.pacientesActivos');
+
+        Route::patch('{paciente}/cambiar-estado', [AjaxController::class, 'cambiarEstadoPaciente'])
+            ->name('ajax.paciente.cambiarEstado');
     });
 });
