@@ -226,117 +226,121 @@ const cambiarEstado = async () => {
                         <tr v-if="pacienteSelected === paciente">
                             <td colspan="10" class="px-4 table-patient-details-container">
                                 <table class="table table-patient-details text-start">
-                                    <tr>
-                                        <td class="text-primary-emphasis p-3" colspan="2">
-                                            <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
-                                            <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
-                                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
-                                        </td>
-                                        <td class="p-3">
-                                            <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}
-                                        </td>
-                                        <td class="p-3">
-                                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
-                                        </td>
-                                        <td class="p-3">
-                                            <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
-                                        </td>
-                                        <td class="text-end p-3"></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-primary-emphasis fw-semibold align-top p-3">Datos de contacto</td>
-                                        <td class="p-3">
-                                            <p>
-                                                <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
-                                            </p>
-                                            <p class="mb-0">
-                                                <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
-                                            </p>
-                                        </td>
-                                        <td class="p-3 align-top">
-                                            <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
-                                        </td>
-                                        <td class="p-3 align-top">
-                                            <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
-                                        </td>
-                                        <td class="p-3 align-top">
-                                            <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-primary-emphasis fw-semibold align-top p-3">Datos clínicos</td>
-                                        <td class="p-3">
-                                            <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
-                                                <tr>
-                                                    <th class="p-1">Registros</th>
-                                                    <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                        {{ registro.fecha }}
-                                                    </th>
-                                                </tr>
-                                                <tr>
-                                                    <td class="p-1">Glucosa</td>
-                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                        {{ registro.glucosa_valor ?? '-' }}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="p-1">Presión sistólica</td>
-                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                        {{ registro.presion_sistolica ?? '-' }}
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="p-1">Presión diastólica</td>
-                                                    <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                        {{ registro.presion_diastolica ?? '-' }}
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                        <td class="text-primary-emphasis fw-semibold align-top p-3">
-                                            <button v-if="pacienteSelected.datos_clinicos.length" class="btn bg-primary text-white p-1">
-                                                <i class="fa-solid fa-chart-line"></i>
-                                                Ver gráficos
-                                            </button>
-                                        </td>
-                                        <td class="text-primary-emphasis fw-semibold align-top p-3">Puntos de contacto</td>
-                                        <td class="p-3 align-top">
-                                            <table v-if="pacienteSelected.interacciones.length" class="table table-bordered bg-white text-center">
-                                                <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
-                                                    <td class="p-1">
-                                                        <a
-                                                            :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
-                                                            class="text-decoration-none d-block text-body"
-                                                        >
-                                                            {{ interaccion.fecha }}
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="text-primary-emphasis fw-semibold align-top p-3">Datos de uso de la app</td>
-                                        <td class="p-3 align-top">
-                                            <span class="fw-semibold">Sesiones completas:</span> 4/5
-                                        </td>
-                                        <td class="p-3 align-top">
-                                            <span class="fw-semibold">Metas cumplidas:</span> 4
-                                        </td>
-                                        <td colspan="2" class="p-3 align-top">
-                                            <span class="fw-semibold">Fecha de enrolamiento:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
-                                        </td>
-                                        <td class="p-3 text-end">
-                                            <div class="d-flex flex-column">
-                                                <a class="btn btn-outline-primary px-3 py-2 shadow mb-3" :href="route('dashboard.pacientes.alertas', paciente.id)">
-                                                    Ir a alertas <i class="fa-solid fa-triangle-exclamation"></i>
-                                                </a>
-                                                <a class="btn bg-primary text-white px-3 py-2 shadow" :href="route('dashboard.pacientes.edit', paciente.id)">
-                                                    Ir a paciente <i class="fa-solid fa-arrow-right"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-primary-emphasis p-3 border-0" colspan="2">
+                                                <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
+                                                <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
+                                                <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
+                                            </td>
+                                            <td class="p-3 border-0">
+                                                <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}
+                                            </td>
+                                            <td class="p-3 border-0">
+                                                <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
+                                            </td>
+                                            <td class="p-3 border-0">
+                                                <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
+                                            </td>
+                                            <td class="text-end p-3 border-0"></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos de contacto</td>
+                                            <td class="p-3 border-0">
+                                                <p>
+                                                    <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
+                                                </p>
+                                                <p class="mb-0">
+                                                    <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
+                                                </p>
+                                            </td>
+                                            <td class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
+                                            </td>
+                                            <td class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
+                                            </td>
+                                            <td class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos clínicos</td>
+                                            <td class="p-3 border-0">
+                                                <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th class="p-1">Registros</th>
+                                                            <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                                {{ registro.fecha }}
+                                                            </th>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="p-1">Glucosa</td>
+                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                                {{ registro.glucosa_valor ?? '-' }}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="p-1">Presión sistólica</td>
+                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                                {{ registro.presion_sistolica ?? '-' }}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="p-1">Presión diastólica</td>
+                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                                {{ registro.presion_diastolica ?? '-' }}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </td>
+                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">
+                                                <button v-if="pacienteSelected.datos_clinicos.length" class="btn bg-primary text-white p-1">
+                                                    <i class="fa-solid fa-chart-line"></i>
+                                                    Ver gráficos
+                                                </button>
+                                            </td>
+                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Puntos de contacto</td>
+                                            <td class="p-3 align-top border-0">
+                                                <table v-if="pacienteSelected.interacciones.length" class="table table-bordered bg-white text-center">
+                                                    <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
+                                                        <td class="p-1 border-1">
+                                                            <a
+                                                                :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
+                                                                class="text-decoration-none d-block text-body"
+                                                            >
+                                                                {{ interaccion.fecha }}
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos de uso de la app</td>
+                                            <td class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Sesiones completas:</span> 4/5
+                                            </td>
+                                            <td class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Metas cumplidas:</span> 4
+                                            </td>
+                                            <td colspan="2" class="p-3 align-top border-0">
+                                                <span class="fw-semibold">Fecha de enrolamiento:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
+                                            </td>
+                                            <td class="p-3 text-end border-0">
+                                                <div class="d-flex flex-column">
+                                                    <a class="btn btn-outline-primary px-3 py-2 shadow mb-3" :href="route('dashboard.pacientes.alertas', paciente.id)">
+                                                        Ir a alertas <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    </a>
+                                                    <a class="btn bg-primary text-white px-3 py-2 shadow" :href="route('dashboard.pacientes.edit', paciente.id)">
+                                                        Ir a paciente <i class="fa-solid fa-arrow-right"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </td>
                         </tr>
