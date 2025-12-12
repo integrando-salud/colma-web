@@ -22,19 +22,16 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email'],
+            'documento' => ['required'],
             'password' => ['required'],
-            'tipo_sesion' => ['required'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'email.required' => 'El campo email es obligatorio',
-            'email.email' => 'El campo email debe ser una dirección de correo electrónico válida',
-            'password.required' => 'El campo password es obligatorio',
-            'tipo_sesion.required' => 'El campo tipo_sesion es obligatorio',
+            'documento.required' => 'Ingrese su número de documento',
+            'password.required' => 'Ingrese su contraseña',
         ];
     }
 }

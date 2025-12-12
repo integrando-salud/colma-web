@@ -12,18 +12,17 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request)
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('documento', $request->documento)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password) || $user->isNotA('paciente')) {
             return response()->json([
-                'message' => 'Credenciales inválidas.'
+                'message' => 'Documento o contraseña incorrectos'
             ], 401);
         }
 
         return response()->json([
             'token' => $user->createToken('mobile-app')->plainTextToken,
             'usuario'  => new InfoUsuarioResource($user),
-            'tipo_sesion'  => $request->tipo_sesion,
         ]);
     }
 }
