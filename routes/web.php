@@ -6,6 +6,7 @@ use App\Http\Controllers\Dashboard\IndexController;
 use App\Http\Controllers\Dashboard\InteraccionController;
 use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
+use App\Http\Middleware\ProhibirPromotoresPeru;
 use Illuminate\Support\Facades\Route;
 
 Route::get('ingresar', [LoginController::class, 'index'])
@@ -37,8 +38,10 @@ Route::middleware('auth')->group(function () {
     Route::prefix('pacientes')->group(function () {
         Route::get('/', [PacienteController::class, 'index'])
             ->name('dashboard.pacientes.index');
-        Route::get('crear', [PacienteController::class, 'create'])
-            ->name('dashboard.pacientes.create');
+        Route::middleware(ProhibirPromotoresPeru::class)->group(function () {
+            Route::get('crear', [PacienteController::class, 'create'])
+                ->name('dashboard.pacientes.create');
+        });
         Route::post('guardar', [PacienteController::class, 'store'])
             ->name('dashboard.pacientes.store');
         Route::get('{paciente}/editar', [PacienteController::class, 'edit'])
@@ -57,6 +60,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('interacciones/guardar', [InteraccionController::class, 'store'])
         ->name('interacciones.store');
+    Route::post('interacciones/eliminar', [InteraccionController::class, 'delete'])
+        ->name('interacciones.delete');
 
     Route::prefix('ajax')->group(function () {
         Route::prefix('interacciones')->group(function () {

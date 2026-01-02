@@ -37,6 +37,7 @@ class PacienteResource extends JsonResource
             'email' => $this->email,
             'direccion' => $this->direccion,
             'referencia' => $this->referencia,
+            'observaciones' => $this->observaciones,
             'centro_salud' => new CentroSaludResource($this->centroSalud),
             'promotor' => new UserResource($this->promotor),
             'fecha_enrolamiento' => $this->fecha_enrolamiento->format('Y-m-d'),
@@ -57,7 +58,8 @@ class PacienteResource extends JsonResource
                     'fecha' => $interaccion->fecha->format('d/m/Y'),
                 ];
             }),
-            'datos_clinicos' => $registros
+            'datos_clinicos' => $registros,
+            'fecha_proximo_contacto' => $this->interacciones->last()?->fecha_proximo_contacto?->format('d/m/Y')
         ];
     }
 }

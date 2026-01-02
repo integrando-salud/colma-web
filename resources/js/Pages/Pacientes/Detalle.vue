@@ -1,6 +1,6 @@
 <script setup>
 import { ref, useTemplateRef, computed } from "vue";
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
 import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
@@ -8,6 +8,7 @@ import HistorialInteraccionesPaciente from "@/Components/Pacientes/HistorialInte
 import AlertasPendientes from "@/Components/Pacientes/Alertas/AlertasPendientes.vue";
 import AlertasHistorial from "@/Components/Pacientes/Alertas/AlertasHistorial.vue";
 import DatosClinicos from "@/Components/Pacientes/DatosClinicos.vue";
+import Modal from "@/Components/Modal.vue";
 
 const props = defineProps({
     paciente: Object,
@@ -46,9 +47,18 @@ const title = computed(() => {
     }
 });
 
+const subtitle = computed(() => {
+    if (props.paciente) {
+        return `Teléfono: ${props.paciente.telefono} | Dirección: ${props.paciente.direccion}`;
+    }
+
+    return null;
+});
+
 const formPaciente = useTemplateRef('formPaciente');
 const formContacto = useTemplateRef('formContacto');
 const guardando = ref(false);
+const modalCancelar = useTemplateRef('modalCancelar');
 
 const guardar = () => {
     switch (props.step) {
@@ -72,12 +82,33 @@ const saveInteraccion = async () => {
     await formContacto.value.submit();
     guardando.value = false;
 }
+
+const mostrarGuardar = computed(() => {
+    if (props.paciente && !props.paciente.activo) {
+        return false;
+    }
+
+    return props.step === 'datos_paciente' || props.step === 'nueva-interaccion';
+});
+
+const showModalCancelar = () => {
+    modalCancelar.value.showModal();
+};
+
+const hideModalCancelar = () => {
+    modalCancelar.value.hideModal();
+};
+
+const confirmCancelar = () => {
+    hideModalCancelar();
+    router.get(route('dashboard.pacientes.index'));
+};
 </script>
 
 <template>
     <Head :title />
 
-    <Dashboard :title>
+    <Dashboard :title :subtitle>
         <div class="row">
             <div class="col-12">
                 <div class="border rounded-2">
@@ -147,7 +178,7 @@ const saveInteraccion = async () => {
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nueva interacción</a>
+                                    <a v-if="paciente?.activo" :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nueva interacción</a>
                                     <a :href="paciente ? route('dashboard.pacientes.interacciones', paciente.id) : '#'" class="dropdown-item">Historial de interacciones</a>
                                 </li>
                             </ul>
@@ -183,10 +214,10 @@ const saveInteraccion = async () => {
                     </span>
                 </template>
                 <template v-else>
-                    <template v-if="step === 'datos_paciente' || step === 'nueva-interaccion'">
-                        <Link :href="route('dashboard.pacientes.index')" class="btn btn-grey fw-semibold shadow me-2">
+                    <template v-if="mostrarGuardar">
+                        <button type="button" class="btn btn-grey fw-semibold shadow me-2" @click="showModalCancelar">
                             Cancelar
-                        </Link>
+                        </button>
                         <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="guardar">
                             Guardar
                         </button>
@@ -195,6 +226,25 @@ const saveInteraccion = async () => {
             </div>
         </div>
     </Dashboard>
+
+    <Modal id="modalCancelar" ref="modalCancelar" title="Cancelar">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    ¿Estás seguro/a que quieres cancelar?
+                </p>
+            </div>
+        </div>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalCancelar">
+                No, continuar
+            </button>
+            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="confirmCancelar">
+                Si, cancelar
+            </button>
+        </template>
+    </Modal>
 </template>
 
 <style scoped>

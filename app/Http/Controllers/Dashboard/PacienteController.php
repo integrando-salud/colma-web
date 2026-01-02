@@ -38,17 +38,17 @@ class PacienteController extends Controller
             $pacienteService->storePaciente($request->validated());
 
             if ($request->filled('id')) {
-                return back()->with('success', 'Paciente actualizado con éxito.');
+                return back()->with('success', 'Se guardó con éxito.');
             } else {
                 return redirect()->route('dashboard.pacientes.index')
-                    ->with('success', 'Paciente creado con éxito.');
+                    ->with('success', 'Se guardó con éxito.');
             }
         } catch (Throwable $th) {
             Log::error('Error al guardar paciente: ' . $th->getMessage(), [
                 'stack' => $th->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Se produjo un error al guardar el paciente.');
+            return back()->with('error', 'Error al guardar el paciente.');
         }
     }
 
@@ -115,8 +115,12 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function createInteraccion(Request $request, Paciente $paciente, AlertaService $alertaService)
+    public function createInteraccion(Request $request, Paciente $paciente)
     {
+        if (!$paciente->activo) {
+            return back()->with('error', 'No se pueden agregar interacciones a un paciente inactivo.');
+        }
+
         $viewData = [
             'paciente' => new PacienteResource($paciente),
             'step' => 'nueva-interaccion',

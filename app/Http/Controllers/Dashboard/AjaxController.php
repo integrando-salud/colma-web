@@ -36,7 +36,7 @@ class AjaxController extends Controller
                 'stack' => $th->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Se produjo un error al obtener los centros de salud.');
+            return back()->with('error', 'Error al obtener los centros de salud.');
         }
     }
 
@@ -51,7 +51,7 @@ class AjaxController extends Controller
                 'stack' => $th->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Se produjo un error al obtener los usuarios.');
+            return back()->with('error', 'Error al obtener los usuarios.');
         }
     }
 
@@ -66,7 +66,7 @@ class AjaxController extends Controller
                 'stack' => $th->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Se produjo un error al obtener los diagnósticos.');
+            return back()->with('error', 'Error al obtener los diagnósticos.');
         }
     }
 
@@ -81,7 +81,7 @@ class AjaxController extends Controller
                 'stack' => $th->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Se produjo un error al obtener los paquetes.');
+            return back()->with('error', 'Error al obtener los paquetes.');
         }
     }
 

@@ -34,6 +34,7 @@ class StorePacienteRequest extends FormRequest
             'email' => ['required', 'email', 'max:100', Rule::unique('pacientes', 'email')->ignore($this->id)],
             'direccion' => ['required', 'string', 'max:255'],
             'referencia' => ['nullable', 'string', 'max:255'],
+            'observaciones' => ['nullable'],
             'centro_salud_id' => ['required', 'exists:centros_salud,id'],
             'promotor_id' => ['required', 'exists:users,id'],
             'fecha_enrolamiento' => ['required', 'date'],

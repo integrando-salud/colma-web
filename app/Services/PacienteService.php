@@ -28,6 +28,14 @@ class PacienteService
             $query->whereNull('revisado');
         }]);
 
+        $query->selectSub("
+            SELECT fecha_proximo_contacto
+            FROM interacciones
+            WHERE interacciones.paciente_id = pacientes.id
+            ORDER BY id DESC
+            LIMIT 1
+        ", 'fecha_proximo_contacto');
+
         if (!empty($filters['nombre'])) {
             $query->where(function ($query) use ($filters) {
                 $nombre = '%' . $filters['nombre'] . '%';
@@ -38,6 +46,19 @@ class PacienteService
 
         if (isset($filters['estado']) && is_numeric($filters['estado'])) {
             $query->where('activo', $filters['estado']);
+        }
+
+        if (!empty($filters['diagnostico'])) {
+            $query->whereHas('diagnosticos', function (Builder $query) use ($filters) {
+                $query->where('diagnostico_id', $filters['diagnostico']);
+            });
+        }
+
+        if (!empty($filters['alertas'])) {
+            $query->whereHas('alertas', function (Builder $query) use ($filters) {
+                $query->where('tipo', $filters['alertas'])
+                    ->whereNull('revisado');
+            });
         }
 
         $query->orderByDesc('pacientes.activo');
@@ -52,10 +73,24 @@ class PacienteService
                     ->leftJoin('users', 'pacientes.user_id', '=', 'users.id')
                     ->orderBy('users.accesos', $orderDir);
                 break;
+            case 'fecha_proximo_contacto':
+                $query->orderByRaw("CASE WHEN fecha_proximo_contacto IS NULL THEN 1 ELSE 0 END, fecha_proximo_contacto $orderDir");
+                break;
             case 'ultimo_ingreso':
                 $query->select('pacientes.*')
                     ->leftJoin('users', 'pacientes.user_id', '=', 'users.id')
                     ->orderBy('users.ultimo_acceso', $orderDir);
+                break;
+            case 'diagnostico':
+                $query->select('pacientes.*')
+                    ->leftJoin('pacientes_diagnosticos', 'pacientes.id', '=', 'pacientes_diagnosticos.paciente_id')
+                    ->leftJoin('diagnosticos', 'pacientes_diagnosticos.diagnostico_id', '=', 'diagnosticos.id')
+                    ->orderBy('diagnosticos.nombre', $orderDir);
+                break;
+            case 'promotor':
+                $query->select('pacientes.*')
+                    ->leftJoin('users AS promotores', 'pacientes.promotor_id', '=', 'promotores.id')
+                    ->orderBy('promotores.nombre', $orderDir);
                 break;
             default:
                 $query->orderBy($orderBy, $orderDir);
@@ -80,6 +115,7 @@ class PacienteService
             $paciente->email = $data['email'];
             $paciente->direccion = $data['direccion'];
             $paciente->referencia = data_get($data, 'referencia');
+            $paciente->observaciones = data_get($data, 'observaciones');
             $paciente->centro_salud_id = $data['centro_salud_id'];
             $paciente->promotor_id = $data['promotor_id'];
             $paciente->fecha_enrolamiento = $data['fecha_enrolamiento'];

@@ -14,6 +14,10 @@ const props = defineProps({
         type: String,
         default: null, // sm, lg, xl
     },
+    fullWidth: {
+        type: Boolean,
+        default: false,
+    },
     loading: {
         type: Boolean,
         default: false,
@@ -47,13 +51,12 @@ onMounted(() => {
 
 <template>
     <div class="modal fade" :id data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered" :class="{ ['modal-' + size]: size }">
+        <div class="modal-dialog modal-dialog-centered" :class="{ ['modal-' + size]: size, 'w-100': fullWidth }" :style="fullWidth ? 'max-width: 100%;' : ''">
             <div class="modal-content bg-body-tertiary rounded-0 border-3 border-dark-subtle">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title text-primary-emphasis" v-if="title">
+                <div class="modal-header border-0" v-if="title">
+                    <h5 class="modal-title text-primary-emphasis">
                         {{ title }}
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" :disabled="loading"></button>
                 </div>
                 <div class="modal-body">
                     <slot />

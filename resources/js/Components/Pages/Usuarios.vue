@@ -65,6 +65,7 @@ const guardando = ref(false);
 const eliminando = ref(false);
 const modalEditarPassword = useTemplateRef('modalEditarPassword');
 const guardandoPassword = ref(false);
+const modalCancelar = useTemplateRef('modalCancelar');
 
 const showModalUsuario = () => {
     modalUsuario.value.showModal();
@@ -110,6 +111,20 @@ const handleCloseModalEditarPassword = () => {
     formEditarPassword.errors = {};
 };
 
+const showModalCancelar = () => {
+    modalCancelar.value.showModal();
+};
+
+const hideModalCancelar = () => {
+    modalCancelar.value.hideModal();
+};
+
+const confirmCancelar = () => {
+    hideModalCancelar();
+    hideModalUsuario();
+    hideModalEditarPassword();
+};
+
 const resetFormUsuario = () => {
     titleModalUsuario.value = 'Nuevo usuario';
     formUsuario.id = null;
@@ -148,7 +163,7 @@ const saveUsuario = async () => {
                 notification.errorNotification('El formulario contiene errores.');
                 return;
             default:
-                notification.errorNotification('Se produjo un error al guardar el usuario.');
+                notification.errorNotification('Error al guardar el usuario.');
                 return;
         }
     } finally {
@@ -174,7 +189,7 @@ const deleteUsuario = async () => {
         hideModalEliminar();
         router.get(props.urlBase);
     } catch (error) {
-        notification.errorNotification('Se produjo un error al eliminar el usuario.');
+        notification.errorNotification('Error al eliminar el usuario.');
     } finally {
         eliminando.value = false;
     }
@@ -210,7 +225,7 @@ const updatePassword = async () => {
     try {
         await axios.put(route('dashboard.usuarios.updatePassword', userSelected.value.id), formEditarPassword);
         hideModalEditarPassword();
-        notification.successNotification('Contraseña actualizada correctamente.');
+        notification.successNotification('Se guardó con éxito.');
     } catch (error) {
         switch (error.status) {
             case 422:
@@ -222,7 +237,7 @@ const updatePassword = async () => {
                 notification.errorNotification('El formulario contiene errores.');
                 return;
             default:
-                notification.errorNotification('Se produjo un error al actualizar la contraseña.');
+                notification.errorNotification('Error al actualizar la contraseña.');
                 return;
         }
     } finally {
@@ -501,7 +516,7 @@ const updatePassword = async () => {
 
         <template #footer>
             <template v-if="guardando === false">
-                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardando" @click="hideModalUsuario">
+                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardando" @click="showModalCancelar">
                     Cancelar
                 </button>
                 <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardando" @click="saveUsuario">
@@ -554,7 +569,7 @@ const updatePassword = async () => {
 
         <template #footer>
             <template v-if="guardandoPassword === false">
-                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardandoPassword" @click="hideModalEditarPassword">
+                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardandoPassword" @click="showModalCancelar">
                     Cancelar
                 </button>
                 <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardandoPassword" @click="updatePassword">
@@ -567,6 +582,25 @@ const updatePassword = async () => {
                     Cambiando contraseña, espere...
                 </button>
             </template>
+        </template>
+    </Modal>
+
+    <Modal id="modalCancelar" ref="modalCancelar" title="Cancelar">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    ¿Estás seguro/a que quieres cancelar?
+                </p>
+            </div>
+        </div>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalCancelar">
+                No, continuar
+            </button>
+            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="confirmCancelar">
+                Si, cancelar
+            </button>
         </template>
     </Modal>
 </template>

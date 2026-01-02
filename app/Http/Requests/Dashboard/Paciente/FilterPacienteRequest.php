@@ -23,7 +23,8 @@ class FilterPacienteRequest extends FormRequest
     {
         return [
             'estado' => ['nullable', 'boolean'],
-            'alertas' => ['nullable'],
+            'diagnostico' => ['nullable', 'exists:App\Models\Diagnostico,id'],
+            'alertas' => ['nullable', 'in:clinica,operativa'],
             'nombre' => ['nullable'],
             'orderBy' => ['nullable'],
             'orderDir' => ['nullable', 'in:asc,desc'],

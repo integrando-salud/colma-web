@@ -27,13 +27,13 @@ class InteraccionService
                 'motivo' => $data['motivo'],
                 'observaciones' => data_get($data, 'observaciones'),
                 'accion' => data_get($data, 'accion'),
-                'fecha_reprogramacion' => data_get($data, 'fecha_reprogramacion'),
+                'fecha_proximo_contacto' => data_get($data, 'fecha_proximo_contacto'),
                 'motivo_reprogramacion' => data_get($data, 'motivo_reprogramacion'),
             ]);
 
             if ($alertaId) {
                 Alerta::where('id', $alertaId)->update([
-                    'revisado' => now(),
+                    'revisado' => $data['contactado'] ? now() : null,
                     'user_id' => auth()->user()->id,
                 ]);
             }
@@ -45,5 +45,10 @@ class InteraccionService
             DB::rollBack();
             throw $th;
         }
+    }
+
+    public function deleteInteraccion(Interaccion $interaccion)
+    {
+        return $interaccion->delete();
     }
 }

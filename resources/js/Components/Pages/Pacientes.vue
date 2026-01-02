@@ -1,6 +1,6 @@
 <script setup>
-import { ref, reactive, computed, useTemplateRef } from "vue";
-import { router } from "@inertiajs/vue3";
+import { ref, reactive, computed, useTemplateRef, onMounted } from "vue";
+import { router, usePage } from "@inertiajs/vue3";
 import Table from "@/Components/Table.vue";
 import Pagination from "@/Components/Pagination.vue";
 import Modal from "@/Components/Modal.vue";
@@ -12,11 +12,14 @@ const props = defineProps({
     urlBase: String,
 });
 
+const page = usePage();
 const pacienteSelected = ref(null);
 const pacienteSelectedCambiarEstado = ref(null);
 const notification = useNotificationStore();
 const modalCambiarEstado = useTemplateRef('modalCambiarEstado');
+const modalDetallePaciente = useTemplateRef('modalDetallePaciente');
 const guardandoEstado = ref(false);
+const diagnosticos = ref([]);
 
 const mensajeCambiarEstado = computed(() => {
     if (!pacienteSelectedCambiarEstado.value) {
@@ -24,6 +27,10 @@ const mensajeCambiarEstado = computed(() => {
     }
 
     return 'Se ' + (pacienteSelectedCambiarEstado.value.activo ? 'desactivará' : 'activará') + ` el paciente <strong>${pacienteSelectedCambiarEstado.value.nombre} ${pacienteSelectedCambiarEstado.value.apellido}</strong>.`;
+});
+
+const ocultarCrear = computed(() => {
+    return page.props.usuario.pais?.id === 2 && page.props.usuario.rol.nombre === 'promotor';
 });
 
 const showModalCambiarEstado = (paciente) => {
@@ -39,8 +46,22 @@ const handleCloseModalCambiarEstado = () => {
     pacienteSelectedCambiarEstado.value = null;
 };
 
+const showModalDetallePaciente = (paciente) => {
+    pacienteSelected.value = paciente;
+    modalDetallePaciente.value.showModal();
+};
+
+const hideModalDetallePaciente = () => {
+    modalDetallePaciente.value.hideModal();
+};
+
+const handleCloseModalDetallePaciente = () => {
+    pacienteSelected.value = null;
+};
+
 const formFiltros = reactive({
     estado: props.filtros.estado || '',
+    diagnostico: props.filtros.diagnostico || '',
     alertas: props.filtros.alertas || '',
     nombre: props.filtros.nombre || '',
     orderBy: props.filtros.orderBy || null,
@@ -76,18 +97,38 @@ const orderBy = (column) => {
 const cambiarEstado = async () => {
     try {
         const { data } = await axios.patch(route('ajax.paciente.cambiarEstado', pacienteSelectedCambiarEstado.value.id));
-        notification.successNotification(data.message || 'Estado del paciente actualizado con éxito.');
+        notification.successNotification(data.message || 'Se guardó con éxito.');
         pacienteSelectedCambiarEstado.value.activo = data.activo;
         pacienteSelectedCambiarEstado.value.estado = data.activo ? 'Activo' : 'Inactivo';
         hideModalCambiarEstado();
     } catch (error) {
-        notification.errorNotification(error.response?.data?.message || 'Se produjo un error al cambiar el estado del paciente.');
+        notification.errorNotification(error.response?.data?.message || 'Error al cambiar el estado del paciente.');
     }
 };
+
+const listarDiagnosticos = (diagnosticos) => {
+    return diagnosticos.map(diagnostico => diagnostico.nombre).join(', ');
+};
+
+const getDiagnosticos = async () => {
+    try {
+        const response = await axios.get(route('ajax.diagnosticos.get'), {
+            params: { activo: 1 }
+        });
+
+        diagnosticos.value = response.data;
+    } catch (error) {
+        notification.errorNotification('Error al obtener los diagnósticos.');
+    }
+};
+
+onMounted(() => {
+    getDiagnosticos();
+});
 </script>
 
 <template>
-    <div class="row">
+    <div class="row" v-if="ocultarCrear === false">
         <div class="col-12 text-end mb-4">
             <a :href="route('dashboard.pacientes.create')" class="btn btn-secondary text-white fw-semibold">
                 Agregar paciente
@@ -109,8 +150,16 @@ const cambiarEstado = async () => {
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
+                    <select name="diagnostico" id="filtroDiagnostico" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.diagnostico" @change="filterPacientes">
+                        <option value="">Diagnóstico</option>
+                        <option v-for="diagnostico in diagnosticos" :key="diagnostico.id" :value="diagnostico.id">{{ diagnostico.nombre }}</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
                     <select name="alertas" id="filtroAlertas" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.alertas" @change="filterPacientes">
                         <option value="">Alertas</option>
+                        <option value="clinica">Clínicas</option>
+                        <option value="operativa">Operativas</option>
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
@@ -127,7 +176,7 @@ const cambiarEstado = async () => {
                     <template #header>
                         <tr>
                             <th>
-                                <span class="me-3">ID</span>
+                                <span class="me-3">Código</span>
                                 <i class="fa order" :class="{
                                     'fa-chevron-down': formFiltros.orderBy !== 'id' || formFiltros.orderBy === 'id' && formFiltros.orderDir === 'asc',
                                     'fa-chevron-up': formFiltros.orderBy === 'id' && formFiltros.orderDir === 'desc'
@@ -141,11 +190,25 @@ const cambiarEstado = async () => {
                                 }" @click="orderBy('nombre')"></i>
                             </th>
                             <th>
-                                <span class="me-3">Fecha enrolamiento</span>
+                                <span class="me-3">Fecha de inicio</span>
                                 <i class="fa order" :class="{
                                     'fa-chevron-down': formFiltros.orderBy !== 'fecha_enrolamiento' || formFiltros.orderBy === 'fecha_enrolamiento' && formFiltros.orderDir === 'asc',
                                     'fa-chevron-up': formFiltros.orderBy === 'fecha_enrolamiento' && formFiltros.orderDir === 'desc'
                                 }" @click="orderBy('fecha_enrolamiento')"></i>
+                            </th>
+                            <th>
+                                <span class="me-3">Diagnóstico</span>
+                                <i class="fa order" :class="{
+                                    'fa-chevron-down': formFiltros.orderBy !== 'diagnostico' || formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'asc',
+                                    'fa-chevron-up': formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'desc'
+                                }" @click="orderBy('diagnostico')"></i>
+                            </th>
+                            <th v-if="$page.props.usuario.rol?.nombre !== 'promotor'">
+                                <span class="me-3">Promotor</span>
+                                <i class="fa order" :class="{
+                                    'fa-chevron-down': formFiltros.orderBy !== 'promotor' || formFiltros.orderBy === 'promotor' && formFiltros.orderDir === 'asc',
+                                    'fa-chevron-up': formFiltros.orderBy === 'promotor' && formFiltros.orderDir === 'desc'
+                                }" @click="orderBy('promotor')"></i>
                             </th>
                             <th>
                                 <span class="me-3">Sesiones</span>
@@ -162,11 +225,11 @@ const cambiarEstado = async () => {
                                 }" @click="orderBy('numero_alertas')"></i>
                             </th>
                             <th>
-                                <span class="me-3">Ingresos</span>
+                                <span class="me-3">Fecha siguiente contacto</span>
                                 <i class="fa order" :class="{
-                                    'fa-chevron-down': formFiltros.orderBy !== 'ingresos' || formFiltros.orderBy === 'ingresos' && formFiltros.orderDir === 'asc',
-                                    'fa-chevron-up': formFiltros.orderBy === 'ingresos' && formFiltros.orderDir === 'desc'
-                                }" @click="orderBy('ingresos')"></i>
+                                    'fa-chevron-down': formFiltros.orderBy !== 'fecha_proximo_contacto' || formFiltros.orderBy === 'fecha_proximo_contacto' && formFiltros.orderDir === 'asc',
+                                    'fa-chevron-up': formFiltros.orderBy === 'fecha_proximo_contacto' && formFiltros.orderDir === 'desc'
+                                }" @click="orderBy('fecha_proximo_contacto')"></i>
                             </th>
                             <th>
                                 <span class="me-3">Último ingreso</span>
@@ -182,7 +245,7 @@ const cambiarEstado = async () => {
                                     'fa-chevron-up': formFiltros.orderBy === 'activo' && formFiltros.orderDir === 'desc'
                                 }" @click="orderBy('activo')"></i>
                             </th>
-                            <th>Interacciones</th>
+                            <th>Formulario de contacto</th>
                             <th></th>
                         </tr>
                     </template>
@@ -192,12 +255,14 @@ const cambiarEstado = async () => {
                             <td>{{ paciente.id }}</td>
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
+                            <td>{{ listarDiagnosticos(paciente.diagnosticos) }}</td>
+                            <td v-if="$page.props.usuario.rol?.nombre !== 'promotor'">{{ paciente.promotor?.nombre }}</td>
                             <td>{{ paciente.sesiones.completadas }}/{{ paciente.sesiones.total }}</td>
                             <td>
                                 {{ paciente.alertas_pendientes ? paciente.alertas_pendientes : '-' }}
                                 <i class="fa fa-warning text-danger" v-if="paciente.alertas_pendientes"></i>
                             </td>
-                            <td>{{ paciente.usuario.numero_accesos }}</td>
+                            <td>{{ paciente.fecha_proximo_contacto ?? '-' }}</td>
                             <td>{{ paciente.usuario.ultimo_acceso }}</td>
                             <td>
                                 <span
@@ -218,130 +283,9 @@ const cambiarEstado = async () => {
                                 </a>
                             </td>
                             <td>
-                                <button type="button" class="btn btn-link btn-ver-mas text-decoration-none" @click="pacienteSelected === paciente ? hideDetails() : showDetails(paciente)">
-                                    Ver {{ (pacienteSelected === paciente ? 'menos' : 'más') }}
+                                <button type="button" class="btn btn-link btn-ver-mas text-decoration-none" @click="showModalDetallePaciente(paciente)">
+                                    Ver más
                                 </button>
-                            </td>
-                        </tr>
-                        <tr v-if="pacienteSelected === paciente">
-                            <td colspan="10" class="px-4 table-patient-details-container">
-                                <table class="table table-patient-details text-start">
-                                    <tbody>
-                                        <tr>
-                                            <td class="text-primary-emphasis p-3 border-0" colspan="2">
-                                                <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
-                                                <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
-                                                <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
-                                            </td>
-                                            <td class="p-3 border-0">
-                                                <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}
-                                            </td>
-                                            <td class="p-3 border-0">
-                                                <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
-                                            </td>
-                                            <td class="p-3 border-0">
-                                                <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
-                                            </td>
-                                            <td class="text-end p-3 border-0"></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos de contacto</td>
-                                            <td class="p-3 border-0">
-                                                <p>
-                                                    <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
-                                                </p>
-                                                <p class="mb-0">
-                                                    <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
-                                                </p>
-                                            </td>
-                                            <td class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
-                                            </td>
-                                            <td class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
-                                            </td>
-                                            <td class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos clínicos</td>
-                                            <td class="p-3 border-0">
-                                                <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
-                                                    <tbody>
-                                                        <tr>
-                                                            <th class="p-1">Registros</th>
-                                                            <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                                {{ registro.fecha }}
-                                                            </th>
-                                                        </tr>
-                                                        <tr>
-                                                            <td class="p-1">Glucosa</td>
-                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                                {{ registro.glucosa_valor ?? '-' }}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td class="p-1">Presión sistólica</td>
-                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                                {{ registro.presion_sistolica ?? '-' }}
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td class="p-1">Presión diastólica</td>
-                                                            <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                                {{ registro.presion_diastolica ?? '-' }}
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">
-                                                <button v-if="pacienteSelected.datos_clinicos.length" class="btn bg-primary text-white p-1">
-                                                    <i class="fa-solid fa-chart-line"></i>
-                                                    Ver gráficos
-                                                </button>
-                                            </td>
-                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Puntos de contacto</td>
-                                            <td class="p-3 align-top border-0">
-                                                <table v-if="pacienteSelected.interacciones.length" class="table table-bordered bg-white text-center">
-                                                    <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
-                                                        <td class="p-1 border-1">
-                                                            <a
-                                                                :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
-                                                                class="text-decoration-none d-block text-body"
-                                                            >
-                                                                {{ interaccion.fecha }}
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-primary-emphasis fw-semibold align-top p-3 border-0">Datos de uso de la app</td>
-                                            <td class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Sesiones completas:</span> 4/5
-                                            </td>
-                                            <td class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Metas cumplidas:</span> 4
-                                            </td>
-                                            <td colspan="2" class="p-3 align-top border-0">
-                                                <span class="fw-semibold">Fecha de enrolamiento:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
-                                            </td>
-                                            <td class="p-3 text-end border-0">
-                                                <div class="d-flex flex-column">
-                                                    <a class="btn btn-outline-primary px-3 py-2 shadow mb-3" :href="route('dashboard.pacientes.alertas', paciente.id)">
-                                                        Ir a alertas <i class="fa-solid fa-triangle-exclamation"></i>
-                                                    </a>
-                                                    <a class="btn bg-primary text-white px-3 py-2 shadow" :href="route('dashboard.pacientes.edit', paciente.id)">
-                                                        Ir a paciente <i class="fa-solid fa-arrow-right"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                             </td>
                         </tr>
                     </template>
@@ -384,6 +328,172 @@ const cambiarEstado = async () => {
                     Cambiando estado, espere...
                 </button>
             </template>
+        </template>
+    </Modal>
+
+    <Modal
+        id="modalDetallePaciente"
+        ref="modalDetallePaciente"
+        class="p-2"
+        :full-width="true"
+        @modalClosed="handleCloseModalDetallePaciente"
+    >
+        <template v-if="pacienteSelected">
+            <div class="row">
+                <div class="col-12 col-xl-4 text-primary-emphasis align-content-center mb-1 mb-xl-4">
+                    <div class="row">
+                        <div class="col-12">
+                            <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
+                            <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
+                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-8 align-content-center mb-2 mb-xl-4">
+                    <div class="row">
+                        <div class="col-12 col-lg-4">
+                            <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                    Datos de contacto
+                </div>
+                <div class="col-12 col-xl-10 mb-2 mb-xl-4">
+                    <div class="row">
+                        <div class="col-12 col-xl-3">
+                            <div>
+                                <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
+                            </div>
+                            <div>
+                                <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                    Datos clínicos
+                </div>
+                <div class="col-12 col-xl-10 mb-xl-4">
+                    <div class="row">
+                        <div class="col-12 col-xl-4">
+                            <div class="table-responsive">
+                                <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
+                                    <tbody>
+                                    <tr>
+                                        <th class="p-1">Registros</th>
+                                        <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                            {{ registro.fecha }}
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1">Glucosa</td>
+                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                            {{ registro.glucosa_valor ?? '-' }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1">Presión sistólica</td>
+                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                            {{ registro.presion_sistolica ?? '-' }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1">Presión diastólica</td>
+                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                            {{ registro.presion_diastolica ?? '-' }}
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-12 col-xl-3 offset-xl-2 text-primary-emphasis fw-semibold">
+                            Fecha de contacto
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <div class="table-responsive">
+                                <table class="table table-bordered bg-white text-center">
+                                    <template v-if="pacienteSelected.interacciones.length">
+                                        <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
+                                            <td class="p-1 border-1">
+                                                <a
+                                                    :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
+                                                    class="text-decoration-none d-block text-body"
+                                                >
+                                                    {{ interaccion.fecha }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <tr v-else>
+                                        <td class="p-1 border-1">Sin contacto.</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                    Datos de uso de la app
+                </div>
+                <div class="col-12 col-xl-10">
+                    <div class="row">
+                        <div class="col-12 col-xl-3">
+                            <span class="fw-semibold">Fecha de inicio:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <span class="fw-semibold">Sesiones completas:</span> 4/5
+                        </div>
+                        <div class="col-12 col-xl-3 mb-3 mb-xl-0">
+                            <span class="fw-semibold">Metas cumplidas:</span> 4
+                        </div>
+                        <div class="col-12 col-xl-3">
+                            <div class="mb-3 text-xl-end">
+                                <a class="btn btn-outline-primary px-3 py-2 shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
+                                    Ir a alertas
+                                    <br>
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </a>
+                            </div>
+                            <div class="text-xl-end">
+                                <a class="btn bg-primary text-white px-3 shadow" :href="route('dashboard.pacientes.edit', pacienteSelected.id)">
+                                    Ir a detalle
+                                    <br>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalDetallePaciente">
+                Cerrar
+            </button>
         </template>
     </Modal>
 </template>

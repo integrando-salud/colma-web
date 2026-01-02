@@ -1,8 +1,10 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted, useTemplateRef } from "vue";
+import { usePage, useForm } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import Pagination from "@/Components/Pagination.vue";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
+import Modal from "@/Components/Modal.vue";
 
 const props = defineProps({
     idPaciente: {
@@ -16,8 +18,50 @@ const props = defineProps({
     interaccion: null
 });
 
+const page = usePage();
 const notification = useNotificationStore();
 const interaccionSelected = ref(null);
+const formEliminar = useForm({
+    interaccion: null
+});
+const modalEliminarInteraccion = useTemplateRef('modalEliminarInteraccion');
+const eliminando = ref(false);
+
+const puedeEliminar = computed(() => {
+    return page.props.usuario.rol?.nombre === 'superusuario' || page.props.usuario.rol?.nombre === 'supervisor_pais';
+});
+
+const showModalEliminarInteraccion = (interaccion) => {
+    formEliminar.interaccion = interaccion.id;
+    modalEliminarInteraccion.value.showModal();
+};
+
+const hideModalEliminarInteraccion = () => {
+    modalEliminarInteraccion.value.hideModal();
+};
+
+const handleCloseModalEliminarInteraccion = () => {
+    formEliminar.interaccion = null;
+};
+
+const eliminarInteraccion = async () => {
+    formEliminar.post(route('interacciones.delete'), {
+        onBefore: () => {
+            eliminando.value = true;
+        },
+        onSuccess: () => {
+            notification.successNotification('Se eliminó con éxito.');
+            formEliminar.interaccion = null;
+            hideModalEliminarInteraccion();
+        },
+        onError: () => {
+            notification.errorNotification('Error al eliminar.');
+        },
+        onFinish: () => {
+            eliminando.value = false;
+        }
+    });
+}
 
 onMounted(() => {
     if (props.interaccion) {
@@ -45,6 +89,7 @@ onMounted(() => {
                                         <th>Estado</th>
                                         <th>Modalidad</th>
                                         <th>Motivo</th>
+                                        <th>Nueva fecha de contacto</th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -55,14 +100,16 @@ onMounted(() => {
                                         <td>{{ interaccion.contactado_descripcion }}</td>
                                         <td>{{ interaccion.modalidad }}</td>
                                         <td>{{ interaccion.motivo }}</td>
+                                        <td>{{ interaccion.fecha_proximo_contacto }}</td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-secondary btn-sm text-white" @click="interaccionSelected = interaccion">Ver más</button>
+                                            <button type="button" class="btn btn-secondary btn-sm text-white me-1" @click="interaccionSelected = interaccion">Ver más</button>
+                                            <button v-if="puedeEliminar" type="button" class="btn btn-danger btn-sm text-white" @click="showModalEliminarInteraccion(interaccion)">Eliminar</button>
                                         </td>
                                     </tr>
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <td colspan="6" class="text-center small border-top">
+                                        <td colspan="7" class="text-center small border-top">
                                             Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} interacciones
                                         </td>
                                     </tr>
@@ -145,6 +192,18 @@ onMounted(() => {
             <div class="row">
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Nueva fecha de contacto
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.fecha_proximo_contacto }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
                         <div class="col-12 mb-sm-3">
                             <div class="row">
                                 <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
@@ -197,18 +256,6 @@ onMounted(() => {
                     <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                         <div class="row">
                             <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                                Nueva fecha de contacto
-                            </div>
-                            <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                                {{ interaccionSelected.fecha_reprogramacion }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                        <div class="row">
-                            <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
                                 Motivo reprogramación
                             </div>
                             <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
@@ -220,6 +267,28 @@ onMounted(() => {
             </template>
         </div>
     </div>
+
+    <Modal id="modalEliminarInteraccion" ref="modalEliminarInteraccion" title="Eliminar interacción" :loading="eliminando" @modalClosed="handleCloseModalEliminarInteraccion">
+        <p>Se eliminará interacción del día {{ formEliminar.interaccion?.fecha }} a las {{ formEliminar.interaccion?.hora }}.</p>
+        <p>¿Desea continuar?</p>
+
+        <template #footer>
+            <template v-if="eliminando === false">
+                <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="eliminando" @click="hideModalEliminarInteraccion">
+                    No, cancelar
+                </button>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="eliminando" @click="eliminarInteraccion">
+                    Si, continuar
+                </button>
+            </template>
+            <template v-else>
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Eliminando interacción, espere...
+                </button>
+            </template>
+        </template>
+    </Modal>
 </template>
 
 <style scoped>

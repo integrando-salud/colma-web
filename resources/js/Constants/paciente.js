@@ -10,6 +10,7 @@ export const FORM_PACIENTE = {
     email: null,
     direccion: null,
     referencia: null,
+    observaciones: null,
     centro_salud_id: '',
     promotor_id: '',
     fecha_enrolamiento: null,
@@ -29,6 +30,6 @@ export const FORM_CONTACTO = {
     motivo: '',
     observaciones: null,
     accion: '',
-    fecha_reprogramacion: null,
+    fecha_proximo_contacto: null,
     motivo_reprogramacion: '',
 };

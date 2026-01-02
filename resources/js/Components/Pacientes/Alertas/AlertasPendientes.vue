@@ -40,7 +40,8 @@ const props = defineProps({
                     <td>{{ alerta.fecha_contacto }}</td>
                     <td>{{ alerta.recomendacion }}</td>
                     <td>
-                        <a :href="route('dashboard.pacientes.createInteraccion', {
+                        <a v-if="alerta.paciente.activo"
+                            :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
                             })"

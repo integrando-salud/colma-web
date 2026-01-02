@@ -38,7 +38,7 @@ return new class extends Migration
             $table->enum('motivo', Interaccion::MOTIVOS_CONTACTO);
             $table->text('observaciones')->nullable();
             $table->enum('accion', Interaccion::ACCIONES)->nullable();
-            $table->date('fecha_reprogramacion')->nullable();
+            $table->date('fecha_proximo_contacto')->nullable();
             $table->enum('motivo_reprogramacion', Interaccion::MOTIVOS_REPROGRAMACION)->nullable();
             $table->timestamps();
             $table->softDeletes();

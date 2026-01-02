@@ -140,7 +140,7 @@ onMounted(async () => {
 
         <div class="col-12">
             <div class="row">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
                         <label for="contacto_resultado" class="col-12 col-sm-4 col-xl-4 col-form-label">Resultado del contacto</label>
                         <div class="col-12 col-sm-8 col-xl-6">
@@ -162,7 +162,7 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3" v-if="verRazonNoContacto">
+                <div class="col-12 col-lg-4 mb-sm-3" v-if="verRazonNoContacto">
                     <div class="row">
                         <label for="contacto_razon_no_contacto" class="col-12 col-sm-4 col-xl-4 col-form-label">
                             Razón de no contacto
@@ -187,10 +187,10 @@ onMounted(async () => {
                 </div>
             </div>
             <div class="row">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
                     <div class="row">
                         <label for="contacto_fecha" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de contacto</label>
-                        <div class="col-12 col-sm-8 col-xl-6">
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
                             <input type="date" name="contacto_fecha" id="contacto_fecha" class="form-control" :class="{ 'is-invalid': formContacto.errors?.fecha }" v-model="formContacto.fecha" />
                             <div class="invalid-feedback" v-if="formContacto.errors?.fecha">
                                 {{ formContacto.errors.fecha }}
@@ -198,10 +198,10 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_hora" class="col-12 col-sm-4 col-xl-4 col-form-label">Hora de contacto</label>
-                        <div class="col-12 col-sm-8 col-xl-4">
+                        <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">Hora de contacto</label>
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
                             <input type="time" name="contacto_hora" id="contacto_hora" class="form-control" :class="{ 'is-invalid': formContacto.errors?.hora }" v-model="formContacto.hora" />
                             <div class="invalid-feedback" v-if="formContacto.errors?.hora">
                                 {{ formContacto.errors.hora }}
@@ -211,11 +211,24 @@ onMounted(async () => {
                 </div>
             </div>
             <div class="row">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_fecha_proximo_contacto" class="col-12 col-sm-4 col-form-label">Nueva fecha de contacto</label>
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
+                            <input type="date" name="contacto_fecha_proximo_contacto" id="contacto_fecha_proximo_contacto" class="form-control" :class="{ 'is-invalid': formContacto.errors?.fecha_proximo_contacto }" v-model="formContacto.fecha_proximo_contacto" />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.fecha_proximo_contacto">
+                                {{ formContacto.errors.fecha_proximo_contacto }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12 mb-sm-3">
                             <div class="row">
-                                <label for="contacto_modalidad" class="col-12 col-sm-4 col-xl-4 col-form-label">Modalidad</label>
+                                <label for="contacto_modalidad" class="col-12 col-sm-4 col-xl-4 col-form-label">Medio de contacto</label>
                                 <div class="col-12 col-sm-8 col-xl-6">
                                     <select
                                         name="contacto_modalidad"
@@ -238,7 +251,7 @@ onMounted(async () => {
                     <div class="row">
                         <div class="col-12">
                             <div class="row">
-                                <label for="contacto_motivo" class="col-12 col-sm-4 col-xl-4 col-form-label">Motivo</label>
+                                <label for="contacto_motivo" class="col-12 col-sm-4 col-xl-4 col-form-label">Motivo de contacto</label>
                                 <div class="col-12 col-sm-8 col-xl-6">
                                     <select
                                         name="contacto_motivo"
@@ -261,8 +274,8 @@ onMounted(async () => {
                 </div>
                 <div class="col-12 col-lg-8 mb-sm-3">
                     <div class="row h-100">
-                        <label for="contacto_observaciones" class="col-12 col-sm-4 col-md-2 col-form-label">Observaciones</label>
-                        <div class="col-12 col-sm-8 col-md-10 col-xl-6">
+                        <label for="contacto_observaciones" class="col-12 col-sm-4 col-lg-2 col-form-label">Observaciones</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
                             <textarea id="contacto_observaciones" name="contacto_observaciones" class="form-control h-100" :class="{ 'is-invalid': formContacto.errors?.observaciones }" v-model="formContacto.observaciones"></textarea>
                             <div class="invalid-feedback" v-if="formContacto.errors?.observaciones">
                                 {{ formContacto.errors.observaciones }}
@@ -272,9 +285,9 @@ onMounted(async () => {
                 </div>
             </div>
             <div class="row" v-if="formContacto.motivo === 'Alerta clínica'">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_accion" class="col-12 col-sm-4 col-xl-4 col-form-label">Acción</label>
+                        <label for="contacto_accion" class="col-12 col-sm-4 col-xl-4 col-form-label">Acción realizada</label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <select
                                 name="contacto_accion"
@@ -295,19 +308,6 @@ onMounted(async () => {
                 </div>
             </div>
             <template v-if="formContacto.motivo === 'Reprogramación'">
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                        <div class="row">
-                            <label for="contacto_fecha_reprogramacion" class="col-12 col-sm-4 col-xl-4 col-form-label">Nueva fecha de contacto</label>
-                            <div class="col-12 col-sm-8 col-xl-6">
-                                <input type="date" name="contacto_fecha_reprogramacion" id="contacto_fecha_reprogramacion" class="form-control" :class="{ 'is-invalid': formContacto.errors?.fecha_reprogramacion }" v-model="formContacto.fecha_reprogramacion" />
-                                <div class="invalid-feedback" v-if="formContacto.errors?.fecha_reprogramacion">
-                                    {{ formContacto.errors.fecha_reprogramacion }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="row">
                     <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                         <div class="row">

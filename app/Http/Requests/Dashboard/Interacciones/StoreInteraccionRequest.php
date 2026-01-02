@@ -33,7 +33,7 @@ class StoreInteraccionRequest extends FormRequest
             'motivo' => ['required', 'in:' . implode(',', Interaccion::MOTIVOS_CONTACTO)],
             'observaciones' => ['nullable'],
             'accion' => ['nullable', 'in:' . implode(',', Interaccion::ACCIONES)],
-            'fecha_reprogramacion' => ['nullable', 'date'],
+            'fecha_proximo_contacto' => ['nullable', 'date'],
             'motivo_reprogramacion' => ['nullable', 'in:' . implode(',', Interaccion::MOTIVOS_REPROGRAMACION)]
         ];
     }
@@ -55,7 +55,7 @@ class StoreInteraccionRequest extends FormRequest
             'modalidad.in' => 'El campo modalidad debe ser una opción de las siguientes: ' . implode(',', Interaccion::MODALIDADES),
             'motivo.in' => 'El campo motivo debe ser una opción de las siguientes: ' . implode(',', Interaccion::MOTIVOS_CONTACTO),
             'accion' => 'El campo acción debe ser una opción de las siguiente: ' . implode(',', Interaccion::ACCIONES),
-            'fecha_reprogramacion.date' => 'El campo fecha de reprogramación debe ser una fecha válida',
+            'fecha_proximo_contacto.date' => 'El campo nueva fecha de contacto debe ser una fecha válida',
             'motivo_reprogramacion.in' => 'El campo motivo de reprogramación debe ser una opción de las siguientes: ' . implode(',', Interaccion::MOTIVOS_REPROGRAMACION),
         ];
     }

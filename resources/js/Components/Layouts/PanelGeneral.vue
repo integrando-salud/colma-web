@@ -15,7 +15,7 @@ const countPacientesActivos = async () => {
 
         pacientesActivos.value = data.pacientes_activos;
     } catch (error) {
-        notification.errorNotification('Se produjo un error al contar los pacientes activos');
+        notification.errorNotification('Error al contar los pacientes activos');
     }
 };
 
@@ -30,25 +30,21 @@ onMounted(async () => {
             <div class="panel-general text-primary-emphasis p-4 pb-md-5 rounded-3">
                 <h4 class="mb-4">Panel general</h4>
                 <div class="row">
-                    <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0 text-center">
+                    <div class="col-12 col-sm-4 col-md-4 mb-3 mb-md-0 text-center">
                         <div class="fs-1 fw-semibold">
                             {{ pacientesActivos }}/{{ $page.props.usuario.numero_pacientes }}
                         </div>
                         <div>pacientes activos</div>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3 mb-3 mb-md-0 text-center">
+                    <div class="col-12 col-sm-4 col-md-4 mb-3 mb-md-0 text-center">
                         <div class="fs-1 fw-semibold">
                             {{ $page.props.usuario.numero_alertas }}
                         </div>
                         <div>alertas</div>
                     </div>
-                    <div class="col-12 col-sm-6 col-md-3 mb-3 mb-sm-0 text-center">
-                        <div class="fs-1 fw-semibold">?</div>
-                        <div>adherencia promedio</div>
-                    </div>
-                    <div class="col-12 col-sm-6 col-md-3 text-center">
+                    <div class="col-12 col-sm-4 col-md-4 text-center">
                         <div class="fs-1 fw-semibold">3</div>
-                        <div>interacciones pendientes</div>
+                        <div>contactos pendientes</div>
                     </div>
                 </div>
             </div>

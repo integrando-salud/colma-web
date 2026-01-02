@@ -62,7 +62,7 @@ class Interaccion extends Model
         'motivo',
         'observaciones',
         'accion',
-        'fecha_reprogramacion',
+        'fecha_proximo_contacto',
         'motivo_reprogramacion',
     ];
 
@@ -70,7 +70,7 @@ class Interaccion extends Model
         'contactado' => 'boolean',
         'fecha' => 'datetime',
         'hora' => 'datetime',
-        'fecha_reprogramacion' => 'datetime',
+        'fecha_proximo_contacto' => 'datetime',
     ];
 
     public function paciente()

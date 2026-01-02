@@ -22,6 +22,7 @@ class Paciente extends Model
         'email',
         'direccion',
         'referencia',
+        'observaciones',
         'centro_salud_id',
         'promotor_id',
         'fecha_enrolamiento',
