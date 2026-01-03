@@ -29,6 +29,17 @@ class UsersSeeder extends Seeder
             if (User::count() < 20) {
                 User::factory()->count(20)->create();
             }
+
+            $promotores = User::whereHas('roles', function ($query) {
+                $query->where('name', User::ROL_PROMOTOR);
+            })->get();
+
+            foreach ($promotores as $promotor) {
+                $promotor->supervisor_id = User::whereHas('roles', function ($query) {
+                    $query->where('name', User::ROL_SUPERVISOR);
+                })->where('pais_id', $promotor->pais_id)->inRandomOrder()->first()->id;
+                $promotor->save();
+            }
         }
     }
 }

@@ -426,7 +426,7 @@ const updatePassword = async () => {
                         <div class="row mb-3">
                             <label for="documento" class="col-12 col-xl-4 col-form-label">DNI</label>
                             <div class="col-12 col-xl-8">
-                                <input type="text" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.documento }" v-model="formUsuario.documento" />
+                                <input type="number" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.documento }" v-model="formUsuario.documento" />
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.documento">
                                     {{ formUsuario.errors.documento }}
                                 </div>

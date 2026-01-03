@@ -42,17 +42,6 @@ class UserFactory extends Factory
             ]);
 
             $user->assign($rol);
-
-            if ($rol === User::ROL_PROMOTOR) {
-                $supervisor = User::whereHas('roles', function ($query) {
-                    $query->where('name', User::ROL_SUPERVISOR);
-                })->inRandomOrder()->first();
-
-                if ($supervisor) {
-                    $user->supervisor_id = $supervisor->id;
-                    $user->save();
-                }
-            }
         });
     }
 }
