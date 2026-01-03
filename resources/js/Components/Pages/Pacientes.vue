@@ -397,32 +397,37 @@ onMounted(() => {
                     <div class="row">
                         <div class="col-12 col-xl-4">
                             <div class="table-responsive">
-                                <table v-if="pacienteSelected.datos_clinicos.length" class="table table-bordered bg-white text-center">
+                                <table class="table table-bordered bg-white text-center">
                                     <tbody>
-                                    <tr>
-                                        <th class="p-1">Registros</th>
-                                        <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                            {{ registro.fecha }}
-                                        </th>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-1">Glucosa</td>
-                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                            {{ registro.glucosa_valor ?? '-' }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-1">Presión sistólica</td>
-                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                            {{ registro.presion_sistolica ?? '-' }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="p-1">Presión diastólica</td>
-                                        <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                            {{ registro.presion_diastolica ?? '-' }}
-                                        </td>
-                                    </tr>
+                                        <template v-if="pacienteSelected.datos_clinicos.length">
+                                            <tr>
+                                                <th class="p-1">Registros</th>
+                                                <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                    {{ registro.fecha }}
+                                                </th>
+                                            </tr>
+                                            <tr>
+                                                <td class="p-1">Glucosa</td>
+                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                    {{ registro.glucosa_valor ?? '-' }}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="p-1">Presión sistólica</td>
+                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                    {{ registro.presion_sistolica ?? '-' }}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td class="p-1">Presión diastólica</td>
+                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
+                                                    {{ registro.presion_diastolica ?? '-' }}
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <tr v-else>
+                                            <td class="p-1 border-1">Sin datos clínicos.</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -433,21 +438,23 @@ onMounted(() => {
                         <div class="col-12 col-xl-3">
                             <div class="table-responsive">
                                 <table class="table table-bordered bg-white text-center">
-                                    <template v-if="pacienteSelected.interacciones.length">
-                                        <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
-                                            <td class="p-1 border-1">
-                                                <a
-                                                    :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
-                                                    class="text-decoration-none d-block text-body"
-                                                >
-                                                    {{ interaccion.fecha }}
-                                                </a>
-                                            </td>
+                                    <tbody>
+                                        <template v-if="pacienteSelected.interacciones.length">
+                                            <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
+                                                <td class="p-1 border-1">
+                                                    <a
+                                                        :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
+                                                        class="text-decoration-none d-block text-body"
+                                                    >
+                                                        {{ interaccion.fecha }}
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <tr v-else>
+                                            <td class="p-1 border-1">Sin contacto.</td>
                                         </tr>
-                                    </template>
-                                    <tr v-else>
-                                        <td class="p-1 border-1">Sin contacto.</td>
-                                    </tr>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
