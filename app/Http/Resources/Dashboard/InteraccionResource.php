@@ -48,7 +48,7 @@ class InteraccionResource extends JsonResource
             'motivo' => $this->motivo,
             'observaciones' => $this->observaciones,
             'accion' => $this->accion,
-            'fecha_proximo_contacto' => $this->fecha_proximo_contacto?->format('d/m/Y'),
+            'fecha_proximo_contacto' => $this->nueva_fecha_contacto?->format('d/m/Y'),
             'motivo_reprogramacion' => $this->motivo_reprogramacion,
         ];
     }

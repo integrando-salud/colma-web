@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
@@ -18,87 +18,258 @@ const props = defineProps({
 
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
-const razonesNoContacto = ref([]);
-const loadingRazonesNoContacto = ref(false);
-const modalidades = ref([]);
-const loadingModalidades = ref(false);
-const acciones = ref([]);
-const loadingAcciones = ref(false);
-const motivosContacto = ref([]);
-const loadingMotivosContacto = ref(false);
-const motivosReprogramacion = ref([]);
-const loadingMotivosReprogramacion = ref(false);
 
-const verRazonNoContacto = computed(() => {
-    return formContacto.contactado !== '' && formContacto.contactado == 0;
+const modalidades = [
+    'Llamada por teléfono / WhatsApp',
+    'Visita domiciliaria',
+];
+
+const motivosReprogramacion = [
+    'No responde',
+    'Teléfono apagado',
+    'Número equivocado / cambió de número',
+    'Pidió que se le llame más tarde',
+];
+
+const dificultadesNoAdherencia = [
+    'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
+    'Problemas con la señal (completó las sesiones, pero la información no se subió)',
+    'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
+    'El celular se malogró y no puede usar el aplicativo',
+    'Le robaron el celular',
+    'Falta de interés',
+    'Falta de tiempo',
+    'Ya no quiere participar en el proyecto',
+    'Otro',
+];
+
+const dificultadesProblemasConexion = [
+    'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
+    'Problemas con la señal (completó las sesiones, pero la información no se subió)',
+    'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
+    'El celular se malogró y no puede usar el aplicativo',
+    'Le robaron el celular',
+    'Otro',
+];
+
+const dificultadesPedidoAyuda = [
+    'Problemas con el celular',
+    'Problemas con el aplicativo',
+    'Problemas con la conexión a internet',
+    'Ya no quiere participar en el proyecto',
+    'Otro',
+];
+
+const motivosContacto = computed(() => {
+    if (props.alerta?.id) {
+        return [
+            'No adherencia a las sesiones',
+            'Problemas de conexión',
+            'Alerta clínica',
+            'Pedido de ayuda a través del aplicativo',
+        ];
+    } else {
+        return [
+            'Agendar cita de entrenamiento',
+            'Cita de entrenamiento',
+            'Seguimiento 2 semanas luego del tratamiento',
+            'Seguimiento mensual',
+            'Agendar cita final',
+            'Cita final',
+            'Re-entrenamiento',
+            'Contacto iniciado por el participante',
+        ];
+    }
 });
 
-const disableMotivo = computed(() => {
-    return props.alerta && props.alerta.tipo === 'clinica';
+const fechaProgramadaCitaTitle = computed(() => {
+    let title = 'Fecha programada para cita';
+
+    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+        title += ' de entrenamiento';
+    }
+
+    if (formContacto.motivo === 'Agendar cita final') {
+        title += ' final';
+    }
+
+    return title;
 });
 
-const getRazonesNoContacto = async () => {
-    loadingRazonesNoContacto.value = true;
+const lugarAcordadoCitaTitle = computed(() => {
+    let title = 'Lugar acordado para cita';
 
-    try {
-        const { data } = await axios.get(route('ajax.interacciones.razonesNoContacto'));
-        razonesNoContacto.value = data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener las razones de no contacto');
-    } finally {
-        loadingRazonesNoContacto.value = false;
+    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+        title += ' de entrenamiento';
+    }
+
+    if (formContacto.motivo === 'Agendar cita final') {
+        title += ' final';
+    }
+
+    return title;
+});
+
+const handleChangeResultado = () => {
+    if (formContacto.contactado !== '0') {
+        formContacto.motivo_reprogramacion = '';
+        formContacto.nueva_fecha_contacto = null;
     }
 };
 
-const getModalidades = async () => {
-    loadingModalidades.value = true;
+const handleChangeMotivoContacto = () => {
+    if (props.alerta?.id) {
+        if (formContacto.motivo !== 'No adherencia a las sesiones') {
+            formContacto.no_adherencia_pregunta_a = [];
+            formContacto.no_adherencia_pregunta_b = '';
+        }
 
-    try {
-        const { data } = await axios.get(route('ajax.interacciones.modalidades'));
-        modalidades.value = data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener las modalidades');
-    } finally {
-        loadingModalidades.value = false;
+        if (formContacto.motivo !== 'Problemas de conexión') {
+            formContacto.problemas_conexion_pregunta_a = [];
+            formContacto.problemas_conexion_pregunta_b = '';
+        }
+
+        if (formContacto.motivo !== 'Alerta clínica') {
+            formContacto.alerta_clinica_pregunta_a = '';
+        }
+
+        if (formContacto.motivo !== 'Pedido de ayuda a través del aplicativo') {
+            formContacto.pedido_ayuda_pregunta_a = [];
+            formContacto.pedido_ayuda_pregunta_b = null;
+        }
+    } else {
+        if (formContacto.motivo !== 'Cita de entrenamiento' && formContacto.motivo !== 'Cita final' && formContacto.motivo !== 'Re-entrenamiento') {
+            formContacto.fecha_cita_final = null;
+            formContacto.hora_cita_final = null;
+            formContacto.lugar_cita_final = '';
+            formContacto.lugar_cita_final_otro = null;
+        }
+
+        if (formContacto.motivo !== 'Seguimiento 2 semanas luego del tratamiento' && formContacto.motivo !== 'Seguimiento mensual') {
+            formContacto.seguimiento_pregunta_a = '';
+            formContacto.seguimiento_pregunta_b = null;
+            formContacto.seguimiento_pregunta_c = '';
+            formContacto.seguimiento_pregunta_d = null;
+            formContacto.seguimiento_pregunta_e = '';
+            formContacto.seguimiento_pregunta_f = null;
+        }
+
+        if (formContacto.motivo !== 'Contacto iniciado por el participante') {
+            formContacto.razon_contacto_participante = '';
+            formContacto.razon_contacto_participante_otro = null;
+            formContacto.contacto_participante_acciones = null;
+        }
     }
 };
 
-const getAcciones = async () => {
-    loadingAcciones.value = true;
-
-    try {
-        const { data } = await axios.get(route('ajax.interacciones.acciones'));
-        acciones.value = data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener las acciones');
-    } finally {
-        loadingAcciones.value = false;
+const handleChangeSeguimientoPreguntaA = () => {
+    if (formContacto.seguimiento_pregunta_a !== 'Si') {
+        formContacto.seguimiento_pregunta_b = null;
+        formContacto.seguimiento_pregunta_c = '';
     }
 };
 
-const getMotivosContacto = async () => {
-    loadingMotivosContacto.value = true;
-
-    try {
-        const { data } = await axios.get(route('ajax.interacciones.motivosContacto'));
-        motivosContacto.value = data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener los motivos de contacto');
-    } finally {
-        loadingMotivosContacto.value = false;
+const handleChangeSeguimientoPreguntaC = () => {
+    if (formContacto.seguimiento_pregunta_c !== 'No') {
+        formContacto.seguimiento_pregunta_f = null;
     }
 };
 
-const getMotivosReprogramacion = async () => {
-    loadingMotivosReprogramacion.value = true;
+const handleChangeSeguimientoPreguntaE = () => {
+    if (formContacto.seguimiento_pregunta_e !== 'No') {
+        formContacto.seguimiento_pregunta_f = null;
+    }
+};
 
-    try {
-        const { data } = await axios.get(route('ajax.interacciones.motivosReprogramacion'));
-        motivosReprogramacion.value = data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener los motivos de reprogramación');
-    } finally {
-        loadingMotivosReprogramacion.value = false;
+const handleChangeLugarCita = () => {
+    if (formContacto.lugar_cita !== 'Otro') {
+        formContacto.lugar_cita_otro = null;
+    }
+};
+
+const handleChangeLugarCitaFinal = () => {
+    if (formContacto.lugar_cita_final !== 'Otro') {
+        formContacto.lugar_cita_final_otro = null;
+    }
+};
+
+const handleChangeRazonContactoParticipante = () => {
+    if (formContacto.razon_contacto_participante !== 'Otro') {
+        formContacto.razon_contacto_participante_otro = null;
+        formContacto.contacto_participante_acciones = null;
+    }
+};
+
+const handleChangeNoAdherenciaPreguntaA = () => {
+    if (!formContacto.no_adherencia_pregunta_a.includes('Otro')) {
+        formContacto.no_adherencia_otro = null;
+    }
+
+    if (!formContacto.no_adherencia_pregunta_a.includes('Ya no quiere participar en el proyecto')) {
+        formContacto.no_adherencia_pregunta_b = '';
+        formContacto.no_adherencia_pregunta_c = null;
+    }
+};
+
+const handleChangeNoAdherenciaPreguntaB = () => {
+    if (formContacto.no_adherencia_pregunta_b !== 'No') {
+        formContacto.no_adherencia_pregunta_c = null;
+    }
+};
+
+const handleChangeProblemasConexionPreguntaA = () => {
+    if (!formContacto.problemas_conexion_pregunta_a.includes('Otro')) {
+        formContacto.problemas_conexion_otro = null;
+    }
+};
+
+const handleChangeProblemasConexionPreguntaB = () => {
+    if (formContacto.problemas_conexion_pregunta_b !== 'No') {
+        formContacto.problemas_conexion_pregunta_c = null;
+    }
+};
+
+const handleChangeAlertaClinicaPreguntaA = () => {
+    if (formContacto.alerta_clinica_pregunta_a !== 'No') {
+        formContacto.alerta_clinica_pregunta_b = '';
+    }
+
+    if (formContacto.alerta_clinica_pregunta_a !== 'Si') {
+        formContacto.alerta_clinica_pregunta_c = '';
+    }
+};
+
+const handleChangeAlertaClinicaPreguntaC = () => {
+    if (formContacto.alerta_clinica_pregunta_c !== 'No') {
+        formContacto.alerta_clinica_pregunta_d = null;
+    }
+
+    if (formContacto.alerta_clinica_pregunta_c !== 'Si') {
+        formContacto.alerta_clinica_pregunta_e = '';
+        formContacto.alerta_clinica_pregunta_f = null;
+    }
+};
+
+const handleChangeAlertaClinicaPreguntaE = () => {
+    if (formContacto.alerta_clinica_pregunta_e !== 'No') {
+        formContacto.alerta_clinica_pregunta_f = null;
+    }
+};
+
+const handleChangePedidoAyudaPreguntaA = () => {
+    if (!formContacto.pedido_ayuda_pregunta_a.includes('Otro')) {
+        formContacto.pedido_ayuda_otro = null;
+    }
+
+    if (!formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')) {
+        formContacto.pedido_ayuda_pregunta_b = null;
+        formContacto.pedido_ayuda_pregunta_c = '';
+    }
+};
+
+const handleChangePedidoAyudaPreguntaC = () => {
+    if (formContacto.pedido_ayuda_pregunta_c !== 'No') {
+        formContacto.pedido_ayuda_pregunta_d = null;
     }
 };
 
@@ -113,11 +284,6 @@ const submit = async () => {
 defineExpose({ submit });
 
 onMounted(async () => {
-    await getRazonesNoContacto();
-    await getModalidades();
-    await getAcciones();
-    await getMotivosContacto();
-    await getMotivosReprogramacion();
     formContacto.paciente_id = props.idPaciente;
 
     if (props.alerta?.id) {
@@ -127,6 +293,74 @@ onMounted(async () => {
             formContacto.motivo = 'Alerta clínica';
         }
     }
+});
+
+watch(() => formContacto.motivo, () => {
+    handleChangeMotivoContacto();
+});
+
+watch(() => formContacto.contactado, () => {
+    handleChangeResultado();
+});
+
+watch(() => formContacto.seguimiento_pregunta_a, () => {
+    handleChangeSeguimientoPreguntaA();
+});
+
+watch(() => formContacto.seguimiento_pregunta_c, () => {
+    handleChangeSeguimientoPreguntaC();
+});
+
+watch(() => formContacto.seguimiento_pregunta_e, () => {
+    handleChangeSeguimientoPreguntaE();
+});
+
+watch(() => formContacto.lugar_cita, () => {
+    handleChangeLugarCita();
+});
+
+watch(() => formContacto.lugar_cita_final, () => {
+    handleChangeLugarCitaFinal();
+});
+
+watch(() => formContacto.razon_contacto_participante, () => {
+    handleChangeRazonContactoParticipante();
+});
+
+watch(() => formContacto.no_adherencia_pregunta_a, () => {
+    handleChangeNoAdherenciaPreguntaA();
+});
+
+watch(() => formContacto.no_adherencia_pregunta_b, () => {
+    handleChangeNoAdherenciaPreguntaB();
+});
+
+watch(() => formContacto.problemas_conexion_pregunta_a, () => {
+    handleChangeProblemasConexionPreguntaA();
+});
+
+watch(() => formContacto.problemas_conexion_pregunta_b, () => {
+    handleChangeProblemasConexionPreguntaB();
+});
+
+watch(() => formContacto.alerta_clinica_pregunta_a, () => {
+    handleChangeAlertaClinicaPreguntaA();
+});
+
+watch(() => formContacto.alerta_clinica_pregunta_c, () => {
+    handleChangeAlertaClinicaPreguntaC();
+});
+
+watch(() => formContacto.alerta_clinica_pregunta_e, () => {
+    handleChangeAlertaClinicaPreguntaE();
+});
+
+watch(() => formContacto.pedido_ayuda_pregunta_a, () => {
+    handleChangePedidoAyudaPreguntaA();
+});
+
+watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
+    handleChangePedidoAyudaPreguntaC();
 });
 </script>
 
@@ -142,7 +376,9 @@ onMounted(async () => {
             <div class="row">
                 <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_resultado" class="col-12 col-sm-4 col-xl-4 col-form-label">Resultado del contacto</label>
+                        <label for="contacto_resultado" class="col-12 col-sm-4 col-form-label">
+                            Resultado del contacto
+                        </label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <select
                                 name="contacto_resultado"
@@ -150,7 +386,6 @@ onMounted(async () => {
                                 class="form-select"
                                 :class="{ 'is-invalid': formContacto.errors?.contactado }"
                                 v-model="formContacto.contactado"
-                                @change="formContacto.razon_no_contacto = ''"
                             >
                                 <option value="">Seleccionar resultado</option>
                                 <option value="1">Contactado</option>
@@ -162,36 +397,24 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-4 mb-sm-3" v-if="verRazonNoContacto">
-                    <div class="row">
-                        <label for="contacto_razon_no_contacto" class="col-12 col-sm-4 col-xl-4 col-form-label">
-                            Razón de no contacto
-                        </label>
-                        <div class="col-12 col-sm-8 col-xl-6">
-                            <select
-                                name="contacto_razon_no_contacto"
-                                id="contacto_razon_no_contacto"
-                                class="form-select"
-                                :class="{ 'is-invalid': formContacto.errors?.razon_no_contacto }"
-                                v-model="formContacto.razon_no_contacto"
-                                :disabled="loadingRazonesNoContacto"
-                            >
-                                <option value="">Seleccionar razón</option>
-                                <option v-for="razon in razonesNoContacto" :value="razon">{{ razon }}</option>
-                            </select>
-                            <div class="invalid-feedback" v-if="formContacto.errors?.razon_no_contacto">
-                                {{ formContacto.errors.razon_no_contacto }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
+        </div>
+        <div class="col-12">
             <div class="row">
                 <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_fecha" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de contacto</label>
-                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
-                            <input type="date" name="contacto_fecha" id="contacto_fecha" class="form-control" :class="{ 'is-invalid': formContacto.errors?.fecha }" v-model="formContacto.fecha" />
+                        <label for="contacto_fecha" class="col-12 col-sm-4 col-form-label">
+                            Fecha de contacto
+                        </label>
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                            <input
+                                type="date"
+                                name="contacto_fecha"
+                                id="contacto_fecha"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.fecha }"
+                                v-model="formContacto.fecha"
+                            />
                             <div class="invalid-feedback" v-if="formContacto.errors?.fecha">
                                 {{ formContacto.errors.fecha }}
                             </div>
@@ -200,9 +423,18 @@ onMounted(async () => {
                 </div>
                 <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">Hora de contacto</label>
-                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
-                            <input type="time" name="contacto_hora" id="contacto_hora" class="form-control" :class="{ 'is-invalid': formContacto.errors?.hora }" v-model="formContacto.hora" />
+                        <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
+                            Hora de contacto
+                        </label>
+                        <div class="col-12 col-sm-3 col-md-2 col-lg-6 col-xl-4">
+                            <input
+                                type="time"
+                                name="contacto_hora"
+                                id="contacto_hora"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.hora }"
+                                v-model="formContacto.hora"
+                            />
                             <div class="invalid-feedback" v-if="formContacto.errors?.hora">
                                 {{ formContacto.errors.hora }}
                             </div>
@@ -210,25 +442,16 @@ onMounted(async () => {
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <label for="contacto_fecha_proximo_contacto" class="col-12 col-sm-4 col-form-label">Nueva fecha de contacto</label>
-                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-4">
-                            <input type="date" name="contacto_fecha_proximo_contacto" id="contacto_fecha_proximo_contacto" class="form-control" :class="{ 'is-invalid': formContacto.errors?.fecha_proximo_contacto }" v-model="formContacto.fecha_proximo_contacto" />
-                            <div class="invalid-feedback" v-if="formContacto.errors?.fecha_proximo_contacto">
-                                {{ formContacto.errors.fecha_proximo_contacto }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        </div>
+        <div class="col-12">
             <div class="row">
                 <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12 mb-sm-3">
                             <div class="row">
-                                <label for="contacto_modalidad" class="col-12 col-sm-4 col-xl-4 col-form-label">Medio de contacto</label>
+                                <label for="contacto_modalidad" class="col-12 col-sm-4 col-form-label">
+                                    Medio de contacto
+                                </label>
                                 <div class="col-12 col-sm-8 col-xl-6">
                                     <select
                                         name="contacto_modalidad"
@@ -236,7 +459,6 @@ onMounted(async () => {
                                         class="form-select"
                                         :class="{ 'is-invalid': formContacto.errors?.modalidad }"
                                         v-model="formContacto.modalidad"
-                                        :disabled="loadingModalidades"
                                     >
                                         <option value="">Seleccionar modalidad</option>
                                         <option v-for="modalidad in modalidades" :value="modalidad">{{ modalidad }}</option>
@@ -248,10 +470,18 @@ onMounted(async () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="row">
+                <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12">
                             <div class="row">
-                                <label for="contacto_motivo" class="col-12 col-sm-4 col-xl-4 col-form-label">Motivo de contacto</label>
+                                <label for="contacto_motivo" class="col-12 col-sm-4 col-form-label">
+                                    Motivo de contacto
+                                </label>
                                 <div class="col-12 col-sm-8 col-xl-6">
                                     <select
                                         name="contacto_motivo"
@@ -259,7 +489,6 @@ onMounted(async () => {
                                         class="form-select"
                                         :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                         v-model="formContacto.motivo"
-                                        :disabled="loadingMotivosContacto || disableMotivo"
                                     >
                                         <option value="">Seleccionar motivo</option>
                                         <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
@@ -272,66 +501,853 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-8 mb-sm-3">
-                    <div class="row h-100">
-                        <label for="contacto_observaciones" class="col-12 col-sm-4 col-lg-2 col-form-label">Observaciones</label>
-                        <div class="col-12 col-sm-8 col-xl-6">
-                            <textarea id="contacto_observaciones" name="contacto_observaciones" class="form-control h-100" :class="{ 'is-invalid': formContacto.errors?.observaciones }" v-model="formContacto.observaciones"></textarea>
-                            <div class="invalid-feedback" v-if="formContacto.errors?.observaciones">
-                                {{ formContacto.errors.observaciones }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-            <div class="row" v-if="formContacto.motivo === 'Alerta clínica'">
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Agendar cita de entrenamiento' || formContacto.motivo === 'Agendar cita final'"
+            class="col-12"
+        >
+            <div class="row">
                 <div class="col-12 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="contacto_accion" class="col-12 col-sm-4 col-xl-4 col-form-label">Acción realizada</label>
-                        <div class="col-12 col-sm-8 col-xl-6">
+                        <label for="contacto_fecha_cita" class="col-12 col-sm-4 col-form-label">
+                            {{ fechaProgramadaCitaTitle }}
+                        </label>
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                            <input
+                                type="date"
+                                name="contacto_fecha_cita"
+                                id="contacto_fecha_cita"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.fecha_cita }"
+                                v-model="formContacto.fecha_cita"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.fecha_cita">
+                                {{ formContacto.errors.fecha_cita }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_lugar_cita" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                            {{ lugarAcordadoCitaTitle }}
+                        </label>
+                        <div class="col-12 col-sm-8 col-lg-4 col-xl-4">
                             <select
-                                name="contacto_accion"
-                                id="contacto_accion"
+                                name="contacto_lugar_cita"
+                                id="contacto_lugar_cita"
                                 class="form-select"
-                                :class="{ 'is-invalid': formContacto.errors?.accion }"
-                                v-model="formContacto.accion"
-                                :disabled="loadingAcciones"
+                                :class="{ 'is-invalid': formContacto.errors?.lugar_cita }"
+                                v-model="formContacto.lugar_cita"
                             >
-                                <option value="">Seleccionar acción</option>
-                                <option v-for="accion in acciones" :value="accion">{{ accion }}</option>
+                                <option value="">Seleccionar lugar</option>
+                                <option value="Centro de salud">Centro de salud</option>
+                                <option value="Vivienda del participante">Vivienda del participante</option>
+                                <option value="Otro">Otro</option>
                             </select>
-                            <div class="invalid-feedback" v-if="formContacto.errors?.accion">
-                                {{ formContacto.errors.accion }}
+                            <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita">
+                                {{ formContacto.errors.lugar_cita }}
+                            </div>
+                        </div>
+                        <div
+                            v-if="formContacto.lugar_cita === 'Otro'"
+                            class="col-12 col-sm-8 col-lg-5 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                        >
+                            <input
+                                type="text"
+                                name="contacto_lugar_cita_otro"
+                                id="contacto_lugar_cita_otro"
+                                class="form-control"
+                                placeholder="Escriba el lugar de la cita"
+                                :class="{ 'is-invalid': formContacto.errors?.lugar_cita_otro }"
+                                v-model="formContacto.lugar_cita_otro"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_otro">
+                                {{ formContacto.errors.lugar_cita_otro }}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <template v-if="formContacto.motivo === 'Reprogramación'">
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                        <div class="row">
-                            <label for="contacto_motivo_reprogramacion" class="col-12 col-sm-4 col-xl-4 col-form-label">Motivo reprogramación</label>
-                            <div class="col-12 col-sm-8 col-xl-6">
-                                <select
-                                    name="contacto_motivo_reprogramacion"
-                                    id="contacto_motivo_reprogramacion"
-                                    class="form-select"
-                                    :class="{ 'is-invalid': formContacto.errors?.motivo_reprogramacion }"
-                                    v-model="formContacto.motivo_reprogramacion"
-                                    :disabled="loadingMotivosReprogramacion"
-                                >
-                                    <option value="">Seleccionar motivo</option>
-                                    <option v-for="motivo in motivosReprogramacion" :value="motivo">{{ motivo }}</option>
-                                </select>
-                                <div class="invalid-feedback" v-if="formContacto.errors?.motivo_reprogramacion">
-                                    {{ formContacto.errors.motivo_reprogramacion }}
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Cita de entrenamiento' || formContacto.motivo === 'Cita final' || formContacto.motivo === 'Re-entrenamiento'"
+            class="col-12"
+        >
+            <div class="row">
+                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_fecha_cita_final" class="col-12 col-sm-4 col-form-label">
+                            Fecha
+                        </label>
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                            <input
+                                type="date"
+                                name="contacto_fecha_cita_final"
+                                id="contacto_fecha_cita_final"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.fecha_cita_final }"
+                                v-model="formContacto.fecha_cita_final"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.fecha_cita_final">
+                                {{ formContacto.errors.fecha_cita_final }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_hora_cita_final" class="col-12 col-sm-4 col-form-label">
+                            Hora de fin
+                        </label>
+                        <div class="col-12 col-sm-3 col-md-2 col-lg-6 col-xl-4">
+                            <input
+                                type="time"
+                                name="contacto_hora_cita_final"
+                                id="contacto_hora_cita_final"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
+                                v-model="formContacto.hora_cita_final"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.hora_cita_final">
+                                {{ formContacto.errors.hora_cita_final }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_lugar_cita_final" class="col-12 col-sm-4 col-lg-2 col-form-label">
+                            Lugar
+                        </label>
+                        <div class="col-12 col-sm-8 col-lg-4">
+                            <select
+                                name="contacto_lugar_cita_final"
+                                id="contacto_lugar_cita_final"
+                                class="form-select"
+                                :class="{ 'is-invalid': formContacto.errors?.lugar_cita_final }"
+                                v-model="formContacto.lugar_cita_final"
+                            >
+                                <option value="">Seleccionar lugar</option>
+                                <option value="Centro de salud">Centro de salud</option>
+                                <option value="Vivienda del participante">Vivienda del participante</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                            <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_final">
+                                {{ formContacto.errors.lugar_cita_final }}
+                            </div>
+                        </div>
+                        <div
+                            v-if="formContacto.lugar_cita_final === 'Otro'"
+                            class="col-12 col-sm-8 col-lg-6 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                        >
+                            <input
+                                type="text"
+                                name="contacto_lugar_cita_final_otro"
+                                id="contacto_lugar_cita_final_otro"
+                                class="form-control"
+                                placeholder="Escriba el lugar de la cita"
+                                :class="{ 'is-invalid': formContacto.errors?.lugar_cita_final_otro }"
+                                v-model="formContacto.lugar_cita_final_otro"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_final_otro">
+                                {{ formContacto.errors.lugar_cita_final_otro }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Seguimiento 2 semanas luego del tratamiento' || formContacto.motivo === 'Seguimiento mensual'"
+            class="col-12"
+        >
+            <div class="row">
+                <div class="col-12 py-2">
+                    <label for="contacto_seguimiento_pregunta_a" class="form-label me-2">
+                        ¿El/la participante tuvo dificultades utilizando el aplicativo desde su último contacto?
+                    </label>
+                    <select
+                        name="contacto_seguimiento_pregunta_a"
+                        id="contacto_seguimiento_pregunta_a"
+                        class="form-select w-auto d-inline-block"
+                        v-model="formContacto.seguimiento_pregunta_a"
+                        :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_a }"
+                    >
+                        <option value=""></option>
+                        <option value="Si">Si</option>
+                        <option value="No">No</option>
+                    </select>
+                    <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_a">
+                        {{ formContacto.errors.seguimiento_pregunta_a }}
+                    </div>
+                </div>
+                <template v-if="formContacto.seguimiento_pregunta_a === 'Si'">
+                    <div class="col-12 col-lg-10 col-xl-7 py-2">
+                        <label for="contacto_seguimiento_pregunta_b" class="form-label me-2">
+                            En caso si, ¿qué dificultades tuvo?
+                        </label>
+                        <input
+                            type="text"
+                            name="contacto_seguimiento_pregunta_b"
+                            id="contacto_seguimiento_pregunta_b"
+                            class="form-control"
+                            v-model="formContacto.seguimiento_pregunta_b"
+                            :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_b }"
+                        >
+                        <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_b">
+                            {{ formContacto.errors.seguimiento_pregunta_b }}
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-10 col-xl-7 py-2">
+                        <label for="contacto_seguimiento_pregunta_c" class="form-label me-2">
+                            ¿El/la participante pudo resolver estas dificultades?
+                        </label>
+                        <select
+                            name="contacto_seguimiento_pregunta_c"
+                            id="contacto_seguimiento_pregunta_c"
+                            class="form-select w-auto d-inline-block"
+                            v-model="formContacto.seguimiento_pregunta_c"
+                            :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_c }"
+                        >
+                            <option value=""></option>
+                            <option value="Si">Si</option>
+                            <option value="No">No</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_c">
+                            {{ formContacto.errors.seguimiento_pregunta_c }}
+                        </div>
+                    </div>
+                    <template v-if="formContacto.seguimiento_pregunta_c === 'Si'">
+                        <div class="col-12 col-lg-10 col-xl-7 py-2">
+                            <label for="contacto_seguimiento_pregunta_d" class="form-label me-2">
+                                En caso si, ¿cómo resolvió estas dificultades?
+                            </label>
+                            <input
+                                type="text"
+                                name="contacto_seguimiento_pregunta_d"
+                                id="contacto_seguimiento_pregunta_d"
+                                class="form-control"
+                                v-model="formContacto.seguimiento_pregunta_d"
+                                :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_d }"
+                            >
+                            <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_d">
+                                {{ formContacto.errors.seguimiento_pregunta_d }}
+                            </div>
+                        </div>
+                    </template>
+                    <template v-if="formContacto.seguimiento_pregunta_c === 'No'">
+                        <div class="col-12 col-lg-10 col-xl-7 py-2">
+                            <label for="contacto_seguimiento_pregunta_e" class="form-label me-2">
+                                ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                            </label>
+                            <select
+                                name="contacto_seguimiento_pregunta_e"
+                                id="contacto_seguimiento_pregunta_e"
+                                class="form-select w-auto d-inline-block"
+                                v-model="formContacto.seguimiento_pregunta_e"
+                                :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_e }"
+                            >
+                                <option value=""></option>
+                                <option value="Si">Si</option>
+                                <option value="No">No</option>
+                            </select>
+                            <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_e">
+                                {{ formContacto.errors.seguimiento_pregunta_e }}
+                            </div>
+                        </div>
+                        <template v-if="formContacto.seguimiento_pregunta_e === 'No'">
+                            <div class="col-12 col-lg-10 col-xl-7 py-2">
+                                <label for="contacto_seguimiento_pregunta_f" class="form-label me-2">
+                                    Agenda una visita domiciliaria o un re-entrenamiento
+                                </label>
+                                <input
+                                    type="date"
+                                    name="contacto_seguimiento_pregunta_f"
+                                    id="contacto_seguimiento_pregunta_f"
+                                    class="form-control w-auto d-inline-block"
+                                    v-model="formContacto.seguimiento_pregunta_f"
+                                    :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_f }"
+                                />
+                                <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_f">
+                                    {{ formContacto.errors.seguimiento_pregunta_f }}
                                 </div>
                             </div>
+                        </template>
+                    </template>
+                </template>
+            </div>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Contacto iniciado por el participante'"
+            class="col-12"
+        >
+            <div class="row">
+                <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_razon_contacto_participante" class="col-12 col-sm-4 col-lg-2 col-form-label">
+                            Razón de contacto del participante
+                        </label>
+                        <div class="col-12 col-sm-8 col-lg-4 col-xl-3">
+                            <select
+                                name="contacto_razon_contacto_participante"
+                                id="contacto_razon_contacto_participante"
+                                class="form-select"
+                                v-model="formContacto.razon_contacto_participante"
+                                :class="{ 'is-invalid': formContacto.errors?.razon_contacto_participante }"
+                            >
+                                <option value=""></option>
+                                <option value="Problemas con el celular">Problemas con el celular</option>
+                                <option value="Problemas de conexión">Problemas de conexión</option>
+                                <option value="Problemas con el aplicativo">Problemas con el aplicativo</option>
+                                <option value="Problemas relacionados a su atención en el centro de salud">Problemas relacionados a su atención en el centro de salud</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                            <div class="invalid-feedback" v-if="formContacto.errors?.razon_contacto_participante">
+                                {{ formContacto.errors.razon_contacto_participante }}
+                            </div>
+                        </div>
+                        <div
+                            v-if="formContacto.razon_contacto_participante === 'Otro'"
+                            class="col-12 col-sm-8 col-lg-6 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                        >
+                            <input
+                                type="text"
+                                name="contacto_razon_contacto_participante_otro"
+                                id="contacto_razon_contacto_participante_otro"
+                                class="form-control"
+                                placeholder="Escriba el motivo de contacto"
+                                :class="{ 'is-invalid': formContacto.errors?.razon_contacto_participante_otro }"
+                                v-model="formContacto.razon_contacto_participante_otro"
+                            />
+                            <div class="invalid-feedback" v-if="formContacto.errors?.razon_contacto_participante_otro">
+                                {{ formContacto.errors.razon_contacto_participante_otro }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_contacto_participante_acciones" class="col-12 col-sm-4 col-lg-2 col-form-label">
+                            Escribe las acciones realizadas
+                        </label>
+                        <div class="col-12 col-sm-8 col-lg-10 col-xl-7">
+                            <textarea
+                                id="contacto_contacto_participante_acciones"
+                                name="contacto_contacto_participante_acciones"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.contacto_participante_acciones }"
+                                v-model="formContacto.contacto_participante_acciones"
+                                rows="4"
+                            ></textarea>
+                            <div class="invalid-feedback" v-if="formContacto.errors?.contacto_participante_acciones">
+                                {{ formContacto.errors.contacto_participante_acciones }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'No adherencia a las sesiones'"
+            class="col-12"
+        >
+            <div class="row">
+                <label for="contacto_no_adherencia_pregunta_a" class="col-12 col-sm-4 col-xl-3 col-form-label">
+                    ¿Qué dificultades tuvo el/la participante con las sesiones?
+                    Selecciona todas las que aplique
+                </label>
+                <div class="col-12 col-sm-8 col-xl-6">
+                    <div
+                        v-for="dificultad in dificultadesNoAdherencia"
+                        :key="dificultad"
+                        class="form-check mb-2"
+                    >
+                        <input
+                            class="form-check-input border-primary"
+                            type="checkbox"
+                            :id="'contacto_no_adherencia_pregunta_a_' + dificultad"
+                            :value="dificultad"
+                            v-model="formContacto.no_adherencia_pregunta_a"
+                        />
+                        <label
+                            class="form-check-label"
+                            :for="'contacto_no_adherencia_pregunta_a_' + dificultad"
+                        >
+                            {{ dificultad }}
+                        </label>
+                    </div>
+                    <div class="invalid-feedback d-block" v-if="formContacto.errors?.no_adherencia_pregunta_a">
+                        {{ formContacto.errors.no_adherencia_pregunta_a }}
+                    </div>
+                    <input
+                        type="text"
+                        id="contacto_no_adherencia_otro"
+                        name="contacto_no_adherencia_otro"
+                        class="form-control"
+                        v-model="formContacto.no_adherencia_otro"
+                        :class="{ 'is-invalid': formContacto.errors?.no_adherencia_otro }"
+                        :disabled="!formContacto.no_adherencia_pregunta_a.includes('Otro')"
+                    />
+                    <div class="invalid-feedback" v-if="formContacto.errors?.no_adherencia_otro">
+                        {{ formContacto.errors.no_adherencia_otro }}
+                    </div>
+                </div>
+                <div
+                    v-if="formContacto.no_adherencia_pregunta_a.includes('Ya no quiere participar en el proyecto')"
+                    class="col-12"
+                >
+                    <div class="alert alert-danger mt-2">
+                        Informar al supervisor o supervisora que el participante no desea seguir en el proyecto.
+                    </div>
+                </div>
+            </div>
+            <template v-if="!formContacto.no_adherencia_pregunta_a.includes('Ya no quiere participar en el proyecto')">
+                <div class="row">
+                    <div class="col-12 py-2">
+                        <label for="contacto_no_adherencia_pregunta_b" class="form-label me-2">
+                            ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                        </label>
+                        <select
+                            name="contacto_no_adherencia_pregunta_b"
+                            id="contacto_no_adherencia_pregunta_b"
+                            v-model="formContacto.no_adherencia_pregunta_b"
+                            class="form-select w-auto d-inline-block"
+                            :class="{ 'is-invalid': formContacto.errors?.no_adherencia_pregunta_b }"
+                        >
+                            <option value=""></option>
+                            <option value="Si">Si</option>
+                            <option value="No">No</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.no_adherencia_pregunta_b">
+                            {{ formContacto.errors.no_adherencia_pregunta_b }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row" v-if="formContacto.no_adherencia_pregunta_b === 'No'">
+                    <div class="col-12 py-2">
+                        <label for="contacto_no_adherencia_pregunta_c" class="form-label me-2">
+                            Agenda una visita domiciliaria o un re-entrenamiento
+                        </label>
+                        <input
+                            type="date"
+                            name="contacto_no_adherencia_pregunta_c"
+                            id="contacto_no_adherencia_pregunta_c"
+                            class="form-control w-auto d-inline-block"
+                            v-model="formContacto.no_adherencia_pregunta_c"
+                            :class="{ 'is-invalid': formContacto.errors?.no_adherencia_pregunta_c }"
+                        />
+                        <div class="invalid-feedback" v-if="formContacto.errors?.no_adherencia_pregunta_c">
+                            {{ formContacto.errors.no_adherencia_pregunta_c }}
                         </div>
                     </div>
                 </div>
             </template>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Problemas de conexión'"
+            class="col-12"
+        >
+            <div class="row">
+                <label for="contacto_problemas_conexion_pregunta_a" class="col-12 col-sm-4 col-xl-3 col-form-label">
+                    ¿Qué dificultades tuvo el/la participante con las sesiones?
+                    Selecciona todas las que aplique
+                </label>
+                <div class="col-12 col-sm-8 col-xl-6">
+                    <div
+                        v-for="dificultad in dificultadesProblemasConexion"
+                        :key="dificultad"
+                        class="form-check mb-2"
+                    >
+                        <input
+                            class="form-check-input border-primary"
+                            type="checkbox"
+                            :id="'contacto_problemas_conexion_pregunta_a' + dificultad"
+                            :value="dificultad"
+                            v-model="formContacto.problemas_conexion_pregunta_a"
+                        />
+                        <label
+                            class="form-check-label"
+                            :for="'contacto_problemas_conexion_pregunta_a' + dificultad"
+                        >
+                            {{ dificultad }}
+                        </label>
+                    </div>
+                    <div class="invalid-feedback d-block" v-if="formContacto.errors?.problemas_conexion_pregunta_a">
+                        {{ formContacto.errors.problemas_conexion_pregunta_a }}
+                    </div>
+                    <input
+                        type="text"
+                        id="contacto_problemas_conexion_otro"
+                        name="contacto_problemas_conexion_otro"
+                        class="form-control"
+                        :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_otro }"
+                        v-model="formContacto.problemas_conexion_otro"
+                        :disabled="!formContacto.problemas_conexion_pregunta_a.includes('Otro')"
+                    />
+                    <div class="invalid-feedback" v-if="formContacto.errors?.problemas_conexion_otro">
+                        {{ formContacto.errors.problemas_conexion_otro }}
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 py-2">
+                    <label for="contacto_problemas_conexion_pregunta_b" class="form-label me-2">
+                        ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                    </label>
+                    <select
+                        name="contacto_problemas_conexion_pregunta_b"
+                        id="contacto_problemas_conexion_pregunta_b"
+                        v-model="formContacto.problemas_conexion_pregunta_b"
+                        class="form-select w-auto d-inline-block"
+                        :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_pregunta_b }"
+                    >
+                        <option value=""></option>
+                        <option value="Si">Si</option>
+                        <option value="No">No</option>
+                    </select>
+                    <div class="invalid-feedback" v-if="formContacto.errors?.problemas_conexion_pregunta_b">
+                        {{ formContacto.errors.problemas_conexion_pregunta_b }}
+                    </div>
+                </div>
+            </div>
+            <div class="row" v-if="formContacto.problemas_conexion_pregunta_b === 'No'">
+                <div class="col-12 py-2">
+                    <label for="contacto_problemas_conexion_pregunta_c" class="form-label me-2">
+                        Agenda una visita domiciliaria o un re-entrenamiento
+                    </label>
+                    <input
+                        type="date"
+                        name="contacto_problemas_conexion_pregunta_c"
+                        id="contacto_problemas_conexion_pregunta_c"
+                        class="form-control w-auto d-inline-block"
+                        :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_pregunta_c }"
+                        v-model="formContacto.problemas_conexion_pregunta_c"
+                    />
+                    <div class="invalid-feedback" v-if="formContacto.errors?.problemas_conexion_pregunta_c">
+                        {{ formContacto.errors.problemas_conexion_pregunta_c }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Alerta clínica'"
+            class="col-12"
+        >
+            <div class="row">
+                <div class="col-12 py-2">
+                    <label for="contacto_alerta_clinica_pregunta_a" class="form-label me-2">
+                        ¿El/la participante vio la recomendación de buscar atención en el aplicativo?
+                    </label>
+                    <select
+                        name="contacto_alerta_clinica_pregunta_a"
+                        id="contacto_alerta_clinica_pregunta_a"
+                        v-model="formContacto.alerta_clinica_pregunta_a"
+                        class="form-select w-auto d-inline-block"
+                        :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_a }"
+                    >
+                        <option value=""></option>
+                        <option value="Si">Si</option>
+                        <option value="No">No</option>
+                    </select>
+                    <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_a">
+                        {{ formContacto.errors.alerta_clinica_pregunta_a }}
+                    </div>
+                </div>
+                <template v-if="formContacto.alerta_clinica_pregunta_a === 'No'">
+                    <div class="col-12">
+                        <div class="alert alert-danger mt-2">
+                            Recomienda al participante que busque atención en su centro de salud.
+                        </div>
+                    </div>
+                    <div class="col-12 py-2">
+                        <label for="contacto_alerta_clinica_pregunta_b" class="form-label me-2">
+                            ¿Recomendaste al participante que busque atención?
+                        </label>
+                        <select
+                            name="contacto_alerta_clinica_pregunta_b"
+                            id="contacto_alerta_clinica_pregunta_b"
+                            v-model="formContacto.alerta_clinica_pregunta_b"
+                            class="form-select w-auto d-inline-block"
+                            :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_b }"
+                        >
+                            <option value=""></option>
+                            <option value="Si">Si</option>
+                            <option value="No">No</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_b">
+                            {{ formContacto.errors.alerta_clinica_pregunta_b }}
+                        </div>
+                    </div>
+                    <div
+                        v-if="formContacto.alerta_clinica_pregunta_b === 'No'"
+                        class="col-12 py-2 text-danger"
+                    >
+                        Indique las razones en el campo "Observaciones"
+                    </div>
+                </template>
+                <template v-if="formContacto.alerta_clinica_pregunta_a === 'Si'">
+                    <div class="col-12 py-2">
+                        <label for="contacto_alerta_clinica_pregunta_c" class="form-label me-2">
+                            ¿El/la participante siguió la recomendación indicada por el aplicativo?
+                        </label>
+                        <select
+                            name="contacto_alerta_clinica_pregunta_c"
+                            id="contacto_alerta_clinica_pregunta_c"
+                            v-model="formContacto.alerta_clinica_pregunta_c"
+                            class="form-select w-auto d-inline-block"
+                            :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_c }"
+                        >
+                            <option value=""></option>
+                            <option value="Si">Si</option>
+                            <option value="No">No</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_c">
+                            {{ formContacto.errors.alerta_clinica_pregunta_c }}
+                        </div>
+                    </div>
+                    <template v-if="formContacto.alerta_clinica_pregunta_c === 'Si'">
+                        <div class="col-12 py-2">
+                            <label for="contacto_alerta_clinica_pregunta_e" class="form-label me-2">
+                                ¿El/la participante pudo acceder a la atención recomendada?
+                            </label>
+                            <select
+                                name="contacto_alerta_clinica_pregunta_e"
+                                id="contacto_alerta_clinica_pregunta_e"
+                                v-model="formContacto.alerta_clinica_pregunta_e"
+                                class="form-select w-auto d-inline-block"
+                                :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_e }"
+                            >
+                                <option value=""></option>
+                                <option value="Si">Si</option>
+                                <option value="No">No</option>
+                            </select>
+                            <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_e">
+                                {{ formContacto.errors.alerta_clinica_pregunta_e }}
+                            </div>
+                        </div>
+                        <div
+                            v-if="formContacto.alerta_clinica_pregunta_e === 'No'"
+                            class="col-12 col-lg-10 col-xl-6 py-2"
+                        >
+                            <label for="contacto_alerta_clinica_pregunta_f" class="form-label me-2">
+                                ¿Qué dificultades encontró para acceder a la atención recomendada?
+                            </label>
+                            <input
+                                type="text"
+                                name="contacto_alerta_clinica_pregunta_f"
+                                id="contacto_alerta_clinica_pregunta_f"
+                                class="form-control"
+                                v-model="formContacto.alerta_clinica_pregunta_f"
+                                :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_f }"
+                            >
+                            <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_f">
+                                {{ formContacto.errors.alerta_clinica_pregunta_f }}
+                            </div>
+                        </div>
+                    </template>
+                    <div
+                        v-if="formContacto.alerta_clinica_pregunta_c === 'No'"
+                        class="col-12 col-lg-8 col-xl-6 py-2"
+                    >
+                        <label for="contacto_alerta_clinica_pregunta_d" class="form-label me-2">
+                            ¿Por qué motivo(s) el participante no pudo seguir la recomendación del aplicativo?
+                        </label>
+                        <input
+                            type="text"
+                            name="contacto_alerta_clinica_pregunta_d"
+                            id="contacto_alerta_clinica_pregunta_d"
+                            class="form-control"
+                            v-model="formContacto.alerta_clinica_pregunta_d"
+                            :class="{ 'is-invalid': formContacto.errors?.alerta_clinica_pregunta_d }"
+                        >
+                        <div class="invalid-feedback" v-if="formContacto.errors?.alerta_clinica_pregunta_d">
+                            {{ formContacto.errors.alerta_clinica_pregunta_d }}
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <div
+            v-if="formContacto.motivo === 'Pedido de ayuda a través del aplicativo'"
+            class="col-12"
+        >
+            <div class="row">
+                <label for="contacto_pedido_ayuda_pregunta_a" class="col-12 col-sm-4 col-xl-3 col-form-label">
+                    ¿Qué dificultades tuvo el/la participante?
+                    Selecciona todas las que aplique
+                </label>
+                <div class="col-12 col-sm-8 col-xl-6">
+                    <div
+                        v-for="dificultad in dificultadesPedidoAyuda"
+                        :key="dificultad"
+                        class="form-check mb-2"
+                    >
+                        <input
+                            class="form-check-input border-primary"
+                            type="checkbox"
+                            :id="'contacto_pedido_ayuda_pregunta_a' + dificultad"
+                            :value="dificultad"
+                            v-model="formContacto.pedido_ayuda_pregunta_a"
+                        />
+                        <label
+                            class="form-check-label"
+                            :for="'contacto_pedido_ayuda_pregunta_a' + dificultad"
+                        >
+                            {{ dificultad }}
+                        </label>
+                    </div>
+                    <div class="invalid-feedback d-block" v-if="formContacto.errors?.pedido_ayuda_pregunta_a">
+                        {{ formContacto.errors.pedido_ayuda_pregunta_a }}
+                    </div>
+                    <input
+                        type="text"
+                        id="contacto_pedido_ayuda_otro"
+                        name="contacto_pedido_ayuda_otro"
+                        class="form-control"
+                        :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_otro }"
+                        v-model="formContacto.pedido_ayuda_otro"
+                        :disabled="!formContacto.pedido_ayuda_pregunta_a.includes('Otro')"
+                    />
+                    <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_otro">
+                        {{ formContacto.errors.pedido_ayuda_otro }}
+                    </div>
+                </div>
+                <div
+                    v-if="formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')"
+                    class="col-12"
+                >
+                    <div class="alert alert-danger mt-2">
+                        Informar al supervisor o supervisora que el participante no desea seguir en el proyecto.
+                    </div>
+                </div>
+            </div>
+            <template v-if="!formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')">
+                <div class="row">
+                    <div class="col-12 col-lg-8 col-xl-6 py-2">
+                        <label for="contacto_pedido_ayuda_pregunta_b" class="form-label me-2">
+                            Describe las dificultades que tuvo el/la participante
+                        </label>
+                        <input
+                            type="text"
+                            name="contacto_pedido_ayuda_pregunta_b"
+                            id="contacto_pedido_ayuda_pregunta_b"
+                            class="form-control"
+                            :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_b }"
+                            v-model="formContacto.pedido_ayuda_pregunta_b"
+                        >
+                        <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_pregunta_b">
+                            {{ formContacto.errors.pedido_ayuda_pregunta_b }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 col-lg-10 col-xl-7 py-2">
+                        <label for="contacto_pedido_ayuda_pregunta_c" class="form-label me-2">
+                            ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                        </label>
+                        <select
+                            name="contacto_pedido_ayuda_pregunta_c"
+                            id="contacto_pedido_ayuda_pregunta_c"
+                            class="form-select w-auto d-inline-block"
+                            :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_c }"
+                            v-model="formContacto.pedido_ayuda_pregunta_c"
+                        >
+                            <option value=""></option>
+                            <option value="Si">Si</option>
+                            <option value="No">No</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_pregunta_c">
+                            {{ formContacto.errors.pedido_ayuda_pregunta_c }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row" v-if="formContacto.pedido_ayuda_pregunta_c === 'No'">
+                    <div class="col-12 col-lg-10 col-xl-7 py-2">
+                        <label for="contacto_pedido_ayuda_pregunta_d" class="form-label me-2">
+                            Agenda una visita domiciliaria o un re-entrenamiento
+                        </label>
+                        <input
+                            type="date"
+                            name="contacto_pedido_ayuda_pregunta_d"
+                            id="contacto_pedido_ayuda_pregunta_d"
+                            class="form-control w-auto d-inline-block"
+                            :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_d }"
+                            v-model="formContacto.pedido_ayuda_pregunta_d"
+                        />
+                        <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_pregunta_d">
+                            {{ formContacto.errors.pedido_ayuda_pregunta_d }}
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <template v-if="formContacto.contactado === '0'">
+            <div class="col-12 col-lg-4 mb-sm-3">
+                <div class="row">
+                    <label for="contacto_motivo_reprogramacion" class="col-12 col-sm-4 col-xl-4 col-form-label">
+                        Motivo de reprogramación
+                    </label>
+                    <div class="col-12 col-sm-8 col-xl-6">
+                        <select
+                            name="contacto_motivo_reprogramacion"
+                            id="contacto_motivo_reprogramacion"
+                            class="form-select"
+                            :class="{ 'is-invalid': formContacto.errors?.motivo_reprogramacion }"
+                            v-model="formContacto.motivo_reprogramacion"
+                        >
+                            <option value="">Seleccionar motivo</option>
+                            <option v-for="motivo in motivosReprogramacion" :value="motivo">{{ motivo }}</option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.motivo_reprogramacion">
+                            {{ formContacto.errors.motivo_reprogramacion }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4 mb-sm-3">
+                <div class="row">
+                    <label for="contacto_nueva_fecha_contacto" class="col-12 col-sm-4 col-xl-4 col-form-label">
+                        Nueva fecha de contacto
+                    </label>
+                    <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                        <input
+                            type="date"
+                            name="contacto_nueva_fecha_contacto"
+                            id="contacto_nueva_fecha_contacto"
+                            class="form-control"
+                            :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }"
+                            v-model="formContacto.nueva_fecha_contacto"
+                        />
+                        <div class="invalid-feedback" v-if="formContacto.errors?.nueva_fecha_contacto">
+                            {{ formContacto.errors.nueva_fecha_contacto }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+        <div class="col-12">
+            <div class="row">
+                <label for="contacto_observaciones" class="col-12 col-sm-4 col-lg-12 col-form-label">
+                    Observaciones
+                </label>
+                <div class="col-12 col-sm-8 col-xl-6">
+                    <textarea
+                        id="contacto_observaciones"
+                        name="contacto_observaciones"
+                        class="form-control"
+                        :class="{ 'is-invalid': formContacto.errors?.observaciones }"
+                        v-model="formContacto.observaciones"
+                        rows="4"
+                    ></textarea>
+                    <div class="invalid-feedback" v-if="formContacto.errors?.observaciones">
+                        {{ formContacto.errors.observaciones }}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>

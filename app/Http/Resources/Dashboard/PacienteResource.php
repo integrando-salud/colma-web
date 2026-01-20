@@ -59,7 +59,7 @@ class PacienteResource extends JsonResource
                 ];
             }),
             'datos_clinicos' => $registros,
-            'fecha_proximo_contacto' => $this->interacciones->last()?->fecha_proximo_contacto?->format('d/m/Y')
+            'fecha_proximo_contacto' => $this->interacciones->last()?->nueva_fecha_contacto?->format('d/m/Y')
         ];
     }
 }

@@ -29,12 +29,12 @@ class PacienteService
         }]);
 
         $query->selectSub("
-            SELECT fecha_proximo_contacto
+            SELECT nueva_fecha_contacto
             FROM interacciones
             WHERE interacciones.paciente_id = pacientes.id
             ORDER BY id DESC
             LIMIT 1
-        ", 'fecha_proximo_contacto');
+        ", 'nueva_fecha_contacto');
 
         if (!empty($filters['nombre'])) {
             $query->where(function ($query) use ($filters) {
@@ -74,7 +74,7 @@ class PacienteService
                     ->orderBy('users.accesos', $orderDir);
                 break;
             case 'fecha_proximo_contacto':
-                $query->orderByRaw("CASE WHEN fecha_proximo_contacto IS NULL THEN 1 ELSE 0 END, fecha_proximo_contacto $orderDir");
+                $query->orderByRaw("CASE WHEN nueva_fecha_contacto IS NULL THEN 1 ELSE 0 END, nueva_fecha_contacto $orderDir");
                 break;
             case 'ultimo_ingreso':
                 $query->select('pacientes.*')
