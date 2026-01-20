@@ -156,16 +156,6 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3" v-if="interaccionSelected.razon_no_contacto">
-                    <div class="row">
-                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                            Razón de no contacto
-                        </div>
-                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.razon_no_contacto }}
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="row">
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
@@ -193,6 +183,307 @@ onMounted(() => {
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Modalidad
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.modalidad }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Motivo
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.motivo }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Agendar cita de entrenamiento' || interaccionSelected.motivo === 'Agendar cita final'"
+                class="row"
+            >
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            {{ 'Fecha programada para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.fecha_cita }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            {{ 'Lugar acordado para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.lugar_cita }}
+                            <span v-if="interaccionSelected.lugar_cita_otro">
+                                ({{ interaccionSelected.lugar_cita_otro }})
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Cita de entrenamiento' || interaccionSelected.motivo === 'Cita final' || interaccionSelected.motivo === 'Re-entrenamiento'"
+                class="row"
+            >
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Fecha
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.fecha_cita_final }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Hora
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.hora_cita_final }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Lugar
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.lugar_cita_final }}
+                            <span v-if="interaccionSelected.lugar_cita_final_otro">
+                                ({{ interaccionSelected.lugar_cita_final_otro }})
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del tratamiento' || interaccionSelected.motivo === 'Seguimiento mensual'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿El/la participante tuvo dificultades utilizando el aplicativo desde su último contacto?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_a }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    En caso si, ¿qué dificultades tuvo?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_b ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿El/la participante pudo resolver estas dificultades?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_c ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    En caso si, ¿cómo resolvió estas dificultades?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_d ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_e ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Agenda una visita domiciliaria o un re-entrenamiento
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.seguimiento_pregunta_f ?? '-' }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Contacto iniciado por el participante'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Razón de contacto del participante
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.razon_contacto_participante }}
+                    <span v-if="interaccionSelected.razon_contacto_participante_otro">
+                        ({{ interaccionSelected.razon_contacto_participante_otro }})
+                    </span>
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Escribe las acciones realizadas
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.contacto_participante_acciones }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'No adherencia a las sesiones'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Qué dificultades tuvo el/la participante con las sesiones?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    <ul>
+                        <li v-for="(item, index) in interaccionSelected.no_adherencia_pregunta_a" :key="index">
+                            {{ item }}
+                            <span v-if="item === 'Otro' && interaccionSelected.no_adherencia_otro">
+                                ({{ interaccionSelected.no_adherencia_otro }})
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.no_adherencia_pregunta_b ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Agenda una visita domiciliaria o un re-entrenamiento
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.no_adherencia_pregunta_c ?? '-' }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Problemas de conexión'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Qué dificultades tuvo el/la participante con las sesiones?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    <ul>
+                        <li v-for="(item, index) in interaccionSelected.problemas_conexion_pregunta_a" :key="index">
+                            {{ item }}
+                            <span v-if="item === 'Otro' && interaccionSelected.problemas_conexion_otro">
+                                ({{ interaccionSelected.problemas_conexion_otro }})
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.problemas_conexion_pregunta_b ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Agenda una visita domiciliaria o un re-entrenamiento
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.problemas_conexion_pregunta_c ?? '-' }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Alerta clínica'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿El/la participante vio la recomendación de buscar atención en el aplicativo?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_a ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Recomendaste al participante que busque atención?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_b ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿El/la participante siguió la recomendación indicada por el aplicativo?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_c ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Por qué motivo(s) el participante no pudo seguir la recomendación del aplicativo?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_d ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿El/la participante pudo acceder a la atención recomendada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_e ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Qué dificultades encontró para acceder a la atención recomendada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.alerta_clinica_pregunta_f ?? '-' }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.motivo === 'Pedido de ayuda a través del aplicativo'"
+                class="row"
+            >
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Qué dificultades tuvo el/la participante?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    <ul>
+                        <li v-for="(item, index) in interaccionSelected.pedido_ayuda_pregunta_a" :key="index">
+                            {{ item }}
+                            <span v-if="item === 'Otro' && interaccionSelected.pedido_ayuda_otro">
+                                ({{ interaccionSelected.pedido_ayuda_otro }})
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Describe las dificultades que tuvo el/la participante
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.pedido_ayuda_pregunta_b ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.pedido_ayuda_pregunta_c ?? '-' }}
+                </div>
+                <div class="col-12 py-2 align-content-center fw-bold">
+                    Agenda una visita domiciliaria o un re-entrenamiento
+                </div>
+                <div class="col-12 py-2 align-content-center">
+                    {{ interaccionSelected.pedido_ayuda_pregunta_d ?? '-' }}
+                </div>
+            </div>
+            <div
+                v-if="interaccionSelected.contactado == 0"
+                class="row"
+            >
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            Motivo de reprogramación
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.motivo_reprogramacion }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
                             Nueva fecha de contacto
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
@@ -202,69 +493,13 @@ onMounted(() => {
                 </div>
             </div>
             <div class="row">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12 mb-sm-3">
-                            <div class="row">
-                                <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                                    Modalidad
-                                </div>
-                                <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                                    {{ interaccionSelected.modalidad }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12 mb-sm-3">
-                            <div class="row">
-                                <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                                    Motivo
-                                </div>
-                                <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                                    {{ interaccionSelected.motivo }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-12 fw-bold">
+                    Observaciones
                 </div>
-                <div class="col-12 col-lg-8 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12 col-sm-4 col-md-2 py-2 align-content-center fw-bold">
-                            Observaciones
-                        </div>
-                        <div class="col-12 col-sm-8 col-md-10 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.observaciones }}
-                        </div>
-                    </div>
+                <div class="col-12">
+                    {{ interaccionSelected.observaciones ?? '-' }}
                 </div>
             </div>
-            <div class="row" v-if="interaccionSelected.accion === 'Alerta clínica'">
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                            Acción
-                        </div>
-                        <div class="col-12 col-sm-8 col-md-10 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.accion }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <template v-if="interaccionSelected.motivo === 'Reprogramación'">
-                <div class="row">
-                    <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                        <div class="row">
-                            <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                                Motivo reprogramación
-                            </div>
-                            <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                                {{ interaccionSelected.motivo_reprogramacion }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
         </div>
     </div>
 

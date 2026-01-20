@@ -64,19 +64,6 @@ Route::middleware('auth')->group(function () {
         ->name('interacciones.delete');
 
     Route::prefix('ajax')->group(function () {
-        Route::prefix('interacciones')->group(function () {
-            Route::get('razones-no-contacto', [InteraccionController::class, 'getRazonesNoContacto'])
-                ->name('ajax.interacciones.razonesNoContacto');
-            Route::get('modalidades', [InteraccionController::class, 'getModalidades'])
-                ->name('ajax.interacciones.modalidades');
-            Route::get('acciones', [InteraccionController::class, 'getAcciones'])
-                ->name('ajax.interacciones.acciones');
-            Route::get('motivos-contacto', [InteraccionController::class, 'getMotivosContacto'])
-                ->name('ajax.interacciones.motivosContacto');
-            Route::get('motivos-reprogramacion', [InteraccionController::class, 'getMotivosReprogramacion'])
-                ->name('ajax.interacciones.motivosReprogramacion');
-        });
-
         Route::get('centros-salud', [AjaxController::class, 'getCentrosSalud'])
             ->name('ajax.centrosSalud.get');
         Route::get('usuarios', [AjaxController::class, 'getUsuarios'])
