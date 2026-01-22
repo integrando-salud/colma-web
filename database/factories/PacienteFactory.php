@@ -78,7 +78,7 @@ class PacienteFactory extends Factory
             switch ($diagnosticoId) {
                 case 1:
                     $registros = Glucosa::factory()
-                        ->count(rand(1, 3))
+                        ->count(rand(1, 5))
                         ->state(fn () => [
                             'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
                         ])
@@ -104,7 +104,7 @@ class PacienteFactory extends Factory
                     break;
                 case 2:
                     $registros = PresionArterial::factory()
-                        ->count(rand(1, 3))
+                        ->count(rand(1, 5))
                         ->state(fn () => [
                             'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
                         ])
@@ -130,6 +130,28 @@ class PacienteFactory extends Factory
                     break;
                 case 3:
                     break;
+            }
+
+            $crearAlertaOperativa = fake()->boolean(80);
+            if ($crearAlertaOperativa) {
+                $cantidadAlertas = rand(1, 3);
+
+                for ($i = 0; $i < $cantidadAlertas; $i++) {
+                    Alerta::create([
+                        'paciente_id' => $paciente->id,
+                        'tipo' => 'operativa',
+                        'entidad_id' => null,
+                        'entidad_tipo' => null,
+                        'descripcion' => fake()->randomElement([
+                            'No se conecta',
+                            'No completa sesiones',
+                            'Pedido de ayuda',
+                        ]),
+                        'fecha' => fake()->dateTimeBetween($paciente->fecha_enrolamiento)->format('Y-m-d'),
+                        'fecha_contacto' => fake()->dateTimeBetween('now', '+15 days')->format('Y-m-d'),
+                        'recomendacion' => 'Contactar y registrar',
+                    ]);
+                }
             }
         });
     }
