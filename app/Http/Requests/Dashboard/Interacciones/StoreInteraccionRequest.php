@@ -54,189 +54,247 @@ class StoreInteraccionRequest extends FormRequest
             'fecha_cita' => [
                 'nullable',
                 'date',
-                'required_if:motivo,Agendar cita de entrenamiento,Agendar cita final'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                })
             ],
             'lugar_cita' => [
                 'nullable',
                 'string',
-                'required_if:motivo,Agendar cita de entrenamiento,Agendar cita final'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                })
             ],
             'lugar_cita_otro' => [
                 'nullable',
                 'string',
-                'required_if:lugar_cita,Otro'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('lugar_cita') === 'Otro';
+                })
             ],
             'fecha_cita_final' => [
                 'nullable',
                 'date',
-                'required_if:motivo,Cita de entrenamiento,Cita final,Re-entrenamiento'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
             ],
             'hora_cita_final' => [
                 'nullable',
                 'date_format:H:i',
-                'required_if:motivo,Cita de entrenamiento,Cita final,Re-entrenamiento'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
             ],
             'lugar_cita_final' => [
                 'nullable',
                 'string',
-                'required_if:motivo,Cita de entrenamiento,Cita final,Re-entrenamiento'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
             ],
             'lugar_cita_final_otro' => [
                 'nullable',
                 'string',
-                'required_if:lugar_cita_final,Otro'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') && $this->input('lugar_cita_final') === 'Otro';
+                })
             ],
             'seguimiento_pregunta_a' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:motivo,Seguimiento 2 semanas luego del tratamiento,Seguimiento mensual'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Seguimiento 2 semanas luego del tratamiento', 'Seguimiento mensual']);
+                })
             ],
             'seguimiento_pregunta_b' => [
                 'nullable',
                 'string',
-                'required_if:seguimiento_pregunta_a,Si'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_a') === 'Si';
+                })
             ],
             'seguimiento_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:seguimiento_pregunta_a,Si'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_a') === 'Si';
+                })
             ],
             'seguimiento_pregunta_d' => [
                 'nullable',
                 'string',
-                'required_if:seguimiento_pregunta_c,Si'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_c') === 'Si';
+                })
             ],
             'seguimiento_pregunta_e' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:seguimiento_pregunta_c,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_c') === 'No';
+                })
             ],
             'seguimiento_pregunta_f' => [
                 'nullable',
                 'date',
-                'required_if:seguimiento_pregunta_e,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
             ],
             'razon_contacto_participante' => [
                 'nullable',
                 'string',
-                'required_if:motivo,Contacto iniciado por el participante'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Contacto iniciado por el participante';
+                })
             ],
             'razon_contacto_participante_otro' => [
                 'nullable',
                 'string',
-                'required_if:razon_contacto_participante,Otro'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('razon_contacto_participante') === 'Otro';
+                })
             ],
             'contacto_participante_acciones' => [
                 'nullable',
                 'string',
-                'required_if:motivo,Contacto iniciado por el participante'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Contacto iniciado por el participante';
+                })
             ],
             'no_adherencia_pregunta_a' => [
                 'nullable',
                 'array',
-                'required_if:motivo,No adherencia a las sesiones'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'No adherencia a las sesiones';
+                })
             ],
             'no_adherencia_otro' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return in_array('Otro', $this->input('no_adherencia_pregunta_a', []));
+                    return $this->input('contactado') && in_array('Otro', $this->input('no_adherencia_pregunta_a', []));
                 })
             ],
             'no_adherencia_pregunta_b' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('motivo') === 'No adherencia a las sesiones' && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'No adherencia a las sesiones' && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
                 })
             ],
             'no_adherencia_pregunta_c' => [
                 'nullable',
                 'date',
-                'required_if:no_adherencia_pregunta_b,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('no_adherencia_pregunta_b') === 'No';
+                })
             ],
             'problemas_conexion_pregunta_a' => [
                 'nullable',
                 'array',
-                'required_if:motivo,Problemas de conexión'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Problemas de conexión';
+                })
             ],
             'problemas_conexion_otro' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return in_array('Otro', $this->input('problemas_conexion_pregunta_a', []));
+                    return $this->input('contactado') && in_array('Otro', $this->input('problemas_conexion_pregunta_a', []));
                 })
             ],
             'problemas_conexion_pregunta_b' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:motivo,Problemas de conexión'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Problemas de conexión';
+                })
             ],
             'problemas_conexion_pregunta_c' => [
                 'nullable',
                 'date',
-                'required_if:problemas_conexion_pregunta_b,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('problemas_conexion_pregunta_b') === 'No';
+                })
             ],
             'alerta_clinica_pregunta_a' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:motivo,Alerta clínica'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Alerta clínica';
+                })
             ],
             'alerta_clinica_pregunta_b' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:alerta_clinica_pregunta_a,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('alerta_clinica_pregunta_a') === 'No';
+                })
             ],
             'alerta_clinica_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:alerta_clinica_pregunta_a,Si'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('alerta_clinica_pregunta_a') === 'Si';
+                })
             ],
             'alerta_clinica_pregunta_d' => [
                 'nullable',
                 'string',
-                'required_if:alerta_clinica_pregunta_c,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('alerta_clinica_pregunta_c') === 'No';
+                })
             ],
             'alerta_clinica_pregunta_e' => [
                 'nullable',
                 'in:Si,No',
-                'required_if:alerta_clinica_pregunta_c,Si'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('alerta_clinica_pregunta_c') === 'Si';
+                })
             ],
             'alerta_clinica_pregunta_f' => [
                 'nullable',
                 'string',
-                'required_if:alerta_clinica_pregunta_e,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('alerta_clinica_pregunta_e') === 'No';
+                })
             ],
             'pedido_ayuda_pregunta_a' => [
                 'nullable',
                 'array',
-                'required_if:motivo,Pedido de ayuda a través del aplicativo'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo';
+                })
             ],
             'pedido_ayuda_otro' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return in_array('Otro', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && in_array('Otro', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_b' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_d' => [
                 'nullable',
                 'date',
-                'required_if:pedido_ayuda_pregunta_c,No'
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
+                })
             ]
         ];
     }
