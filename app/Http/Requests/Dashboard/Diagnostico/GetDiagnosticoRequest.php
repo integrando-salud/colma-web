@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\API\CentroSalud;
+namespace App\Http\Requests\Dashboard\Diagnostico;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class GetCentroSaludRequest extends FormRequest
+class GetDiagnosticoRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

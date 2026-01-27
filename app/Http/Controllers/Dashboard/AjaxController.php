@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\API\CentroSalud\GetCentroSaludRequest;
-use App\Http\Requests\API\Diagnostico\GetDiagnosticoRequest;
-use App\Http\Requests\API\Paquete\GetPaqueteRequest;
 use App\Http\Requests\API\User\GetUserRequest;
+use App\Http\Requests\Dashboard\CentroSalud\GetCentroSaludRequest;
+use App\Http\Requests\Dashboard\Diagnostico\GetDiagnosticoRequest;
+use App\Http\Requests\Dashboard\Paquete\GetPaqueteRequest;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
 use App\Http\Resources\Dashboard\PaqueteResource;
@@ -18,7 +18,6 @@ use App\Services\DiagnosticoService;
 use App\Services\PacienteService;
 use App\Services\PaqueteService;
 use App\Services\UsuarioService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\API\Paquete;
+namespace App\Http\Requests\Dashboard\Paquete;
 
 use Illuminate\Foundation\Http\FormRequest;
 
