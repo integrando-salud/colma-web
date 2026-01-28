@@ -244,6 +244,10 @@ const updatePassword = async () => {
         guardandoPassword.value = false;
     }
 }
+
+const soloNumeros = (event) => {
+    formUsuario.documento = event.target.value.replace(/\D/g, '');
+};
 </script>
 
 <template>
@@ -426,7 +430,16 @@ const updatePassword = async () => {
                         <div class="row mb-3">
                             <label for="documento" class="col-12 col-xl-4 col-form-label">DNI</label>
                             <div class="col-12 col-xl-8">
-                                <input type="number" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': formUsuario.errors?.documento }" v-model="formUsuario.documento" />
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    id="documento"
+                                    name="documento"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': formUsuario.errors?.documento }"
+                                    v-model="formUsuario.documento"
+                                    @input="soloNumeros"
+                                />
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.documento">
                                     {{ formUsuario.errors.documento }}
                                 </div>
