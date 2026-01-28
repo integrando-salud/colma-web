@@ -144,6 +144,10 @@ const fillDataPaciente = () => {
     formPaciente.paquete_id = formPaciente.paquete?.id;
 };
 
+const soloNumeros = (event) => {
+    formPaciente.documento = event.target.value.replace(/\D/g, '');
+};
+
 defineExpose({ submit });
 
 onMounted(async () => {
@@ -482,12 +486,14 @@ onMounted(async () => {
                             <label for="paciente_documento" class="col-12 col-sm-4 col-xl-4 col-form-label">DNI</label>
                             <div class="col-12 col-sm-8 col-xl-6">
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputmode="numeric"
                                     name="paciente_documento"
                                     id="paciente_documento"
                                     class="form-control"
                                     :class="{ 'is-invalid': formPaciente.errors.documento }"
                                     v-model="formPaciente.documento"
+                                    @input="soloNumeros"
                                     :disabled="soloLectura"
                                 />
                                 <div class="invalid-feedback" v-if="formPaciente.errors?.documento">
