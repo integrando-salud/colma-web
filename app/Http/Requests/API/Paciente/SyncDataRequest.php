@@ -11,7 +11,7 @@ class SyncDataRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && auth()->user()->id == $this->input('userId');
     }
 
     /**
