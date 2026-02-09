@@ -12,15 +12,19 @@ class PresionArterial extends Model
     protected $table = 'presion_arterial';
 
     protected $fillable = [
+        'id_app',
         'paciente_id',
         'presion_sistolica',
         'presion_diastolica',
         'fecha_registro',
+        'fecha_usuario',
         'fecha_sincronizacion',
+        'advertencia',
     ];
 
     protected $casts = [
         'fecha_registro' => 'datetime',
+        'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 
