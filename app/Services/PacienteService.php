@@ -219,7 +219,7 @@ class PacienteService
             ult_glucosa AS (
                 SELECT * FROM (
                     SELECT
-                        id, paciente_id, valor, ayuno,
+                        id, paciente_id, valor_mgdl, ayuno,
                         DATE(fecha_registro) AS fecha,
                         fecha_registro,
                         ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
@@ -244,7 +244,7 @@ class PacienteService
             )
             SELECT
                 DATE_FORMAT(f.fecha, '%d/%m/%Y') AS fecha,
-                g.valor AS glucosa_valor,
+                g.valor_mgdl AS glucosa_valor,
                 g.ayuno AS glucosa_ayuno,
                 p.presion_sistolica,
                 p.presion_diastolica

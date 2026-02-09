@@ -12,16 +12,20 @@ class Glucosa extends Model
     protected $table = 'glucosa';
 
     protected $fillable = [
+        'id_app',
         'paciente_id',
-        'valor',
+        'valor_mgdl',
         'ayuno',
         'fecha_registro',
+        'fecha_usuario',
         'fecha_sincronizacion',
+        'advertencia',
     ];
 
     protected $casts = [
         'ayuno' => 'boolean',
         'fecha_registro' => 'datetime',
+        'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 

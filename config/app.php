@@ -124,4 +124,6 @@ return [
     ],
 
     'rpp' => env('APP_RPP', 10),
+
+    'valor_alerta_estado_animo' => env('APP_VALOR_ALERTA_ESTADO_ANIMO'),
 ];

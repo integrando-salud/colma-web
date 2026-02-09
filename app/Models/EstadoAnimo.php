@@ -9,6 +9,7 @@ class EstadoAnimo extends Model
     protected $table = 'estado_animo';
 
     protected $fillable = [
+        'id_app',
         'paciente_id',
         'pregunta_1',
         'pregunta_2',
@@ -21,11 +22,13 @@ class EstadoAnimo extends Model
         'pregunta_9',
         'valor',
         'fecha_registro',
+        'fecha_usuario',
         'fecha_sincronizacion',
     ];
 
     protected $casts = [
         'fecha_registro' => 'datetime',
+        'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];
 
