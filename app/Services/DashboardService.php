@@ -120,6 +120,9 @@ class DashboardService
 
         return [
             'pacientes' => PacienteResource::collection($pacientes),
+            'promotores' => auth()->user()->isA('supervisor')
+                ? UserResource::collection(auth()->user()->promotores()->orderBy('nombre')->get())
+                : null,
             'filtros' => $filters,
         ];
     }

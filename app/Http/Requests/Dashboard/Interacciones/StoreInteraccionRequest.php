@@ -24,10 +24,11 @@ class StoreInteraccionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => ['nullable', 'exists:interacciones,id'],
             'paciente_id' => ['required', 'exists:pacientes,id'],
             'alerta_id' => ['nullable', 'integer'],
             'contactado' => ['required', 'boolean'],
-            'fecha' => ['required', 'date'],
+            'fecha' => ['required', 'date_format:d/m/Y'],
             'hora' => ['required', 'date_format:H:i'],
             'modalidad' => [
                 'required',
@@ -48,12 +49,12 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'nueva_fecha_contacto' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 'required_if:contactado,0'
             ],
             'fecha_cita' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
                 })
@@ -74,7 +75,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'fecha_cita_final' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
                 })
@@ -104,7 +105,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Seguimiento 2 semanas luego del tratamiento', 'Seguimiento mensual']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Seguimiento 2 semanas luego del entrenamiento', 'Seguimiento mensual']);
                 })
             ],
             'seguimiento_pregunta_b' => [
@@ -137,7 +138,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'seguimiento_pregunta_f' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
                 })
@@ -167,7 +168,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'No adherencia a las sesiones';
+                    return $this->input('contactado') && $this->input('motivo') === 'No completa las sesiones';
                 })
             ],
             'no_adherencia_otro' => [
@@ -181,12 +182,12 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'No adherencia a las sesiones' && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'No completa las sesiones' && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
                 })
             ],
             'no_adherencia_pregunta_c' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('no_adherencia_pregunta_b') === 'No';
                 })
@@ -214,7 +215,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'problemas_conexion_pregunta_c' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('problemas_conexion_pregunta_b') === 'No';
                 })
@@ -291,7 +292,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'pedido_ayuda_pregunta_d' => [
                 'nullable',
-                'date',
+                'date_format:d/m/Y',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
                 })

@@ -4,6 +4,7 @@ import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
+import { vMaska } from "maska/vue";
 
 const props = defineProps({
     idPaciente: {
@@ -11,6 +12,10 @@ const props = defineProps({
         required: true,
     },
     alerta: {
+        type: Object,
+        default: null,
+    },
+    interaccion: {
         type: Object,
         default: null,
     }
@@ -35,7 +40,7 @@ const dificultadesNoAdherencia = [
     'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
     'Problemas con la señal (completó las sesiones, pero la información no se subió)',
     'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
-    'El celular se malogró y no puede usar el aplicativo',
+    'El celular no funciona y no puede usar el aplicativo',
     'Le robaron el celular',
     'Falta de interés',
     'Falta de tiempo',
@@ -47,7 +52,7 @@ const dificultadesProblemasConexion = [
     'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
     'Problemas con la señal (completó las sesiones, pero la información no se subió)',
     'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
-    'El celular se malogró y no puede usar el aplicativo',
+    'El celular no funciona y no puede usar el aplicativo',
     'Le robaron el celular',
     'Otro',
 ];
@@ -66,7 +71,7 @@ const motivosContacto = computed(() => {
             return [ 'Alerta clínica' ];
         } else {
             return [
-                'No adherencia a las sesiones',
+                'No completa las sesiones',
                 'Problemas de conexión',
                 'Pedido de ayuda a través del aplicativo',
             ];
@@ -75,7 +80,7 @@ const motivosContacto = computed(() => {
         return [
             'Agendar cita de entrenamiento',
             'Cita de entrenamiento',
-            'Seguimiento 2 semanas luego del tratamiento',
+            'Seguimiento 2 semanas luego del entrenamiento',
             'Seguimiento mensual',
             'Agendar cita final',
             'Cita final',
@@ -114,7 +119,7 @@ const lugarAcordadoCitaTitle = computed(() => {
 });
 
 const handleChangeResultado = () => {
-    if (formContacto.contactado !== '0') {
+    if (formContacto.contactado !== 0) {
         formContacto.motivo_reprogramacion = '';
         formContacto.nueva_fecha_contacto = null;
     }
@@ -122,7 +127,7 @@ const handleChangeResultado = () => {
 
 const handleChangeMotivoContacto = () => {
     if (props.alerta?.id) {
-        if (formContacto.motivo !== 'No adherencia a las sesiones') {
+        if (formContacto.motivo !== 'No completa las sesiones') {
             formContacto.no_adherencia_pregunta_a = [];
             formContacto.no_adherencia_pregunta_b = '';
         }
@@ -148,7 +153,7 @@ const handleChangeMotivoContacto = () => {
             formContacto.lugar_cita_final_otro = null;
         }
 
-        if (formContacto.motivo !== 'Seguimiento 2 semanas luego del tratamiento' && formContacto.motivo !== 'Seguimiento mensual') {
+        if (formContacto.motivo !== 'Seguimiento 2 semanas luego del entrenamiento' && formContacto.motivo !== 'Seguimiento mensual') {
             formContacto.seguimiento_pregunta_a = '';
             formContacto.seguimiento_pregunta_b = null;
             formContacto.seguimiento_pregunta_c = '';
@@ -284,16 +289,81 @@ const submit = async () => {
     })
 };
 
+const fillDataInteraccion = () => {
+    formContacto.id = props.interaccion.id;
+    formContacto.paciente_id = props.interaccion.paciente.id;
+    formContacto.alerta_id = props.interaccion.alerta.id;
+    formContacto.contactado = props.interaccion.contactado;
+    formContacto.fecha = props.interaccion.fecha;
+    formContacto.hora = props.interaccion.hora;
+    formContacto.modalidad = props.interaccion.modalidad;
+    formContacto.motivo = props.interaccion.motivo;
+    formContacto.observaciones = props.interaccion.observaciones;
+    formContacto.motivo_reprogramacion = props.interaccion.motivo_reprogramacion;
+    formContacto.fecha_cita = props.interaccion.fecha_cita;
+    formContacto.lugar_cita = props.interaccion.lugar_cita;
+    formContacto.lugar_cita_otro = props.interaccion.lugar_cita_otro;
+    formContacto.fecha_cita_final = props.interaccion.fecha_cita_final;
+    formContacto.hora_cita_final = props.interaccion.hora_cita_final;
+    formContacto.lugar_cita_final = props.interaccion.lugar_cita_final;
+    formContacto.lugar_cita_final_otro = props.interaccion.lugar_cita_final_otro;
+    formContacto.seguimiento_pregunta_a = props.interaccion.seguimiento_pregunta_a;
+    formContacto.seguimiento_pregunta_b = props.interaccion.seguimiento_pregunta_b;
+    formContacto.seguimiento_pregunta_c = props.interaccion.seguimiento_pregunta_c;
+    formContacto.seguimiento_pregunta_d = props.interaccion.seguimiento_pregunta_d;
+    formContacto.seguimiento_pregunta_e = props.interaccion.seguimiento_pregunta_e;
+    formContacto.seguimiento_pregunta_f = props.interaccion.seguimiento_pregunta_f;
+    formContacto.razon_contacto_participante = props.interaccion.razon_contacto_participante;
+    formContacto.razon_contacto_participante_otro = props.interaccion.razon_contacto_participante_otro;
+    formContacto.contacto_participante_acciones = props.interaccion.contacto_participante_acciones;
+    formContacto.nueva_fecha_contacto = props.interaccion.nueva_fecha_contacto;
+    formContacto.no_adherencia_pregunta_a = props.interaccion.no_adherencia_pregunta_a;
+    formContacto.no_adherencia_otro = props.interaccion.no_adherencia_otro;
+    formContacto.no_adherencia_pregunta_b = props.interaccion.no_adherencia_pregunta_b;
+    formContacto.no_adherencia_pregunta_c = props.interaccion.no_adherencia_pregunta_c;
+    formContacto.problemas_conexion_pregunta_a = props.interaccion.problemas_conexion_pregunta_a;
+    formContacto.problemas_conexion_otro = props.interaccion.problemas_conexion_otro;
+    formContacto.problemas_conexion_pregunta_b = props.interaccion.problemas_conexion_pregunta_b;
+    formContacto.problemas_conexion_pregunta_c = props.interaccion.problemas_conexion_pregunta_c;
+    formContacto.alerta_clinica_pregunta_a = props.interaccion.alerta_clinica_pregunta_a;
+    formContacto.alerta_clinica_pregunta_b = props.interaccion.alerta_clinica_pregunta_b;
+    formContacto.alerta_clinica_pregunta_c = props.interaccion.alerta_clinica_pregunta_c;
+    formContacto.alerta_clinica_pregunta_d = props.interaccion.alerta_clinica_pregunta_d;
+    formContacto.alerta_clinica_pregunta_e = props.interaccion.alerta_clinica_pregunta_e;
+    formContacto.alerta_clinica_pregunta_f = props.interaccion.alerta_clinica_pregunta_f;
+    formContacto.pedido_ayuda_pregunta_a = props.interaccion.pedido_ayuda_pregunta_a;
+    formContacto.pedido_ayuda_otro = props.interaccion.pedido_ayuda_otro;
+    formContacto.pedido_ayuda_pregunta_b = props.interaccion.pedido_ayuda_pregunta_b;
+    formContacto.pedido_ayuda_pregunta_c = props.interaccion.pedido_ayuda_pregunta_c;
+    formContacto.pedido_ayuda_pregunta_d = props.interaccion.pedido_ayuda_pregunta_d;
+};
+
 defineExpose({ submit });
 
 onMounted(async () => {
     formContacto.paciente_id = props.idPaciente;
+
+    if (props.interaccion) {
+        fillDataInteraccion();
+    }
 
     if (props.alerta?.id) {
         formContacto.alerta_id = props.alerta.id;
 
         if (props.alerta.tipo === 'clinica') {
             formContacto.motivo = 'Alerta clínica';
+        } else if (props.alerta.tipo === 'operativa') {
+            switch (props.alerta.descripcion) {
+                case 'No completa sesiones':
+                    formContacto.motivo = 'No completa las sesiones';
+                    break;
+                case 'No se conecta':
+                    formContacto.motivo = 'Problemas de conexión';
+                    break;
+                case 'Pedido de ayuda':
+                    formContacto.motivo = 'Pedido de ayuda a través del aplicativo';
+                    break;
+            }
         }
     }
 });
@@ -377,7 +447,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
 
         <div class="col-12">
             <div class="row">
-                <div class="col-12 col-lg-4 mb-sm-3">
+                <div class="col-12 col-lg-6 mb-sm-3">
                     <div class="row">
                         <label for="contacto_resultado" class="col-12 col-sm-4 col-form-label">
                             Resultado del contacto
@@ -404,19 +474,22 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
         </div>
         <div class="col-12">
             <div class="row">
-                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
                     <div class="row">
                         <label for="contacto_fecha" class="col-12 col-sm-4 col-form-label">
                             Fecha de contacto
                         </label>
-                        <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-6 col-xl-4">
                             <input
-                                type="date"
+                                type="text"
+                                inputmode="numeric"
                                 name="contacto_fecha"
                                 id="contacto_fecha"
                                 class="form-control"
                                 :class="{ 'is-invalid': formContacto.errors?.fecha }"
                                 v-model="formContacto.fecha"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formContacto.errors?.fecha">
                                 {{ formContacto.errors.fecha }}
@@ -424,19 +497,22 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
                     <div class="row">
                         <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
                             Hora de contacto
                         </label>
-                        <div class="col-12 col-sm-3 col-md-2 col-lg-6 col-xl-4">
+                        <div class="col-12 col-sm-3 col-md-2 col-lg-4 col-xl-3">
                             <input
-                                type="time"
+                                type="text"
+                                inputmode="numeric"
                                 name="contacto_hora"
                                 id="contacto_hora"
                                 class="form-control"
                                 :class="{ 'is-invalid': formContacto.errors?.hora }"
                                 v-model="formContacto.hora"
+                                v-maska="'##:##'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formContacto.errors?.hora">
                                 {{ formContacto.errors.hora }}
@@ -448,14 +524,14 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
         </div>
         <div class="col-12">
             <div class="row">
-                <div class="col-12 col-lg-4 mb-sm-3">
+                <div class="col-12 col-lg-6 mb-sm-3">
                     <div class="row">
                         <div class="col-12 mb-sm-3">
                             <div class="row">
                                 <label for="contacto_modalidad" class="col-12 col-sm-4 col-form-label">
                                     Medio de contacto
                                 </label>
-                                <div class="col-12 col-sm-8 col-xl-6">
+                                <div class="col-12 col-sm-8 col-xl-7">
                                     <select
                                         name="contacto_modalidad"
                                         id="contacto_modalidad"
@@ -478,21 +554,21 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
         </div>
         <div class="col-12">
             <div class="row">
-                <div class="col-12 col-lg-4 mb-sm-3">
+                <div class="col-12 col-lg-8 mb-sm-3">
                     <div class="row">
                         <div class="col-12">
                             <div class="row">
-                                <label for="contacto_motivo" class="col-12 col-sm-4 col-form-label">
+                                <label for="contacto_motivo" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     Motivo de contacto
                                 </label>
-                                <div class="col-12 col-sm-8 col-xl-6">
+                                <div class="col-12 col-sm-8 col-xl-7">
                                     <select
                                         name="contacto_motivo"
                                         id="contacto_motivo"
                                         class="form-select"
                                         :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                         v-model="formContacto.motivo"
-                                        :disabled="alerta && alerta.tipo === 'clinica'"
+                                        :disabled="alerta"
                                     >
                                         <option value="">Seleccionar motivo</option>
                                         <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
@@ -507,25 +583,28 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </div>
             </div>
         </div>
-        <template v-if="formContacto.contactado === '1'">
+        <template v-if="formContacto.contactado === 1">
             <div
                 v-if="formContacto.motivo === 'Agendar cita de entrenamiento' || formContacto.motivo === 'Agendar cita final'"
                 class="col-12"
             >
                 <div class="row">
-                    <div class="col-12 col-lg-4 mb-sm-3">
+                    <div class="col-12 col-lg-6 mb-sm-3">
                         <div class="row">
                             <label for="contacto_fecha_cita" class="col-12 col-sm-4 col-form-label">
                                 {{ fechaProgramadaCitaTitle }}
                             </label>
-                            <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                            <div class="col-6 col-sm-4 col-md-3 col-lg-6 col-xl-4">
                                 <input
-                                    type="date"
+                                    type="text"
+                                    inputmode="numeric"
                                     name="contacto_fecha_cita"
                                     id="contacto_fecha_cita"
                                     class="form-control"
                                     :class="{ 'is-invalid': formContacto.errors?.fecha_cita }"
                                     v-model="formContacto.fecha_cita"
+                                    v-maska="'##/##/####'"
+                                    data-maska-eager
                                 />
                                 <div class="invalid-feedback" v-if="formContacto.errors?.fecha_cita">
                                     {{ formContacto.errors.fecha_cita }}
@@ -533,12 +612,12 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="col-12 col-lg-6 mb-sm-3">
                         <div class="row">
-                            <label for="contacto_lugar_cita" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                            <label for="contacto_lugar_cita" class="col-12 col-sm-4 col-lg-4 col-form-label">
                                 {{ lugarAcordadoCitaTitle }}
                             </label>
-                            <div class="col-12 col-sm-8 col-lg-4 col-xl-4">
+                            <div class="col-12 col-sm-8 col-lg-8 col-xl-6">
                                 <select
                                     name="contacto_lugar_cita"
                                     id="contacto_lugar_cita"
@@ -581,19 +660,22 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 class="col-12"
             >
                 <div class="row">
-                    <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                    <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
                         <div class="row">
                             <label for="contacto_fecha_cita_final" class="col-12 col-sm-4 col-form-label">
                                 Fecha
                             </label>
-                            <div class="col-12 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                            <div class="col-12 col-sm-4 col-md-3 col-lg-6 col-xl-4">
                                 <input
-                                    type="date"
+                                    type="text"
+                                    inputmode="numeric"
                                     name="contacto_fecha_cita_final"
                                     id="contacto_fecha_cita_final"
                                     class="form-control"
                                     :class="{ 'is-invalid': formContacto.errors?.fecha_cita_final }"
                                     v-model="formContacto.fecha_cita_final"
+                                    v-maska="'##/##/####'"
+                                    data-maska-eager
                                 />
                                 <div class="invalid-feedback" v-if="formContacto.errors?.fecha_cita_final">
                                     {{ formContacto.errors.fecha_cita_final }}
@@ -601,19 +683,22 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-sm-12 col-lg-4 mb-sm-3">
+                    <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
                         <div class="row">
                             <label for="contacto_hora_cita_final" class="col-12 col-sm-4 col-form-label">
-                                Hora de fin
+                                Hora de inicio
                             </label>
-                            <div class="col-12 col-sm-3 col-md-2 col-lg-6 col-xl-4">
+                            <div class="col-12 col-sm-3 col-md-2 col-lg-4 col-xl-3">
                                 <input
-                                    type="time"
+                                    type="text"
+                                    inputmode="numeric"
                                     name="contacto_hora_cita_final"
                                     id="contacto_hora_cita_final"
                                     class="form-control"
                                     :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
                                     v-model="formContacto.hora_cita_final"
+                                    v-maska="'##:##'"
+                                    data-maska-eager
                                 />
                                 <div class="invalid-feedback" v-if="formContacto.errors?.hora_cita_final">
                                     {{ formContacto.errors.hora_cita_final }}
@@ -625,10 +710,10 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 <div class="row">
                     <div class="col-12 col-lg-8 mb-sm-3">
                         <div class="row">
-                            <label for="contacto_lugar_cita_final" class="col-12 col-sm-4 col-lg-2 col-form-label">
+                            <label for="contacto_lugar_cita_final" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                 Lugar
                             </label>
-                            <div class="col-12 col-sm-8 col-lg-4">
+                            <div class="col-12 col-sm-8 col-lg-6">
                                 <select
                                     name="contacto_lugar_cita_final"
                                     id="contacto_lugar_cita_final"
@@ -667,7 +752,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </div>
             </div>
             <div
-                v-if="formContacto.motivo === 'Seguimiento 2 semanas luego del tratamiento' || formContacto.motivo === 'Seguimiento mensual'"
+                v-if="formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || formContacto.motivo === 'Seguimiento mensual'"
                 class="col-12"
             >
                 <div class="row">
@@ -747,7 +832,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         <template v-if="formContacto.seguimiento_pregunta_c === 'No'">
                             <div class="col-12 col-lg-10 col-xl-7 py-2">
                                 <label for="contacto_seguimiento_pregunta_e" class="form-label me-2">
-                                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                                    ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada/visita?
                                 </label>
                                 <select
                                     name="contacto_seguimiento_pregunta_e"
@@ -770,12 +855,15 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                         Agenda una visita domiciliaria o un re-entrenamiento
                                     </label>
                                     <input
-                                        type="date"
+                                        type="text"
+                                        inputmode="numeric"
                                         name="contacto_seguimiento_pregunta_f"
                                         id="contacto_seguimiento_pregunta_f"
                                         class="form-control w-auto d-inline-block"
                                         v-model="formContacto.seguimiento_pregunta_f"
                                         :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_f }"
+                                        v-maska="'##/##/####'"
+                                        data-maska-eager
                                     />
                                     <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_f">
                                         {{ formContacto.errors.seguimiento_pregunta_f }}
@@ -791,12 +879,12 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 class="col-12"
             >
                 <div class="row">
-                    <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="col-12 col-lg-12 mb-sm-3">
                         <div class="row">
                             <label for="contacto_razon_contacto_participante" class="col-12 col-sm-4 col-lg-2 col-form-label">
                                 Razón de contacto del participante
                             </label>
-                            <div class="col-12 col-sm-8 col-lg-4 col-xl-3">
+                            <div class="col-12 col-sm-8 col-lg-8 col-xl-6">
                                 <select
                                     name="contacto_razon_contacto_participante"
                                     id="contacto_razon_contacto_participante"
@@ -817,7 +905,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                             <div
                                 v-if="formContacto.razon_contacto_participante === 'Otro'"
-                                class="col-12 col-sm-8 col-lg-6 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                                class="col-12 col-sm-8 col-lg-8 col-xl-6 offset-sm-4 offset-lg-2 mt-2 mt-lg-0"
                             >
                                 <input
                                     type="text"
@@ -834,7 +922,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="col-12 col-lg-12 mb-sm-3">
                         <div class="row">
                             <label for="contacto_contacto_participante_acciones" class="col-12 col-sm-4 col-lg-2 col-form-label">
                                 Escribe las acciones realizadas
@@ -857,7 +945,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </div>
             </div>
             <div
-                v-if="formContacto.motivo === 'No adherencia a las sesiones'"
+                v-if="formContacto.motivo === 'No completa las sesiones'"
                 class="col-12"
             >
                 <div class="row">
@@ -914,7 +1002,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                     <div class="row">
                         <div class="col-12 py-2">
                             <label for="contacto_no_adherencia_pregunta_b" class="form-label me-2">
-                                ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                                ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada/visita?
                             </label>
                             <select
                                 name="contacto_no_adherencia_pregunta_b"
@@ -938,12 +1026,15 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 Agenda una visita domiciliaria o un re-entrenamiento
                             </label>
                             <input
-                                type="date"
+                                type="text"
+                                inputmode="numeric"
                                 name="contacto_no_adherencia_pregunta_c"
                                 id="contacto_no_adherencia_pregunta_c"
                                 class="form-control w-auto d-inline-block"
                                 v-model="formContacto.no_adherencia_pregunta_c"
                                 :class="{ 'is-invalid': formContacto.errors?.no_adherencia_pregunta_c }"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formContacto.errors?.no_adherencia_pregunta_c">
                                 {{ formContacto.errors.no_adherencia_pregunta_c }}
@@ -1001,7 +1092,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 <div class="row">
                     <div class="col-12 py-2">
                         <label for="contacto_problemas_conexion_pregunta_b" class="form-label me-2">
-                            ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                            ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada/visita?
                         </label>
                         <select
                             name="contacto_problemas_conexion_pregunta_b"
@@ -1025,12 +1116,15 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             Agenda una visita domiciliaria o un re-entrenamiento
                         </label>
                         <input
-                            type="date"
+                            type="text"
+                            inputmode="numeric"
                             name="contacto_problemas_conexion_pregunta_c"
                             id="contacto_problemas_conexion_pregunta_c"
                             class="form-control w-auto d-inline-block"
                             :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_pregunta_c }"
                             v-model="formContacto.problemas_conexion_pregunta_c"
+                            v-maska="'##/##/####'"
+                            data-maska-eager
                         />
                         <div class="invalid-feedback" v-if="formContacto.errors?.problemas_conexion_pregunta_c">
                             {{ formContacto.errors.problemas_conexion_pregunta_c }}
@@ -1252,7 +1346,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                     <div class="row">
                         <div class="col-12 col-lg-10 col-xl-7 py-2">
                             <label for="contacto_pedido_ayuda_pregunta_c" class="form-label me-2">
-                                ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada?
+                                ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada/visita?
                             </label>
                             <select
                                 name="contacto_pedido_ayuda_pregunta_c"
@@ -1276,12 +1370,15 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 Agenda una visita domiciliaria o un re-entrenamiento
                             </label>
                             <input
-                                type="date"
+                                type="text"
+                                inputmode="numeric"
                                 name="contacto_pedido_ayuda_pregunta_d"
                                 id="contacto_pedido_ayuda_pregunta_d"
                                 class="form-control w-auto d-inline-block"
                                 :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_d }"
                                 v-model="formContacto.pedido_ayuda_pregunta_d"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_pregunta_d">
                                 {{ formContacto.errors.pedido_ayuda_pregunta_d }}
@@ -1291,13 +1388,13 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </template>
             </div>
         </template>
-        <template v-if="formContacto.contactado === '0'">
-            <div class="col-12 col-lg-4 mb-sm-3">
+        <template v-if="formContacto.contactado === 0">
+            <div class="col-12 col-lg-8 mb-sm-3">
                 <div class="row">
-                    <label for="contacto_motivo_reprogramacion" class="col-12 col-sm-4 col-xl-4 col-form-label">
+                    <label for="contacto_motivo_reprogramacion" class="col-12 col-sm-4 col-lg-3 col-form-label">
                         Motivo de reprogramación
                     </label>
-                    <div class="col-12 col-sm-8 col-xl-6">
+                    <div class="col-12 col-sm-8 col-xl-7">
                         <select
                             name="contacto_motivo_reprogramacion"
                             id="contacto_motivo_reprogramacion"
@@ -1321,12 +1418,15 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                     </label>
                     <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
                         <input
-                            type="date"
+                            type="text"
+                            inputmode="numeric"
                             name="contacto_nueva_fecha_contacto"
                             id="contacto_nueva_fecha_contacto"
                             class="form-control"
                             :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }"
                             v-model="formContacto.nueva_fecha_contacto"
+                            v-maska="'##/##/####'"
+                            data-maska-eager
                         />
                         <div class="invalid-feedback" v-if="formContacto.errors?.nueva_fecha_contacto">
                             {{ formContacto.errors.nueva_fecha_contacto }}
@@ -1337,10 +1437,10 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
         </template>
         <div class="col-12">
             <div class="row">
-                <label for="contacto_observaciones" class="col-12 col-sm-4 col-lg-12 col-form-label">
+                <label for="contacto_observaciones" class="col-12 col-sm-4 col-lg-2 col-form-label">
                     Observaciones
                 </label>
-                <div class="col-12 col-sm-8 col-xl-6">
+                <div class="col-12 col-sm-8 col-lg-10 col-xl-6">
                     <textarea
                         id="contacto_observaciones"
                         name="contacto_observaciones"

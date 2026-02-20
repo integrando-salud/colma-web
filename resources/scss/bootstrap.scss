@@ -29,6 +29,9 @@ $table-th-font-weight: $font-weight-semibold;
 $table-cell-padding-y: 1rem;
 $nav-tabs-border-radius: 0;
 $nav-tabs-link-active-bg: $light;
+$input-border-color: #000000;
+$input-focus-border-color: $primary;
+$input-bg: #ffffff;
 
 @import "bootstrap/scss/bootstrap";
 

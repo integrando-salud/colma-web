@@ -28,6 +28,7 @@ class FilterPacienteRequest extends FormRequest
             'nombre' => ['nullable'],
             'orderBy' => ['nullable'],
             'orderDir' => ['nullable', 'in:asc,desc'],
+            'promotor' => ['nullable', 'exists:App\Models\User,id'],
         ];
     }
 }

@@ -24,7 +24,7 @@ class Interaccion extends Model
     public const MOTIVOS_CONTACTO = [
         'Agendar cita de entrenamiento',
         'Cita de entrenamiento',
-        'Seguimiento 2 semanas luego del tratamiento',
+        'Seguimiento 2 semanas luego del entrenamiento',
         'Seguimiento mensual',
         'Agendar cita final',
         'Cita final',
@@ -33,7 +33,7 @@ class Interaccion extends Model
     ];
 
     public const MOTIVOS_CONTACTO_ALERTA = [
-        'No adherencia a las sesiones',
+        'No completa las sesiones',
         'Problemas de conexión',
         'Alerta clínica',
         'Pedido de ayuda a través del aplicativo',

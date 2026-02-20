@@ -12,7 +12,7 @@ class StorePacienteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check();
     }
 
     /**
@@ -26,18 +26,18 @@ class StorePacienteRequest extends FormRequest
             'id' => ['nullable', 'exists:pacientes,id'],
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
-            'fecha_nacimiento' => ['required', 'date'],
+            'fecha_nacimiento' => ['required', 'date_format:d/m/Y'],
             'sexo' => ['required', 'in:F,M'],
             'documento' => ['required', 'max:20', Rule::unique('pacientes', 'documento')->ignore($this->id)],
             'telefono' => ['required', 'max:30'],
             'telefono2' => ['nullable', 'max:30'],
-            'email' => ['required', 'email', 'max:100', Rule::unique('pacientes', 'email')->ignore($this->id)],
+            'email' => ['nullable', 'email', 'max:100', Rule::unique('pacientes', 'email')->ignore($this->id)],
             'direccion' => ['required', 'string', 'max:255'],
             'referencia' => ['nullable', 'string', 'max:255'],
             'observaciones' => ['nullable'],
             'centro_salud_id' => ['required', 'exists:centros_salud,id'],
             'promotor_id' => ['required', 'exists:users,id'],
-            'fecha_enrolamiento' => ['required', 'date'],
+            'fecha_enrolamiento' => ['required', 'date_format:d/m/Y'],
             'paquete_id' => ['nullable', 'exists:paquetes,id'],
             'password' => ['nullable', 'required_without:id', 'min:6'],
             'diagnosticos' => ['required', 'array'],

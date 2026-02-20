@@ -8,6 +8,7 @@ use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\Meta;
 use App\Models\MultimediaRead;
+use App\Models\Paciente;
 use App\Models\PresionArterial;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -43,6 +44,11 @@ class DatosClinicosService
             if (!empty($data['multimedia_read'])) {
                 $this->saveDatosMultimediaRead($userId, $data['multimedia_read']);
             }
+
+            $paciente = Paciente::find($userId);
+            $paciente->update([
+                'fecha_ultima_sincronizacion' => now(),
+            ]);
 
             DB::commit();
             return true;

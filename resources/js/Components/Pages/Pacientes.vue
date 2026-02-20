@@ -4,10 +4,15 @@ import { router, usePage } from "@inertiajs/vue3";
 import Table from "@/Components/Table.vue";
 import Pagination from "@/Components/Pagination.vue";
 import Modal from "@/Components/Modal.vue";
+import Password from "@/Components/Form/Password.vue";
 import { useNotificationStore } from "@/Stores/notification";
 
 const props = defineProps({
     pacientes: Object,
+    promotores: {
+        type: Object,
+        default: null
+    },
     filtros: Object,
     urlBase: String,
 });
@@ -34,6 +39,10 @@ const ocultarCrear = computed(() => {
 });
 
 const showModalCambiarEstado = (paciente) => {
+    if (page.props.usuario.rol.nombre === 'promotor' || page.props.usuario.rol.nombre === 'supervisor_pais') {
+        return;
+    }
+
     pacienteSelectedCambiarEstado.value = paciente;
     modalCambiarEstado.value.showModal();
 };
@@ -61,9 +70,10 @@ const handleCloseModalDetallePaciente = () => {
 
 const formFiltros = reactive({
     estado: props.filtros.estado || '',
-    diagnostico: props.filtros.diagnostico || '',
+    // diagnostico: props.filtros.diagnostico || '',
     alertas: props.filtros.alertas || '',
     nombre: props.filtros.nombre || '',
+    promotor: props.filtros.promotor || '',
     orderBy: props.filtros.orderBy || null,
     orderDir: props.filtros.orderDir || null,
 });
@@ -95,6 +105,11 @@ const orderBy = (column) => {
 }
 
 const cambiarEstado = async () => {
+    if (page.props.usuario.rol.nombre === 'promotor' || page.props.usuario.rol.nombre === 'supervisor_pais') {
+        notification.errorNotification('Acción no permitida.');
+        return;
+    }
+
     try {
         const { data } = await axios.patch(route('ajax.paciente.cambiarEstado', pacienteSelectedCambiarEstado.value.id));
         notification.successNotification(data.message || 'Se guardó con éxito.');
@@ -106,9 +121,9 @@ const cambiarEstado = async () => {
     }
 };
 
-const listarDiagnosticos = (diagnosticos) => {
-    return diagnosticos.map(diagnostico => diagnostico.nombre).join(', ');
-};
+// const listarDiagnosticos = (diagnosticos) => {
+//     return diagnosticos.map(diagnostico => diagnostico.nombre).join(', ');
+// };
 
 const getDiagnosticos = async () => {
     try {
@@ -149,10 +164,19 @@ onMounted(() => {
                         <option value="0">Inactivo</option>
                     </select>
                 </div>
-                <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
-                    <select name="diagnostico" id="filtroDiagnostico" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.diagnostico" @change="filterPacientes">
-                        <option value="">Diagnóstico</option>
-                        <option v-for="diagnostico in diagnosticos" :key="diagnostico.id" :value="diagnostico.id">{{ diagnostico.nombre }}</option>
+<!--                <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">-->
+<!--                    <select name="diagnostico" id="filtroDiagnostico" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.diagnostico" @change="filterPacientes">-->
+<!--                        <option value="">Diagnóstico</option>-->
+<!--                        <option v-for="diagnostico in diagnosticos" :key="diagnostico.id" :value="diagnostico.id">{{ diagnostico.nombre }}</option>-->
+<!--                    </select>-->
+<!--                </div>-->
+                <div
+                    v-if="$page.props.usuario.rol.nombre === 'supervisor'"
+                    class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0"
+                >
+                    <select name="promotor" id="filtroPromotor" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.promotor" @change="filterPacientes">
+                        <option value="">Promotor de salud</option>
+                        <option v-for="promotor in promotores" :key="promotor.id" :value="promotor.id">{{ promotor.nombre }}</option>
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
@@ -196,13 +220,13 @@ onMounted(() => {
                                     'fa-chevron-up': formFiltros.orderBy === 'fecha_enrolamiento' && formFiltros.orderDir === 'desc'
                                 }" @click="orderBy('fecha_enrolamiento')"></i>
                             </th>
-                            <th>
-                                <span class="me-3">Diagnóstico</span>
-                                <i class="fa order" :class="{
-                                    'fa-chevron-down': formFiltros.orderBy !== 'diagnostico' || formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'asc',
-                                    'fa-chevron-up': formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'desc'
-                                }" @click="orderBy('diagnostico')"></i>
-                            </th>
+<!--                            <th>-->
+<!--                                <span class="me-3">Diagnóstico</span>-->
+<!--                                <i class="fa order" :class="{-->
+<!--                                    'fa-chevron-down': formFiltros.orderBy !== 'diagnostico' || formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'asc',-->
+<!--                                    'fa-chevron-up': formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'desc'-->
+<!--                                }" @click="orderBy('diagnostico')"></i>-->
+<!--                            </th>-->
                             <th v-if="$page.props.usuario.rol?.nombre !== 'promotor'">
                                 <span class="me-3">Promotor</span>
                                 <i class="fa order" :class="{
@@ -255,7 +279,7 @@ onMounted(() => {
                             <td>{{ paciente.id }}</td>
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
-                            <td>{{ listarDiagnosticos(paciente.diagnosticos) }}</td>
+<!--                            <td>{{ listarDiagnosticos(paciente.diagnosticos) }}</td>-->
                             <td v-if="$page.props.usuario.rol?.nombre !== 'promotor'">{{ paciente.promotor?.nombre }}</td>
                             <td>{{ paciente.sesiones.completadas }}/{{ paciente.sesiones.total }}</td>
                             <td>
@@ -462,21 +486,49 @@ onMounted(() => {
                 </div>
             </div>
             <div class="row">
-                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
-                    Datos de uso de la app
-                </div>
                 <div class="col-12 col-xl-10">
                     <div class="row">
-                        <div class="col-12 col-xl-3">
-                            <span class="fw-semibold">Fecha de inicio:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
+                        <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                            Datos de uso de la app
                         </div>
-                        <div class="col-12 col-xl-3">
-                            <span class="fw-semibold">Sesiones completas:</span> 4/5
+                        <div class="col-12 col-xl-10">
+                            <div class="row">
+                                <div class="col-12 col-xl-3">
+                                    <span class="fw-semibold">Fecha de inicio:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
+                                </div>
+                                <div class="col-12 col-xl-3">
+                                    <span class="fw-semibold">Sesiones completas:</span> 4/5
+                                </div>
+                                <div class="col-12 col-xl-3">
+                                    <span class="fw-semibold">Metas cumplidas:</span> 4
+                                </div>
+                                <div class="col-12 col-xl-3 mb-3">
+                                    <span class="fw-semibold">Fecha de última actualización de datos:</span> {{ pacienteSelected.fecha_ultima_sincronizacion }}
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-12 col-xl-3 mb-3 mb-xl-0">
-                            <span class="fw-semibold">Metas cumplidas:</span> 4
+                    </div>
+                    <div class="row">
+                        <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                            Observaciones
                         </div>
-                        <div class="col-12 col-xl-3">
+                        <div class="col-12 col-xl-10">
+                            {{ pacienteSelected.observaciones }}
+                        </div>
+                    </div>
+                    <div class="row" v-if="$page.props.usuario.pais?.codigo === 'PE'">
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <span class="fw-semibold">DNI:</span> {{ pacienteSelected.documento }}
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3 mb-3 mb-xl-0">
+                            <span class="fw-semibold">Contraseña:</span>
+                            <Password name="paciente_password" id="paciente_password" v-model="pacienteSelected.clave" :readonly="true" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-2">
+                    <div class="row">
+                        <div class="col-12">
                             <div class="mb-3 text-xl-end">
                                 <a class="btn btn-outline-primary px-3 py-2 shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
                                     Ir a alertas

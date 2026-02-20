@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -40,12 +41,17 @@ class PacienteService
             $query->where(function ($query) use ($filters) {
                 $nombre = '%' . $filters['nombre'] . '%';
                 $query->where('nombre', 'like', $nombre)
-                    ->orWhere('apellido', 'like', $nombre);
+                    ->orWhere('apellido', 'like', $nombre)
+                    ->orWhere('id', $filters['nombre']);
             });
         }
 
         if (isset($filters['estado']) && is_numeric($filters['estado'])) {
             $query->where('activo', $filters['estado']);
+        }
+
+        if (!empty($filters['promotor'])) {
+            $query->where('promotor_id', $filters['promotor']);
         }
 
         if (!empty($filters['diagnostico'])) {
@@ -107,7 +113,7 @@ class PacienteService
             $paciente = empty($data['id']) ? new Paciente() : Paciente::find($data['id']);
             $paciente->nombre = $data['nombre'];
             $paciente->apellido = $data['apellido'];
-            $paciente->fecha_nacimiento = $data['fecha_nacimiento'];
+            $paciente->fecha_nacimiento = implode('-', array_reverse(explode('/', $data['fecha_nacimiento'])));
             $paciente->sexo = $data['sexo'];
             $paciente->documento = $data['documento'];
             $paciente->telefono = $data['telefono'];
@@ -118,8 +124,9 @@ class PacienteService
             $paciente->observaciones = data_get($data, 'observaciones');
             $paciente->centro_salud_id = $data['centro_salud_id'];
             $paciente->promotor_id = $data['promotor_id'];
-            $paciente->fecha_enrolamiento = $data['fecha_enrolamiento'];
-            $paciente->paquete_id = data_get($data, 'paquete_id');
+            $paciente->fecha_enrolamiento = implode('-', array_reverse(explode('/', $data['fecha_enrolamiento'])));
+//            $paciente->paquete_id = data_get($data, 'paquete_id');
+            $paciente->clave = Crypt::encryptString($data['password']);
 
             if (empty($data['id'])) {
                 $usuario = $this->createUsuario($paciente, $data['password']);

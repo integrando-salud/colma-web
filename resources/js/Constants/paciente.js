@@ -14,12 +14,13 @@ export const FORM_PACIENTE = {
     centro_salud_id: '',
     promotor_id: '',
     fecha_enrolamiento: null,
-    diagnosticos: [],
-    paquete_id: '',
+    diagnosticos: [3],
+    // paquete_id: '',
     password: null,
 };
 
 export const FORM_CONTACTO = {
+    id: null,
     paciente_id: null,
     alerta_id: null,
     contactado: '',

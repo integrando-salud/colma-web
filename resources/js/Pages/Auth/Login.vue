@@ -1,4 +1,5 @@
 <script setup>
+import { watch } from "vue";
 import { Head, useForm } from "@inertiajs/vue3";
 import Main from "@/Components/Layouts/Main.vue";
 
@@ -12,6 +13,12 @@ const login = () => {
         onFinish: () => form.reset('password')
     });
 };
+
+watch(() => form.documento, (value) => {
+    if (!value) return;
+
+    form.documento = value.replace(/\D/g, '').slice(0,8);
+});
 </script>
 
 <template>
@@ -29,7 +36,16 @@ const login = () => {
                             <div class="alert alert-danger" v-if="form.errors.login">{{ form.errors.login }}</div>
                             <div class="mb-3">
                                 <label for="documento" class="form-label">Usuario:</label>
-                                <input type="number" id="documento" name="documento" class="form-control" :class="{ 'is-invalid': form.errors.documento }" v-model="form.documento">
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    id="documento"
+                                    name="documento"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': form.errors.documento }"
+                                    v-model="form.documento"
+                                    maxlength="8"
+                                >
                                 <div class="invalid-feedback" v-if="form.errors.documento">{{ form.errors.documento }}</div>
                             </div>
                             <div class="mb-3">

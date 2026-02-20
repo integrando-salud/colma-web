@@ -1,6 +1,6 @@
 <script setup>
-import { reactive, ref, useTemplateRef } from "vue";
-import { router } from "@inertiajs/vue3";
+import { reactive, ref, useTemplateRef, watch } from "vue";
+import { router, usePage } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import Table from "@/Components/Table.vue";
 import Modal from "@/Components/Modal.vue";
@@ -56,6 +56,7 @@ const formEditarPassword = reactive({
     errors: {},
 });
 
+const page = usePage();
 const notification = useNotificationStore();
 const modalUsuario = useTemplateRef('modalUsuario');
 const titleModalUsuario = ref('Nuevo usuario');
@@ -66,9 +67,12 @@ const eliminando = ref(false);
 const modalEditarPassword = useTemplateRef('modalEditarPassword');
 const guardandoPassword = ref(false);
 const modalCancelar = useTemplateRef('modalCancelar');
+const modalConfirmar = useTemplateRef('modalConfirmar');
+const formActivo = ref('null');
 
 const showModalUsuario = () => {
     modalUsuario.value.showModal();
+    formActivo.value = 'usuario';
 };
 
 const hideModalUsuario = () => {
@@ -81,9 +85,14 @@ const handleCloseModalUsuario = () => {
     }
 
     resetFormUsuario();
+    formActivo.value = null;
 };
 
 const showModalEliminar = (usuario) => {
+    if (page.props.usuario.rol.nombre === 'supervisor' || page.props.usuario.rol.nombre === 'promotor') {
+        return;
+    }
+
     userSelected.value = usuario;
     modalEliminar.value.showModal();
 };
@@ -99,6 +108,7 @@ const handleCloseModalEliminar = () => {
 const showModalEditarPassword = (usuario) => {
     userSelected.value = usuario;
     modalEditarPassword.value.showModal();
+    formActivo.value = 'password';
 };
 
 const hideModalEditarPassword = () => {
@@ -109,6 +119,7 @@ const handleCloseModalEditarPassword = () => {
     userSelected.value = null;
     formEditarPassword.password = '';
     formEditarPassword.errors = {};
+    formActivo.value = null;
 };
 
 const showModalCancelar = () => {
@@ -123,6 +134,25 @@ const confirmCancelar = () => {
     hideModalCancelar();
     hideModalUsuario();
     hideModalEditarPassword();
+};
+
+const showModalConfirmar = () => {
+    modalConfirmar.value.showModal();
+};
+
+const hideModalConfirmar = () => {
+    modalConfirmar.value.hideModal();
+};
+
+const handleConfirmar = () => {
+    switch (formActivo.value) {
+        case 'usuario':
+            saveUsuario();
+            break;
+        case 'password':
+            updatePassword();
+            break;
+    }
 };
 
 const resetFormUsuario = () => {
@@ -145,6 +175,7 @@ const resetErroresFormUsuario = () => {
 };
 
 const saveUsuario = async () => {
+    hideModalConfirmar();
     guardando.value = true;
     resetErroresFormUsuario();
 
@@ -182,6 +213,10 @@ const orderBy = (column) => {
 }
 
 const deleteUsuario = async () => {
+    if (page.props.usuario.rol.nombre === 'supervisor' || page.props.usuario.rol.nombre === 'promotor') {
+        return;
+    }
+
     eliminando.value = true;
 
     try {
@@ -219,6 +254,7 @@ const resetSupervisor = () => {
 };
 
 const updatePassword = async () => {
+    hideModalConfirmar();
     guardandoPassword.value = true;
     formEditarPassword.errors = {};
 
@@ -245,9 +281,11 @@ const updatePassword = async () => {
     }
 }
 
-const soloNumeros = (event) => {
-    formUsuario.documento = event.target.value.replace(/\D/g, '');
-};
+watch(() => formUsuario.documento, (value) => {
+    if (!value) return;
+
+    formUsuario.documento = value.replace(/\D/g, '').slice(0,8);
+});
 </script>
 
 <template>
@@ -371,7 +409,14 @@ const soloNumeros = (event) => {
                                     <li>
                                         <a href="#" class="dropdown-item" @click="handleEditarUsuario(usuario)">Editar</a>
                                         <a href="#" class="dropdown-item" @click="showModalEditarPassword(usuario)">Cambiar contraseña</a>
-                                        <a href="#" class="dropdown-item text-danger" @click="showModalEliminar(usuario)">Eliminar</a>
+                                        <a
+                                            v-if="$page.props.usuario.rol.nombre === 'superusuario' || $page.props.usuario.rol.nombre === 'supervisor_pais'"
+                                            href="#"
+                                            class="dropdown-item text-danger"
+                                            @click="showModalEliminar(usuario)"
+                                        >
+                                            Eliminar
+                                        </a>
                                     </li>
                                 </ul>
                             </div>
@@ -438,7 +483,7 @@ const soloNumeros = (event) => {
                                     class="form-control"
                                     :class="{ 'is-invalid': formUsuario.errors?.documento }"
                                     v-model="formUsuario.documento"
-                                    @input="soloNumeros"
+                                    maxlength="8"
                                 />
                                 <div class="invalid-feedback" v-if="formUsuario.errors?.documento">
                                     {{ formUsuario.errors.documento }}
@@ -499,7 +544,14 @@ const soloNumeros = (event) => {
                         <div class="row mb-3">
                             <label for="pais" class="col-12 col-xl-4 col-form-label">País</label>
                             <div class="col-12 col-xl-8">
-                                <select id="pais" name="pais" class="form-select" :class="{ 'is-invalid': formUsuario.errors?.pais_id }" v-model="formUsuario.pais_id">
+                                <select
+                                    id="pais"
+                                    name="pais"
+                                    class="form-select"
+                                    :class="{ 'is-invalid': formUsuario.errors?.pais_id }"
+                                    v-model="formUsuario.pais_id"
+                                    :disabled="userSelected"
+                                >
                                     <option value="">Seleccionar país</option>
                                     <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.nombre }}</option>
                                 </select>
@@ -532,7 +584,7 @@ const soloNumeros = (event) => {
                 <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardando" @click="showModalCancelar">
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardando" @click="saveUsuario">
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardando" @click="showModalConfirmar">
                     Guardar
                 </button>
             </template>
@@ -585,7 +637,7 @@ const soloNumeros = (event) => {
                 <button type="button" class="btn btn-grey fw-semibold shadow" :disabled="guardandoPassword" @click="showModalCancelar">
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardandoPassword" @click="updatePassword">
+                <button type="button" class="btn btn-secondary text-white fw-semibold shadow" :disabled="guardandoPassword" @click="showModalConfirmar">
                     Confirmar
                 </button>
             </template>
@@ -613,6 +665,25 @@ const soloNumeros = (event) => {
             </button>
             <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="confirmCancelar">
                 Si, cancelar
+            </button>
+        </template>
+    </Modal>
+
+    <Modal id="modalConfirmar" ref="modalConfirmar" title="Confirmar">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    ¿Estás seguro/a que desea guardar la información?
+                </p>
+            </div>
+        </div>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalConfirmar">
+                No
+            </button>
+            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="handleConfirmar">
+                Si
             </button>
         </template>
     </Modal>
