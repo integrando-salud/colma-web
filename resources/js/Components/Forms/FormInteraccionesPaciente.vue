@@ -24,6 +24,84 @@ const props = defineProps({
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
 
+const convertirHora12a24 = (hora12, meridiano) => {
+    if (!hora12 || !meridiano) {
+        return null;
+    }
+
+    const [horasStr, minutos] = hora12.split(':');
+
+    if (!horasStr || !minutos) {
+        return null;
+    }
+
+    let horas = parseInt(horasStr, 10);
+
+    if (Number.isNaN(horas)) {
+        return null;
+    }
+
+    if (meridiano === 'AM') {
+        if (horas === 12) {
+            horas = 0;
+        }
+    } else if (meridiano === 'PM') {
+        if (horas < 12) {
+            horas += 12;
+        }
+    }
+
+    const horas24 = horas.toString().padStart(2, '0');
+
+    return `${horas24}:${minutos}`;
+};
+
+const convertirHora24a12 = (hora24) => {
+    if (!hora24) {
+        return {
+            hora12: null,
+            meridiano: '',
+        };
+    }
+
+    const [horasStr, minutos] = hora24.split(':');
+
+    if (!horasStr || !minutos) {
+        return {
+            hora12: null,
+            meridiano: '',
+        };
+    }
+
+    let horas = parseInt(horasStr, 10);
+
+    if (Number.isNaN(horas)) {
+        return {
+            hora12: null,
+            meridiano: '',
+        };
+    }
+
+    let meridiano = 'AM';
+
+    if (horas === 0) {
+        horas = 12;
+        meridiano = 'AM';
+    } else if (horas === 12) {
+        meridiano = 'PM';
+    } else if (horas > 12) {
+        horas -= 12;
+        meridiano = 'PM';
+    }
+
+    const horas12 = horas.toString().padStart(2, '0');
+
+    return {
+        hora12: `${horas12}:${minutos}`,
+        meridiano,
+    };
+};
+
 const modalidades = [
     'Llamada por teléfono / WhatsApp',
     'Visita domiciliaria',
@@ -282,6 +360,25 @@ const handleChangePedidoAyudaPreguntaC = () => {
 };
 
 const submit = async () => {
+    if (formContacto.hora_display && formContacto.hora_meridiano) {
+        const hora24 = convertirHora12a24(formContacto.hora_display, formContacto.hora_meridiano);
+
+        if (hora24) {
+            formContacto.hora = hora24;
+        }
+    }
+
+    if (formContacto.hora_cita_final_display && formContacto.hora_cita_final_meridiano) {
+        const horaCitaFinal24 = convertirHora12a24(
+            formContacto.hora_cita_final_display,
+            formContacto.hora_cita_final_meridiano
+        );
+
+        if (horaCitaFinal24) {
+            formContacto.hora_cita_final = horaCitaFinal24;
+        }
+    }
+
     formContacto.post(route('interacciones.store'), {
         onError: () => {
             notification.errorNotification('El formulario contiene errores.');
@@ -292,10 +389,14 @@ const submit = async () => {
 const fillDataInteraccion = () => {
     formContacto.id = props.interaccion.id;
     formContacto.paciente_id = props.interaccion.paciente.id;
-    formContacto.alerta_id = props.interaccion.alerta.id;
+    formContacto.alerta_id = props.interaccion.alerta?.id ?? null;
     formContacto.contactado = props.interaccion.contactado;
     formContacto.fecha = props.interaccion.fecha;
+
+    const datosHora = convertirHora24a12(props.interaccion.hora);
     formContacto.hora = props.interaccion.hora;
+    formContacto.hora_display = datosHora.hora12;
+    formContacto.hora_meridiano = datosHora.meridiano;
     formContacto.modalidad = props.interaccion.modalidad;
     formContacto.motivo = props.interaccion.motivo;
     formContacto.observaciones = props.interaccion.observaciones;
@@ -304,7 +405,11 @@ const fillDataInteraccion = () => {
     formContacto.lugar_cita = props.interaccion.lugar_cita;
     formContacto.lugar_cita_otro = props.interaccion.lugar_cita_otro;
     formContacto.fecha_cita_final = props.interaccion.fecha_cita_final;
+
+    const datosHoraCitaFinal = convertirHora24a12(props.interaccion.hora_cita_final);
     formContacto.hora_cita_final = props.interaccion.hora_cita_final;
+    formContacto.hora_cita_final_display = datosHoraCitaFinal.hora12;
+    formContacto.hora_cita_final_meridiano = datosHoraCitaFinal.meridiano;
     formContacto.lugar_cita_final = props.interaccion.lugar_cita_final;
     formContacto.lugar_cita_final_otro = props.interaccion.lugar_cita_final_otro;
     formContacto.seguimiento_pregunta_a = props.interaccion.seguimiento_pregunta_a;
@@ -458,7 +563,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 id="contacto_resultado"
                                 class="form-select"
                                 :class="{ 'is-invalid': formContacto.errors?.contactado }"
-                                v-model="formContacto.contactado"
+                                v-model.number="formContacto.contactado"
                             >
                                 <option value="">Seleccionar resultado</option>
                                 <option value="1">Contactado</option>
@@ -497,29 +602,42 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
-                    <div class="row">
-                        <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
-                            Hora de contacto
-                        </label>
-                        <div class="col-12 col-sm-3 col-md-2 col-lg-4 col-xl-3">
-                            <input
-                                type="text"
-                                inputmode="numeric"
-                                name="contacto_hora"
-                                id="contacto_hora"
-                                class="form-control"
-                                :class="{ 'is-invalid': formContacto.errors?.hora }"
-                                v-model="formContacto.hora"
-                                v-maska="'##:##'"
-                                data-maska-eager
-                            />
-                            <div class="invalid-feedback" v-if="formContacto.errors?.hora">
-                                {{ formContacto.errors.hora }}
+                    <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
+                        <div class="row">
+                            <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
+                                Hora de contacto
+                            </label>
+                            <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
+                                <div class="row gx-2">
+                                    <div class="col-6">
+                                        <input
+                                            type="text"
+                                            inputmode="numeric"
+                                            name="contacto_hora"
+                                            id="contacto_hora"
+                                            class="form-control"
+                                            :class="{ 'is-invalid': formContacto.errors?.hora }"
+                                            v-model="formContacto.hora_display"
+                                            v-maska="'##:##'"
+                                            data-maska-eager
+                                        />
+                                        <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
+                                            {{ formContacto.errors.hora }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <select
+                                            class="form-select"
+                                            v-model="formContacto.hora_meridiano"
+                                        >
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
         <div class="col-12">
@@ -688,20 +806,33 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             <label for="contacto_hora_cita_final" class="col-12 col-sm-4 col-form-label">
                                 Hora de inicio
                             </label>
-                            <div class="col-12 col-sm-3 col-md-2 col-lg-4 col-xl-3">
-                                <input
-                                    type="text"
-                                    inputmode="numeric"
-                                    name="contacto_hora_cita_final"
-                                    id="contacto_hora_cita_final"
-                                    class="form-control"
-                                    :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
-                                    v-model="formContacto.hora_cita_final"
-                                    v-maska="'##:##'"
-                                    data-maska-eager
-                                />
-                                <div class="invalid-feedback" v-if="formContacto.errors?.hora_cita_final">
-                                    {{ formContacto.errors.hora_cita_final }}
+                            <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
+                                <div class="row gx-2">
+                                    <div class="col-6">
+                                        <input
+                                            type="text"
+                                            inputmode="numeric"
+                                            name="contacto_hora_cita_final"
+                                            id="contacto_hora_cita_final"
+                                            class="form-control"
+                                            :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
+                                            v-model="formContacto.hora_cita_final_display"
+                                            v-maska="'##:##'"
+                                            data-maska-eager
+                                        />
+                                        <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_cita_final">
+                                            {{ formContacto.errors.hora_cita_final }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <select
+                                            class="form-select"
+                                            v-model="formContacto.hora_cita_final_meridiano"
+                                        >
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -732,7 +863,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                             <div
                                 v-if="formContacto.lugar_cita_final === 'Otro'"
-                                class="col-12 col-sm-8 col-lg-6 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                                class="col-12 col-sm-8 col-lg-6 offset-sm-4 offset-lg-3 mt-2"
                             >
                                 <input
                                     type="text"

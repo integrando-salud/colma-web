@@ -191,7 +191,7 @@ onMounted(() => {
                             Hora de contacto
                         </div>
                         <div class="col-12 col-sm-8 col-xl-4 py-2 align-content-center">
-                            {{ interaccionSelected.hora }}
+                            {{ interaccionSelected.hora_am_pm }}
                         </div>
                     </div>
                 </div>
@@ -268,7 +268,7 @@ onMounted(() => {
                             Hora
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.hora_cita_final }}
+                            {{ interaccionSelected.hora_cita_final_am_pm }}
                         </div>
                     </div>
                 </div>
