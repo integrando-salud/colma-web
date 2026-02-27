@@ -22,7 +22,7 @@ class AlertaResource extends JsonResource
             'id' => $this->id,
             'paciente' => $this->paciente->only(['id', 'nombre', 'apellido', 'activo']),
             'tipo' => $this->tipo,
-            'valor' => $entidad?->valor ?? null,
+            'valor' => $entidad?->valor ?? $entidad?->valor_mgdl ?? null,
             'rango_normal' => $entidad ? $entidad::RANGO_NORMAL : null,
             'descripcion' => $this->descripcion,
             'recomendacion' => $this->recomendacion,

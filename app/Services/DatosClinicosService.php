@@ -10,6 +10,7 @@ use App\Models\Meta;
 use App\Models\MultimediaRead;
 use App\Models\Paciente;
 use App\Models\PresionArterial;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -18,34 +19,35 @@ class DatosClinicosService
     public function syncDatosApp(array $data)
     {
         try {
-            $userId = $data['userId'];
+            $usuario = User::find($data['userId']);
+            $idPaciente = $usuario->paciente->id;
             DB::beginTransaction();
 
             if (!empty($data['glucosa'])) {
-                $this->saveDatosGlucosa($userId, $data['glucosa']);
+                $this->saveDatosGlucosa($idPaciente, $data['glucosa']);
             }
 
             if (!empty($data['presion'])) {
-                $this->saveDatosPresionArterial($userId, $data['presion']);
+                $this->saveDatosPresionArterial($idPaciente, $data['presion']);
             }
 
             if (!empty($data['estado_animo'])) {
-                $this->saveDatosEstadoAnimo($userId, $data['estado_animo']);
+                $this->saveDatosEstadoAnimo($idPaciente, $data['estado_animo']);
             }
 
             if (!empty($data['quiz'])) {
-                $this->saveDatosCuestionario($userId, $data['quiz']);
+                $this->saveDatosCuestionario($idPaciente, $data['quiz']);
             }
 
             if (!empty($data['metas'])) {
-                $this->saveDatosMetas($userId, $data['metas']);
+                $this->saveDatosMetas($idPaciente, $data['metas']);
             }
 
             if (!empty($data['multimedia_read'])) {
-                $this->saveDatosMultimediaRead($userId, $data['multimedia_read']);
+                $this->saveDatosMultimediaRead($idPaciente, $data['multimedia_read']);
             }
 
-            $paciente = Paciente::find($userId);
+            $paciente = Paciente::find($idPaciente);
             $paciente->update([
                 'fecha_ultima_sincronizacion' => now(),
             ]);
@@ -75,7 +77,10 @@ class DatosClinicosService
             if ($registroGlucosa->advertencia !== 'Normal') {
                 $descripcion = $registroGlucosa->advertencia === 'Baja'
                     ? 'Glucosa baja'
-                    : 'Glucosa baja elevada / alta';
+                    : 'Glucosa elevada / alta';
+
+                $recomendacion = $this->getRecomendacionGlucosa($registroGlucosa->valor_mgdl);
+                $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
 
                 $this->saveAlerta(
                     $idPaciente,
@@ -83,10 +88,22 @@ class DatosClinicosService
                     $registroGlucosa->id,
                     'glucosa',
                     $descripcion,
-                    'Indicar que vaya a consulta'
+                    $recomendacion,
+                    now()->addDays(2)->format('Y-m-d')
                 );
             }
         }
+    }
+
+    protected function getRecomendacionGlucosa(int $valor)
+    {
+        if ($valor < 70) {
+            return 'Contactar y preguntar si pudo agendar un control con su médico.';
+        } elseif ($valor > 300) {
+            return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
+        }
+
+        return null;
     }
 
     protected function saveDatosPresionArterial(int $idPaciente, array $data)
@@ -108,16 +125,33 @@ class DatosClinicosService
                     ? 'Presión arterial baja'
                     : 'Presión arterial elevada / alta';
 
+                $recomendacion = $this->getRecomendacionPresionArterial($registroPresion->presion_sistolica, $registroPresion->presion_diastolica);
+                $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
+
                 $this->saveAlerta(
                     $idPaciente,
                     'clinica',
                     $registroPresion->id,
                     'presion_arterial',
                     $descripcion,
-                    'Indicar que vaya a consulta'
+                    $recomendacion,
+                    now()->addDays(2)->format('Y-m-d')
                 );
             }
         }
+    }
+
+    protected function getRecomendacionPresionArterial(int $presionSistolica, int $presionDiastolica)
+    {
+        if ($presionSistolica >= 180 || $presionDiastolica >= 120) {
+            return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
+        } elseif (($presionSistolica >= 140 && $presionSistolica <= 179) || ($presionDiastolica >= 90 && $presionDiastolica <= 119)) {
+            return 'Contactar y preguntar si pudo agendar un control con su médico.';
+        } elseif ($presionSistolica < 90) {
+            return 'Contactar y preguntar si pudo acceder a atención médica.';
+        }
+
+        return null;
     }
 
     protected function saveDatosEstadoAnimo(int $idPaciente, array $data)
@@ -147,13 +181,17 @@ class DatosClinicosService
             ]);
 
             if ($valor > config('app.valor_alerta_estado_animo')) {
+                $recomendacion = 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
+                $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
+
                 $this->saveAlerta(
                     $idPaciente,
                     'clinica',
                     $registroEstadoAnimo->id,
                     'estado_animo',
                     'Estado de ánimo alterado',
-                    'Contactar al paciente para seguimiento'
+                    $recomendacion,
+                    now()->addDays(2)->format('Y-m-d')
                 );
             }
         }
@@ -165,7 +203,8 @@ class DatosClinicosService
         int $entidadId,
         string $entidad_tipo,
         string $descripcion,
-        string $recomendacion
+        string $recomendacion,
+        string $fecha_contacto
     )
     {
         return Alerta::create([
@@ -176,7 +215,7 @@ class DatosClinicosService
             'descripcion' => $descripcion,
             'recomendacion' => $recomendacion,
             'fecha' => now(),
-            'fecha_contacto' => now()->addDay(),
+            'fecha_contacto' => $fecha_contacto,
         ]);
     }
 

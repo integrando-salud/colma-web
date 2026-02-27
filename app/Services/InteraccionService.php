@@ -80,10 +80,16 @@ class InteraccionService
             $interaccion->save();
 
             if ($alertaId) {
-                Alerta::where('id', $alertaId)->update([
+                $dataAlerta = [
                     'revisado' => $data['contactado'] ? now() : null,
                     'user_id' => auth()->user()->id,
-                ]);
+                ];
+
+                if (! $interaccion->contactado) {
+                    $dataAlerta['fecha_contacto'] = $interaccion->nueva_fecha_contacto;
+                }
+
+                Alerta::where('id', $alertaId)->update($dataAlerta);
             }
 
             DB::commit();
