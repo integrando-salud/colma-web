@@ -6,6 +6,7 @@ use App\Services\AlertaService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Crypt;
 
 class PacienteResource extends JsonResource
 {
@@ -51,6 +52,7 @@ class PacienteResource extends JsonResource
             ],
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
+            'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',
             'alertas_pendientes' => $this->numero_alertas ?? $this->alertas()->whereNull('revisado')->count(),
             'interacciones' => $this->interacciones()->orderByDesc('id')->take(3)->get(['id', 'fecha'])->map(function ($interaccion) {
                 return [
@@ -59,7 +61,8 @@ class PacienteResource extends JsonResource
                 ];
             }),
             'datos_clinicos' => $registros,
-            'fecha_proximo_contacto' => $this->interacciones->last()?->nueva_fecha_contacto?->format('d/m/Y')
+            'fecha_proximo_contacto' => $this->interacciones->last()?->nueva_fecha_contacto?->format('d/m/Y'),
+            'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
         ];
     }
 }

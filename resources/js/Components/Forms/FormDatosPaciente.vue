@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import { FORM_PACIENTE } from "@/Constants/paciente";
 import Password from "@/Components/Form/Password.vue";
 import { useNotificationStore } from "@/Stores/notification";
+import { vMaska } from "maska/vue";
 
 const props = defineProps({
     paciente: {
@@ -23,13 +24,14 @@ const cargandoCentrosSalud = ref(false);
 const cargandoPromotores = ref(false);
 const cargandoDiagnosticos = ref(false);
 const cargandoPaquetes = ref(false);
+const blockSelectPromotor = ref(false);
 
 const soloLectura = computed(() => {
-    return props.paciente?.activo === false || page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.id === 2;
+    return props.paciente?.activo === false || page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo === 'PE';
 });
 
 const verUsuarioPassword = computed(() => {
-    return page.props.usuario.rol?.nombre !== 'promotor' || (page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.id !== 2);
+    return page.props.usuario.rol?.nombre !== 'promotor' || (page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo !== 'PE');
 });
 
 const promotoresFiltered = computed(() => {
@@ -128,7 +130,7 @@ const fillDataPaciente = () => {
     formPaciente.id = props.paciente.id;
     formPaciente.nombre = props.paciente.nombre;
     formPaciente.apellido = props.paciente.apellido;
-    formPaciente.fecha_nacimiento = props.paciente.fecha_nacimiento;
+    formPaciente.fecha_nacimiento = props.paciente.fecha_nacimiento_format;
     formPaciente.sexo = props.paciente.sexo;
     formPaciente.documento = props.paciente.documento;
     formPaciente.telefono = props.paciente.telefono;
@@ -139,13 +141,9 @@ const fillDataPaciente = () => {
     formPaciente.observaciones = props.paciente.observaciones;
     formPaciente.centro_salud_id = props.paciente.centro_salud.id;
     formPaciente.promotor_id = props.paciente.promotor.id;
-    formPaciente.fecha_enrolamiento = props.paciente.fecha_enrolamiento;
+    formPaciente.fecha_enrolamiento = props.paciente.fecha_enrolamiento_format;
     formPaciente.diagnosticos = props.paciente.diagnosticos.map(diagnostico => diagnostico.id);
-    formPaciente.paquete_id = formPaciente.paquete?.id;
-};
-
-const soloNumeros = (event) => {
-    formPaciente.documento = event.target.value.replace(/\D/g, '');
+    // formPaciente.paquete_id = formPaciente.paquete?.id;
 };
 
 defineExpose({ submit });
@@ -159,6 +157,33 @@ onMounted(async () => {
     if (props.paciente) {
         fillDataPaciente();
     }
+
+    if (page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo === 'AR') {
+        formPaciente.centro_salud_id = page.props.usuario.centro_salud?.id || '';
+        formPaciente.promotor_id = page.props.usuario.id;
+        blockSelectPromotor.value = true;
+    }
+});
+
+const camposSoloNumeros = ['documento', 'telefono', 'telefono2'];
+camposSoloNumeros.forEach(campo => {
+    watch(() => formPaciente[campo], (value) => {
+        if (!value) return;
+
+        if (campo === 'documento') {
+            formPaciente[campo] = value.replace(/\D/g, '').slice(0,8);
+        } else {
+            formPaciente[campo] = value.replace(/\D/g, '');
+        }
+    });
+});
+
+const camposSoloLetras = ['nombre', 'apellido'];
+camposSoloLetras.forEach(campo => {
+    watch(() => formPaciente[campo], (value) => {
+        if (!value) return;
+        formPaciente[campo] = value.replace(/[^\p{L}\s]/gu, '');
+    });
 });
 </script>
 
@@ -212,13 +237,16 @@ onMounted(async () => {
                         <label for="paciente_fecha_nacimiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de nacimiento</label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <input
-                                type="date"
+                                type="text"
+                                inputmode="numeric"
                                 name="paciente_fecha_nacimiento"
                                 id="paciente_fecha_nacimiento"
                                 class="form-control"
                                 :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }"
                                 v-model="formPaciente.fecha_nacimiento"
                                 :disabled="soloLectura"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_nacimiento">
                                 {{ formPaciente.errors.fecha_nacimiento }}
@@ -364,7 +392,7 @@ onMounted(async () => {
                                 :class="{ 'is-invalid': formPaciente.errors?.centro_salud_id }"
                                 v-model="formPaciente.centro_salud_id"
                                 @change="resetPromotor"
-                                :disabled="cargandoCentrosSalud || soloLectura"
+                                :disabled="cargandoCentrosSalud || soloLectura || blockSelectPromotor"
                             >
                                 <option value="">Seleccionar centro</option>
                                 <option v-for="centro in centrosSalud" :key="centro.id" :value="centro.id">
@@ -387,7 +415,7 @@ onMounted(async () => {
                                 class="form-select"
                                 :class="{ 'is-invalid': formPaciente.errors?.promotor_id }"
                                 v-model="formPaciente.promotor_id"
-                                :disabled="cargandoPromotores || soloLectura"
+                                :disabled="cargandoPromotores || soloLectura || blockSelectPromotor"
                             >
                                 <option value="">Seleccionar</option>
                                 <option v-for="promotor in promotoresFiltered" :key="promotor.id" :value="promotor.id">
@@ -405,13 +433,16 @@ onMounted(async () => {
                         <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha enrolamiento</label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <input
-                                type="date"
+                                type="text"
+                                inputmode="numeric"
                                 name="paciente_fecha_enrolamiento"
                                 id="paciente_fecha_enrolamiento"
                                 class="form-control"
                                 :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }"
                                 v-model="formPaciente.fecha_enrolamiento"
                                 :disabled="soloLectura"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
                             />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_enrolamiento">
                                 {{ formPaciente.errors.fecha_enrolamiento }}
@@ -430,14 +461,19 @@ onMounted(async () => {
                                 </span>
                             </template>
                             <template v-else>
-                                <div class="form-check" :class="{ 'is-invalid': formPaciente.errors.diagnosticos }" v-for="diagnostico in diagnosticos" :key="diagnostico.id">
+                                <div
+                                    class="form-check"
+                                    :class="{ 'is-invalid': formPaciente.errors.diagnosticos }"
+                                    v-for="diagnostico in diagnosticos"
+                                    :key="diagnostico.id"
+                                >
                                     <input
                                         type="checkbox"
                                         class="form-check-input"
                                         :value="diagnostico.id"
                                         :id="`diagnostico-${diagnostico.id}`"
                                         v-model="formPaciente.diagnosticos"
-                                        :disabled="soloLectura"
+                                        :disabled="soloLectura || paciente || diagnostico.id === 3"
                                     />
                                     <label :for="`diagnostico-${diagnostico.id}`" class="form-check-label">
                                         {{ diagnostico.nombre }}
@@ -450,29 +486,29 @@ onMounted(async () => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <label for="paciente_paquete" class="col-12 col-sm-4 col-xl-4 col-form-label">Paquete asignado</label>
-                        <div class="col-12 col-sm-8 col-xl-6">
-                            <select
-                                name="paciente_paquete"
-                                id="paciente_paquete"
-                                class="form-select"
-                                :class="{ 'is-invalid': formPaciente.errors.paquete_id }"
-                                v-model="formPaciente.paquete_id"
-                                :disabled="cargandoPaquetes || soloLectura"
-                            >
-                                <option value="">Seleccionar</option>
-                                <option v-for="paquete in paquetes" :key="paquete.id" :value="paquete.id">
-                                    {{ paquete.nombre }}
-                                </option>
-                            </select>
-                            <div class="invalid-feedback" v-if="formPaciente.errors?.paquete_id">
-                                {{ formPaciente.errors.paquete_id }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!--                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">-->
+<!--                    <div class="row">-->
+<!--                        <label for="paciente_paquete" class="col-12 col-sm-4 col-xl-4 col-form-label">Paquete asignado</label>-->
+<!--                        <div class="col-12 col-sm-8 col-xl-6">-->
+<!--                            <select-->
+<!--                                name="paciente_paquete"-->
+<!--                                id="paciente_paquete"-->
+<!--                                class="form-select"-->
+<!--                                :class="{ 'is-invalid': formPaciente.errors.paquete_id }"-->
+<!--                                v-model="formPaciente.paquete_id"-->
+<!--                                :disabled="cargandoPaquetes || soloLectura"-->
+<!--                            >-->
+<!--                                <option value="">Seleccionar</option>-->
+<!--                                <option v-for="paquete in paquetes" :key="paquete.id" :value="paquete.id">-->
+<!--                                    {{ paquete.nombre }}-->
+<!--                                </option>-->
+<!--                            </select>-->
+<!--                            <div class="invalid-feedback" v-if="formPaciente.errors?.paquete_id">-->
+<!--                                {{ formPaciente.errors.paquete_id }}-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
             </div>
         </div>
         <template v-if="verUsuarioPassword">
@@ -493,8 +529,8 @@ onMounted(async () => {
                                     class="form-control"
                                     :class="{ 'is-invalid': formPaciente.errors.documento }"
                                     v-model="formPaciente.documento"
-                                    @input="soloNumeros"
                                     :disabled="soloLectura"
+                                    maxlength="8"
                                 />
                                 <div class="invalid-feedback" v-if="formPaciente.errors?.documento">
                                     {{ formPaciente.errors.documento }}

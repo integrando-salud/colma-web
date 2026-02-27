@@ -32,7 +32,10 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    interaccion: null,
+    interaccion: {
+        type: Object,
+        default: null,
+    },
     datosClinicos: {
         type: Object,
         default: () => [],
@@ -59,8 +62,11 @@ const formPaciente = useTemplateRef('formPaciente');
 const formContacto = useTemplateRef('formContacto');
 const guardando = ref(false);
 const modalCancelar = useTemplateRef('modalCancelar');
+const modalConfirmar = useTemplateRef('modalConfirmar');
 
 const guardar = () => {
+    hideModalConfirmar();
+
     switch (props.step) {
         case 'datos_paciente':
             saveDatosPaciente();
@@ -101,7 +107,20 @@ const hideModalCancelar = () => {
 
 const confirmCancelar = () => {
     hideModalCancelar();
-    router.get(route('dashboard.pacientes.index'));
+
+    const redirectTo = props.interaccion
+        ? route('dashboard.pacientes.interacciones', props.paciente.id)
+        : route('dashboard.pacientes.index');
+
+    router.get(redirectTo);
+};
+
+const showModalConfirmar = () => {
+    modalConfirmar.value.showModal();
+};
+
+const hideModalConfirmar = () => {
+    modalConfirmar.value.hideModal();
 };
 </script>
 
@@ -174,7 +193,7 @@ const confirmCancelar = () => {
                                 }"
                                 data-bs-toggle="dropdown"
                             >
-                                Interacciones
+                                Contactos pendientes
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
@@ -198,7 +217,7 @@ const confirmCancelar = () => {
                             <AlertasHistorial :alertas="alertasHistoricas" />
                         </template>
                         <template v-else-if="step === 'nueva-interaccion'">
-                            <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta />
+                            <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta :interaccion />
                         </template>
                         <template v-else-if="step === 'historial-interacciones'">
                             <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones :interaccion />
@@ -218,7 +237,7 @@ const confirmCancelar = () => {
                         <button type="button" class="btn btn-grey fw-semibold shadow me-2" @click="showModalCancelar">
                             Cancelar
                         </button>
-                        <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="guardar">
+                        <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="showModalConfirmar">
                             Guardar
                         </button>
                     </template>
@@ -242,6 +261,25 @@ const confirmCancelar = () => {
             </button>
             <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="confirmCancelar">
                 Si, cancelar
+            </button>
+        </template>
+    </Modal>
+
+    <Modal id="modalConfirmar" ref="modalConfirmar" title="Confirmar">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    ¿Estás seguro/a que desea guardar la información?
+                </p>
+            </div>
+        </div>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalConfirmar">
+                No
+            </button>
+            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="guardar">
+                Si
             </button>
         </template>
     </Modal>

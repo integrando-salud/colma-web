@@ -9,8 +9,8 @@ use App\Http\Resources\Dashboard\AlertaResource;
 use App\Http\Resources\Dashboard\InteraccionResource;
 use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
+use App\Models\Interaccion;
 use App\Models\Paciente;
-use App\Services\AlertaService;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
@@ -137,6 +137,24 @@ class PacienteController extends Controller
         }
 
         return Inertia::render('Pacientes/Detalle', $viewData);
+    }
+
+    public function editInteraccion(Paciente $paciente, Interaccion $interaccion)
+    {
+        if (auth()->user()->isNotA('superusuario', 'supervisor_pais')) {
+            return back()->with('error', 'No tienes permiso para realizar esta acción.');
+        }
+
+        if ($interaccion->paciente_id !== $paciente->id) {
+            return back()->with('error', 'La interacción no pertenece a este paciente.');
+        }
+
+        return Inertia::render('Pacientes/Detalle', [
+            'paciente' => new PacienteResource($paciente),
+            'step' => 'nueva-interaccion',
+            'interaccion' => new InteraccionResource($interaccion),
+            'alerta' => $interaccion->alerta ? new AlertaResource($interaccion->alerta) : null,
+        ]);
     }
 
     public function datosClinicos(Request $request, Paciente $paciente, PacienteService $pacienteService)

@@ -5,6 +5,14 @@ defineProps({
     id: String,
     name: String,
     error: String,
+    readonly: {
+        type: Boolean,
+        default: false
+    },
+    disabled: {
+        type: Boolean,
+        default: false
+    }
 });
 
 const model = defineModel();
@@ -17,7 +25,7 @@ const toggle = () => {
 
 <template>
     <div class="input-group" :class="{ 'has-validation': error }">
-        <input :type :id :name class="form-control" :class="{ 'is-invalid': error }" v-model="model" />
+        <input :type :id :name class="form-control" :class="{ 'is-invalid': error }" v-model="model" :readonly :disabled />
         <button type="button" class="btn" @click="toggle">
             <i class="fa" :class="{
                 'fa-eye': type === 'password',

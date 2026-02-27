@@ -28,12 +28,15 @@ class Paciente extends Model
         'fecha_enrolamiento',
         'paquete_id',
         'activo',
+        'fecha_ultima_sincronizacion',
+        'clave',
     ];
 
     public $casts = [
         'fecha_nacimiento' => 'date',
         'fecha_enrolamiento' => 'date',
         'activo' => 'boolean',
+        'fecha_ultima_sincronizacion' => 'datetime',
     ];
 
     public function usuario()

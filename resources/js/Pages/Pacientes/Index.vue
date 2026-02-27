@@ -5,6 +5,10 @@ import Pacientes from "@/Components/Pages/Pacientes.vue";
 
 defineProps({
     pacientes: Object,
+    promotores: {
+        type: Object,
+        default: null
+    },
     filtros: Object,
 });
 </script>
@@ -13,7 +17,7 @@ defineProps({
     <Head title="Pacientes" />
 
     <Dashboard title="Pacientes">
-        <Pacientes :filtros :pacientes :urlBase="route('dashboard.pacientes.index')" />
+        <Pacientes :filtros :pacientes :promotores :urlBase="route('dashboard.pacientes.index')" />
     </Dashboard>
 </template>
 

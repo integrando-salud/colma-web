@@ -103,7 +103,24 @@ onMounted(() => {
                                         <td>{{ interaccion.fecha_proximo_contacto }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-secondary btn-sm text-white me-1" @click="interaccionSelected = interaccion">Ver más</button>
-                                            <button v-if="puedeEliminar" type="button" class="btn btn-danger btn-sm text-white" @click="showModalEliminarInteraccion(interaccion)">Eliminar</button>
+                                            <template v-if="puedeEliminar">
+                                                <a
+                                                    :href="route('dashboard.pacientes.editInteraccion', {
+                                                        paciente: interaccion.paciente.id,
+                                                        interaccion: interaccion.id
+                                                    })"
+                                                    class="btn btn-success btn-sm text-white me-1"
+                                                >
+                                                    Editar
+                                                </a>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-danger btn-sm text-white"
+                                                    @click="showModalEliminarInteraccion(interaccion)"
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            </template>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -174,7 +191,7 @@ onMounted(() => {
                             Hora de contacto
                         </div>
                         <div class="col-12 col-sm-8 col-xl-4 py-2 align-content-center">
-                            {{ interaccionSelected.hora }}
+                            {{ interaccionSelected.hora_am_pm }}
                         </div>
                     </div>
                 </div>
@@ -251,7 +268,7 @@ onMounted(() => {
                             Hora
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.hora_cita_final }}
+                            {{ interaccionSelected.hora_cita_final_am_pm }}
                         </div>
                     </div>
                 </div>
@@ -270,7 +287,7 @@ onMounted(() => {
                 </div>
             </div>
             <div
-                v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del tratamiento' || interaccionSelected.motivo === 'Seguimiento mensual'"
+                v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || interaccionSelected.motivo === 'Seguimiento mensual'"
                 class="row"
             >
                 <div class="col-12 py-2 align-content-center fw-bold">
@@ -331,7 +348,7 @@ onMounted(() => {
                 </div>
             </div>
             <div
-                v-if="interaccionSelected.motivo === 'No adherencia a las sesiones'"
+                v-if="interaccionSelected.motivo === 'No completa las sesiones'"
                 class="row"
             >
                 <div class="col-12 py-2 align-content-center fw-bold">

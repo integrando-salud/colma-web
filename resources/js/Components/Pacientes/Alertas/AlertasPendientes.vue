@@ -38,7 +38,7 @@ const props = defineProps({
                     <td>{{ alerta.rango_normal }}</td>
                     <td>{{ alerta.fecha }}</td>
                     <td>{{ alerta.fecha_contacto }}</td>
-                    <td>{{ alerta.recomendacion }}</td>
+                    <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
                         <a v-if="alerta.paciente.activo"
                             :href="route('dashboard.pacientes.createInteraccion', {
@@ -63,6 +63,7 @@ const props = defineProps({
                     <tr>
                         <th>Alerta</th>
                         <th>Fecha de alerta</th>
+                        <th>Fecha máxima de contacto</th>
                         <th>Recomendación</th>
                         <th>Estado</th>
                     </tr>
@@ -71,7 +72,8 @@ const props = defineProps({
                 <tr v-for="alerta in alertas.operativas" :key="alerta.id">
                     <td>{{ alerta.descripcion }}</td>
                     <td>{{ alerta.fecha }}</td>
-                    <td>{{ alerta.recomendacion }}</td>
+                    <td>{{ alerta.fecha_contacto }}</td>
+                    <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
                         <a :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
@@ -89,5 +91,7 @@ const props = defineProps({
 </template>
 
 <style scoped>
-
+.recomendacion {
+    white-space: pre-wrap;
+}
 </style>

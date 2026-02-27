@@ -54,6 +54,8 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.interacciones');
         Route::get('{paciente}/interacciones/crear', [PacienteController::class, 'createInteraccion'])
             ->name('dashboard.pacientes.createInteraccion');
+        Route::get('{paciente}/interacciones/{interaccion}/editar', [PacienteController::class, 'editInteraccion'])
+            ->name('dashboard.pacientes.editInteraccion');
         Route::get('{paciente}/datos-clinicos', [PacienteController::class, 'datosClinicos'])
             ->name('dashboard.pacientes.datosClinicos');
     });

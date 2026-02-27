@@ -89,4 +89,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Paciente::class, 'promotor_id');
     }
+
+    public function paciente()
+    {
+        return $this->hasOne(Paciente::class, 'user_id');
+    }
 }
