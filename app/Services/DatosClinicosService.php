@@ -95,7 +95,7 @@ class DatosClinicosService
         }
     }
 
-    protected function getRecomendacionGlucosa(int $valor)
+    public function getRecomendacionGlucosa(int $valor)
     {
         if ($valor < 70) {
             return 'Contactar y preguntar si pudo agendar un control con su médico.';
@@ -141,7 +141,7 @@ class DatosClinicosService
         }
     }
 
-    protected function getRecomendacionPresionArterial(int $presionSistolica, int $presionDiastolica)
+    public function getRecomendacionPresionArterial(int $presionSistolica, int $presionDiastolica)
     {
         if ($presionSistolica >= 180 || $presionDiastolica >= 120) {
             return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
@@ -149,6 +149,17 @@ class DatosClinicosService
             return 'Contactar y preguntar si pudo agendar un control con su médico.';
         } elseif ($presionSistolica < 90) {
             return 'Contactar y preguntar si pudo acceder a atención médica.';
+        }
+
+        return null;
+    }
+
+    public function getRecomendacionEstadoAnimo(int $valor)
+    {
+        $umbral = (int) config('app.valor_alerta_estado_animo');
+
+        if ($valor >= $umbral) {
+            return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
         }
 
         return null;
@@ -180,8 +191,8 @@ class DatosClinicosService
                 'fecha_sincronizacion' => $d['fecha_sincronizacion'],
             ]);
 
-            if ($valor > config('app.valor_alerta_estado_animo')) {
-                $recomendacion = 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
+            $recomendacion = $this->getRecomendacionEstadoAnimo($valor);
+            if ($recomendacion !== null) {
                 $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
 
                 $this->saveAlerta(
