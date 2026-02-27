@@ -35,7 +35,7 @@ const props = defineProps({
                         <tr>
                             <td>Estado de ánimo</td>
                             <td v-for="(dato, key) in datosClinicos" :key="key">
-                                -
+                                {{ dato.estado_animo_valor ?? '-' }}
                             </td>
                         </tr>
                         <tr>
