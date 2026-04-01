@@ -11,6 +11,8 @@ use App\Models\MultimediaRead;
 use App\Models\Paciente;
 use App\Models\PresionArterial;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -125,7 +127,16 @@ class DatosClinicosService
                     ? 'Presión arterial baja'
                     : 'Presión arterial elevada / alta';
 
-                $recomendacion = $this->getRecomendacionPresionArterial($registroPresion->presion_sistolica, $registroPresion->presion_diastolica);
+                $recomendacion = $this->getRecomendacionPresionArterial(
+                    $registroPresion->presion_sistolica,
+                    $registroPresion->presion_diastolica,
+                    $idPaciente
+                );
+
+                if ($recomendacion === null) {
+                    continue;
+                }
+
                 $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
 
                 $this->saveAlerta(
@@ -141,11 +152,40 @@ class DatosClinicosService
         }
     }
 
-    public function getRecomendacionPresionArterial(int $presionSistolica, int $presionDiastolica)
+    public function getRecomendacionPresionArterial(
+        int $presionSistolica,
+        int $presionDiastolica,
+        int $idPaciente
+    ): ?string
     {
         if ($presionSistolica >= 180 || $presionDiastolica >= 120) {
             return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
-        } elseif (($presionSistolica >= 140 && $presionSistolica <= 179) || ($presionDiastolica >= 90 && $presionDiastolica <= 119)) {
+        } elseif ($this->isPresionElevada($presionSistolica, $presionDiastolica)) {
+            // Esta alerta se dispara solo si la condición se cumple para los últimos 4 registros consecutivos y en días diferentes
+            $cantidadRegistros = 4;
+            $ultimosRegistros = $this->getUltimosRegistrosPresionArterial($idPaciente, $cantidadRegistros);
+
+            if ($ultimosRegistros->count() < $cantidadRegistros) {
+                return null;
+            }
+
+            $sonDiasDiferentes = $this->checkUltimosRegistrosFechasDiferentes($cantidadRegistros, $ultimosRegistros);
+
+            if (!$sonDiasDiferentes) {
+                return null;
+            }
+
+            $todosConPresionElevada = $ultimosRegistros->every(
+                fn ($registro) => $this->isPresionElevada(
+                    (int) $registro->presion_sistolica,
+                    (int) $registro->presion_diastolica
+                )
+            );
+
+            if (!$todosConPresionElevada) {
+                return null;
+            }
+
             return 'Contactar y preguntar si pudo agendar un control con su médico.';
         } elseif ($presionSistolica < 90) {
             return 'Contactar y preguntar si pudo acceder a atención médica.';
@@ -154,11 +194,36 @@ class DatosClinicosService
         return null;
     }
 
+    private function isPresionElevada(int $presionSistolica, int $presionDiastolica): bool
+    {
+        return ($presionSistolica >= 140 && $presionSistolica <= 179) || ($presionDiastolica >= 90 && $presionDiastolica <= 119);
+    }
+
+    public function getUltimosRegistrosPresionArterial(int $idPaciente, int $cantidadRegistros): Collection
+    {
+        return PresionArterial::query()
+            ->where('paciente_id', $idPaciente)
+            ->orderBy('fecha_registro', 'desc')
+            ->limit($cantidadRegistros)
+            ->get();
+    }
+
+    private function checkUltimosRegistrosFechasDiferentes(int $cantidadRegistros, Collection $ultimosRegistros): bool
+    {
+        $fechasUnicas = $ultimosRegistros
+            ->pluck('fecha_registro')
+            ->map(fn ($fechaRegistro) => Carbon::parse($fechaRegistro)->toDateString())
+            ->unique();
+
+        return $ultimosRegistros->count() === $cantidadRegistros
+            && $fechasUnicas->count() === $cantidadRegistros;
+    }
+
     public function getRecomendacionEstadoAnimo(int $valor)
     {
-        $umbral = (int) config('app.valor_alerta_estado_animo');
-
-        if ($valor >= $umbral) {
+        if ($valor >= 10 && $valor <= 14) {
+            return 'Contactar y preguntar si pudo agendar un control con su médico.';
+        } elseif ($valor >= 15) {
             return 'Contactar y preguntar si pudo acceder a atención en emergencias/urgencias.';
         }
 
