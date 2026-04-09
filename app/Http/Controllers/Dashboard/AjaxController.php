@@ -142,4 +142,38 @@ class AjaxController extends Controller
             ], 500);
         }
     }
+
+    public function contarContactosPendientes(User $usuario, UsuarioService $usuarioService)
+    {
+        try {
+            $contactosPendientes = $usuarioService->countPacientesConContactosPendientes($usuario->id);
+
+            return response()->json(['contactos_pendientes' => $contactosPendientes]);
+        } catch (Throwable $th) {
+            Log::error('Error al contar los contactos pendientes: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'Se produjo un error al contar los contactos pendientes.');
+
+            return response()->json([], 500);
+        }
+    }
+
+    public function contarPacientesConAlertasPendientes(User $usuario, UsuarioService $usuarioService)
+    {
+        try {
+            $pacientesConAlertasPendientes = $usuarioService->countPacientesConAlertas($usuario->id);
+
+            return response()->json(['pacientes_con_alertas_pendientes' => $pacientesConAlertasPendientes]);
+        } catch (Throwable $th) {
+            Log::error('Error al contar los pacientes con alertas pendientes: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'Se produjo un error al contar los pacientes con alertas pendientes.');
+
+            return response()->json([], 500);
+        }
+    }
 }

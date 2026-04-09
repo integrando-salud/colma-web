@@ -5,11 +5,13 @@ import { useNotificationStore } from "@/Stores/notification";
 
 const page = usePage();
 const pacientesActivos = ref(0);
+const pacientesConAlertas = ref(0);
+const contactosPendientes = ref(0);
 const notification = useNotificationStore();
 
 const countPacientesActivos = async () => {
     try {
-        const { data } = await axios.get(route('ajax.usuario.pacientesActivos', {
+        const { data } = await axios.get(route('ajax.usuario.contarPacientesActivos', {
             usuario: page.props.usuario.id
         }));
 
@@ -19,8 +21,34 @@ const countPacientesActivos = async () => {
     }
 };
 
+const countPacientesConAlertas = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.usuario.contarPacientesConAlertasPendientes', {
+            usuario: page.props.usuario.id
+        }));
+
+        pacientesConAlertas.value = data.pacientes_con_alertas_pendientes;
+    } catch (error) {
+        notification.errorNotification('Error al contar los pacientes con alertas pendientes');
+    }
+};
+
+const countContactosPendientes = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.usuario.contarContactosPendientes', {
+            usuario: page.props.usuario.id
+        }));
+
+        contactosPendientes.value = data.contactos_pendientes;
+    } catch (error) {
+        notification.errorNotification('Error al contar los contactos pendientes');
+    }
+};
+
 onMounted(async () => {
     await countPacientesActivos();
+    await countPacientesConAlertas();
+    await countContactosPendientes();
 });
 </script>
 
@@ -38,13 +66,13 @@ onMounted(async () => {
                     </div>
                     <div class="col-12 col-sm-4 col-md-4 mb-3 mb-md-0 text-center">
                         <div class="fs-1 fw-semibold">
-                            {{ $page.props.usuario.numero_alertas }}
+                            {{ pacientesConAlertas }}
                         </div>
                         <div>alertas</div>
                     </div>
                     <div class="col-12 col-sm-4 col-md-4 text-center">
-                        <div class="fs-1 fw-semibold">3</div>
-                        <div>contactos pendientes</div>
+                        <div class="fs-1 fw-semibold">{{ contactosPendientes }}</div>
+                        <div>contactos</div>
                     </div>
                 </div>
             </div>

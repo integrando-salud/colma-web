@@ -81,7 +81,7 @@ class InteraccionService
 
             if ($alertaId) {
                 $dataAlerta = [
-                    'revisado' => $data['contactado'] ? now() : null,
+                    'revisado' => $interaccion->contactado ? now() : null,
                     'user_id' => auth()->user()->id,
                 ];
 

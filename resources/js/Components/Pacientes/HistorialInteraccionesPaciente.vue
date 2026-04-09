@@ -84,23 +84,23 @@ onMounted(() => {
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Fecha y hora</th>
-                                        <th>Usuario</th>
-                                        <th>Estado</th>
-                                        <th>Modalidad</th>
-                                        <th>Motivo</th>
-                                        <th>Nueva fecha de contacto</th>
+                                        <th class="text-center">Fecha y hora</th>
+                                        <th class="text-center">Usuario</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Modalidad</th>
+                                        <th class="text-center">Motivo</th>
+                                        <th class="text-center">Nueva fecha de contacto</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="interaccion in interacciones.data" :key="interaccion.id">
-                                        <td>{{ interaccion.fecha + ' ' + interaccion.hora }}</td>
-                                        <td>{{ interaccion.usuario.nombre }}</td>
-                                        <td>{{ interaccion.contactado_descripcion }}</td>
-                                        <td>{{ interaccion.modalidad }}</td>
-                                        <td>{{ interaccion.motivo }}</td>
-                                        <td>{{ interaccion.fecha_proximo_contacto }}</td>
+                                        <td class="text-center">{{ interaccion.fecha + ' ' + interaccion.hora }}</td>
+                                        <td class="text-center">{{ interaccion.usuario.nombre }}</td>
+                                        <td class="text-center">{{ interaccion.contactado_descripcion }}</td>
+                                        <td class="text-center">{{ interaccion.modalidad }}</td>
+                                        <td class="text-center">{{ interaccion.motivo }}</td>
+                                        <td class="text-center">{{ interaccion.fecha_proximo_contacto ?? 'No aplica' }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-secondary btn-sm text-white me-1" @click="interaccionSelected = interaccion">Ver más</button>
                                             <template v-if="puedeEliminar">
@@ -127,7 +127,7 @@ onMounted(() => {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" class="text-center small border-top">
-                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} interacciones
+                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos realizados
                                         </td>
                                     </tr>
                                 </tfoot>

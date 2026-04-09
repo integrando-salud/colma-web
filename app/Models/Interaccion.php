@@ -32,6 +32,16 @@ class Interaccion extends Model
         'Contacto iniciado por el participante',
     ];
 
+    public const MOTIVOS_CONTACTO_CORTOS = [
+        'Agendar cita de entrenamiento' => 'Entrenamiento',
+        'Cita de entrenamiento' => 'Entrenamiento',
+        'Seguimiento 2 semanas luego del entrenamiento' => 'Seguimiento 2 semanas',
+        'Seguimiento mensual' => 'Seguimiento mensual',
+        'Agendar cita final' => 'Agendar cita final',
+        'Cita final' => 'Cita final',
+        'Re-entrenamiento' => 'Re-entrenamiento',
+    ];
+
     public const MOTIVOS_CONTACTO_ALERTA = [
         'No completa las sesiones',
         'Problemas de conexión',
