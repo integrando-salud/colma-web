@@ -266,7 +266,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo';
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda';
                 })
             ],
             'pedido_ayuda_otro' => [
@@ -280,14 +280,14 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_d' => [
@@ -309,7 +309,11 @@ class StoreInteraccionRequest extends FormRequest
             'integer' => 'Este campo debe ser un número entero.',
             'boolean' => 'El valor seleccionado no es válido.',
             'date' => 'Ingrese una fecha válida.',
+            'date_format' => 'Ingrese una fecha válida en formato DD/MM/AAAA.',
             'in' => 'El valor seleccionado no es válido.',
+
+            'hora.date_format' => 'Ingrese una hora válida en formato HH:MM.',
+            'hora_cita_final.date_format' => 'Ingrese una hora válida en formato HH:MM.',
         ];
     }
 }

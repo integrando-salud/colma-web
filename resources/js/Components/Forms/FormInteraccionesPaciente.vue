@@ -151,7 +151,7 @@ const motivosContacto = computed(() => {
             return [
                 'No completa las sesiones',
                 'Problemas de conexión',
-                'Pedido de ayuda a través del aplicativo',
+                'Pedido de ayuda',
             ];
         }
     } else {
@@ -219,7 +219,7 @@ const handleChangeMotivoContacto = () => {
             formContacto.alerta_clinica_pregunta_a = '';
         }
 
-        if (formContacto.motivo !== 'Pedido de ayuda a través del aplicativo') {
+        if (formContacto.motivo !== 'Pedido de ayuda') {
             formContacto.pedido_ayuda_pregunta_a = [];
             formContacto.pedido_ayuda_pregunta_b = null;
         }
@@ -459,14 +459,14 @@ onMounted(async () => {
             formContacto.motivo = 'Alerta clínica';
         } else if (props.alerta.tipo === 'operativa') {
             switch (props.alerta.descripcion) {
-                case 'No completa sesiones':
-                    formContacto.motivo = 'No completa las sesiones';
-                    break;
-                case 'No se conecta':
+                case 'Problemas de conexión':
                     formContacto.motivo = 'Problemas de conexión';
                     break;
+                case 'No se conecta':
+                    formContacto.motivo = 'No completa las sesiones';
+                    break;
                 case 'Pedido de ayuda':
-                    formContacto.motivo = 'Pedido de ayuda a través del aplicativo';
+                    formContacto.motivo = 'Pedido de ayuda';
                     break;
             }
         }
@@ -585,17 +585,23 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             Fecha de contacto
                         </label>
                         <div class="col-12 col-sm-4 col-md-3 col-lg-6 col-xl-4">
-                            <input
-                                type="text"
-                                inputmode="numeric"
-                                name="contacto_fecha"
-                                id="contacto_fecha"
-                                class="form-control"
-                                :class="{ 'is-invalid': formContacto.errors?.fecha }"
-                                v-model="formContacto.fecha"
-                                v-maska="'##/##/####'"
-                                data-maska-eager
-                            />
+                            <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha }">
+                                <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha }">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </span>
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    name="contacto_fecha"
+                                    id="contacto_fecha"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': formContacto.errors?.fecha }"
+                                    v-model="formContacto.fecha"
+                                    v-maska="'##/##/####'"
+                                    data-maska-eager
+                                    placeholder="DD/MM/AAAA"
+                                />
+                            </div>
                             <div class="invalid-feedback" v-if="formContacto.errors?.fecha">
                                 {{ formContacto.errors.fecha }}
                             </div>
@@ -610,17 +616,23 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
                                 <div class="row gx-2">
                                     <div class="col-6">
-                                        <input
-                                            type="text"
-                                            inputmode="numeric"
-                                            name="contacto_hora"
-                                            id="contacto_hora"
-                                            class="form-control"
-                                            :class="{ 'is-invalid': formContacto.errors?.hora }"
-                                            v-model="formContacto.hora_display"
-                                            v-maska="'##:##'"
-                                            data-maska-eager
-                                        />
+                                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora }">
+                                            <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora }">
+                                                <i class="fa fa-clock"></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                inputmode="numeric"
+                                                name="contacto_hora"
+                                                id="contacto_hora"
+                                                class="form-control"
+                                                :class="{ 'is-invalid': formContacto.errors?.hora }"
+                                                v-model="formContacto.hora_display"
+                                                v-maska="'##:##'"
+                                                data-maska-eager
+                                                placeholder="HH:MM"
+                                            />
+                                        </div>
                                         <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
                                             {{ formContacto.errors.hora }}
                                         </div>
@@ -809,17 +821,23 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
                                 <div class="row gx-2">
                                     <div class="col-6">
-                                        <input
-                                            type="text"
-                                            inputmode="numeric"
-                                            name="contacto_hora_cita_final"
-                                            id="contacto_hora_cita_final"
-                                            class="form-control"
-                                            :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
-                                            v-model="formContacto.hora_cita_final_display"
-                                            v-maska="'##:##'"
-                                            data-maska-eager
-                                        />
+                                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }">
+                                            <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita_final }">
+                                                <i class="fa fa-clock"></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                inputmode="numeric"
+                                                name="contacto_hora_cita_final"
+                                                id="contacto_hora_cita_final"
+                                                class="form-control"
+                                                :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }"
+                                                v-model="formContacto.hora_cita_final_display"
+                                                v-maska="'##:##'"
+                                                data-maska-eager
+                                                placeholder="HH:MM"
+                                            />
+                                        </div>
                                         <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_cita_final">
                                             {{ formContacto.errors.hora_cita_final }}
                                         </div>
@@ -1402,7 +1420,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </div>
             </div>
             <div
-                v-if="formContacto.motivo === 'Pedido de ayuda a través del aplicativo'"
+                v-if="formContacto.motivo === 'Pedido de ayuda'"
                 class="col-12"
             >
                 <div class="row">
@@ -1548,17 +1566,23 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         Nueva fecha de contacto
                     </label>
                     <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
-                        <input
-                            type="text"
-                            inputmode="numeric"
-                            name="contacto_nueva_fecha_contacto"
-                            id="contacto_nueva_fecha_contacto"
-                            class="form-control"
-                            :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }"
-                            v-model="formContacto.nueva_fecha_contacto"
-                            v-maska="'##/##/####'"
-                            data-maska-eager
-                        />
+                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }">
+                            <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.nueva_fecha_contacto }">
+                                <i class="fa fa-calendar-alt"></i>
+                            </span>
+                            <input
+                                type="text"
+                                inputmode="numeric"
+                                name="contacto_nueva_fecha_contacto"
+                                id="contacto_nueva_fecha_contacto"
+                                class="form-control"
+                                :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }"
+                                v-model="formContacto.nueva_fecha_contacto"
+                                v-maska="'##/##/####'"
+                                data-maska-eager
+                                placeholder="DD/MM/AAAA"
+                            />
+                        </div>
                         <div class="invalid-feedback" v-if="formContacto.errors?.nueva_fecha_contacto">
                             {{ formContacto.errors.nueva_fecha_contacto }}
                         </div>

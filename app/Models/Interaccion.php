@@ -46,7 +46,7 @@ class Interaccion extends Model
         'No completa las sesiones',
         'Problemas de conexión',
         'Alerta clínica',
-        'Pedido de ayuda a través del aplicativo',
+        'Pedido de ayuda',
     ];
 
     public const DESCRIPCION_CONTACTO = [

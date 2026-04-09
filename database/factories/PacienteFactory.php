@@ -144,7 +144,7 @@ class PacienteFactory extends Factory
                         'entidad_tipo' => null,
                         'descripcion' => fake()->randomElement([
                             'No se conecta',
-                            'No completa sesiones',
+                            'Problemas de conexión',
                             'Pedido de ayuda',
                         ]),
                         'fecha' => fake()->dateTimeBetween($paciente->fecha_enrolamiento)->format('Y-m-d'),

@@ -449,7 +449,7 @@ onMounted(() => {
                 </div>
             </div>
             <div
-                v-if="interaccionSelected.motivo === 'Pedido de ayuda a través del aplicativo'"
+                v-if="interaccionSelected.motivo === 'Pedido de ayuda'"
                 class="row"
             >
                 <div class="col-12 py-2 align-content-center fw-bold">
