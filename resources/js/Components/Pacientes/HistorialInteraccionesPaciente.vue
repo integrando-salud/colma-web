@@ -237,6 +237,16 @@ onMounted(() => {
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            {{ 'Hora programada para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.hora_cita_am_pm }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
                             {{ 'Lugar acordado para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
@@ -459,9 +469,6 @@ onMounted(() => {
                     <ul>
                         <li v-for="(item, index) in interaccionSelected.pedido_ayuda_pregunta_a" :key="index">
                             {{ item }}
-                            <span v-if="item === 'Otro' && interaccionSelected.pedido_ayuda_otro">
-                                ({{ interaccionSelected.pedido_ayuda_otro }})
-                            </span>
                         </li>
                     </ul>
                 </div>

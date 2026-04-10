@@ -30,6 +30,7 @@ class InteraccionService
             $interaccion->fecha_cita = !empty($data['fecha_cita'])
                 ? implode('-', array_reverse(explode('/', $data['fecha_cita'])))
                 : null;
+            $interaccion->hora_cita = data_get($data, 'hora_cita');
             $interaccion->lugar_cita = data_get($data, 'lugar_cita');
             $interaccion->lugar_cita_otro = data_get($data, 'lugar_cita_otro');
             $interaccion->fecha_cita_final = !empty($data['fecha_cita_final'])
@@ -71,7 +72,6 @@ class InteraccionService
             $interaccion->alerta_clinica_pregunta_e = data_get($data, 'alerta_clinica_pregunta_e');
             $interaccion->alerta_clinica_pregunta_f = data_get($data, 'alerta_clinica_pregunta_f');
             $interaccion->pedido_ayuda_pregunta_a = data_get($data, 'pedido_ayuda_pregunta_a');
-            $interaccion->pedido_ayuda_otro = data_get($data, 'pedido_ayuda_otro');
             $interaccion->pedido_ayuda_pregunta_b = data_get($data, 'pedido_ayuda_pregunta_b');
             $interaccion->pedido_ayuda_pregunta_c = data_get($data, 'pedido_ayuda_pregunta_c');
             $interaccion->pedido_ayuda_pregunta_d = !empty($data['pedido_ayuda_pregunta_d'])

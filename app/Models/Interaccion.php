@@ -11,14 +11,20 @@ class Interaccion extends Model
 
     public const MODALIDADES = [
         'Llamada por teléfono / WhatsApp',
-        'Visita domiciliaria',
+        'Encuentro presencial',
     ];
 
     public const MOTIVOS_REPROGRAMACION = [
         'No responde',
         'Teléfono apagado',
         'Número equivocado / cambió de número',
-        'Pidió que se le llame más tarde',
+        'Pidió que se le llame en otro momento',
+        'No hay nadie en el domicilio',
+        'No se encuentra en el domicilio',
+        'Se mudó',
+        'Domicilio equivocado / dirección no existe',
+        'No acudió a la cita',
+        'Pidió que se le llame / visite en otro momento',
     ];
 
     public const MOTIVOS_CONTACTO = [
@@ -68,6 +74,7 @@ class Interaccion extends Model
         'observaciones',
         'motivo_reprogramacion',
         'fecha_cita',
+        'hora_cita',
         'lugar_cita',
         'lugar_cita_otro',
         'fecha_cita_final',
@@ -99,7 +106,6 @@ class Interaccion extends Model
         'alerta_clinica_pregunta_e',
         'alerta_clinica_pregunta_f',
         'pedido_ayuda_pregunta_a',
-        'pedido_ayuda_otro',
         'pedido_ayuda_pregunta_b',
         'pedido_ayuda_pregunta_c',
         'pedido_ayuda_pregunta_d',

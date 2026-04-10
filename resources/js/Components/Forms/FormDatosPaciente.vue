@@ -436,7 +436,7 @@ camposSoloLetras.forEach(campo => {
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha enrolamiento</label>
+                        <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de inicio</label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <div class="input-group" :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }">
                                 <span class="input-group-text" :class="{ 'border-danger': formPaciente.errors?.fecha_enrolamiento }">

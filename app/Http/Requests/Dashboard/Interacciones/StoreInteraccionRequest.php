@@ -73,6 +73,13 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('lugar_cita') === 'Otro';
                 })
             ],
+            'hora_cita' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                })
+            ],
             'fecha_cita_final' => [
                 'nullable',
                 'date_format:d/m/Y',
@@ -267,13 +274,6 @@ class StoreInteraccionRequest extends FormRequest
                 'array',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda';
-                })
-            ],
-            'pedido_ayuda_otro' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array('Otro', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_b' => [

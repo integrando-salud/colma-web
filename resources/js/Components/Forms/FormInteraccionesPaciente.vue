@@ -104,15 +104,30 @@ const convertirHora24a12 = (hora24) => {
 
 const modalidades = [
     'Llamada por teléfono / WhatsApp',
-    'Visita domiciliaria',
+    'Encuentro presencial',
 ];
 
-const motivosReprogramacion = [
-    'No responde',
-    'Teléfono apagado',
-    'Número equivocado / cambió de número',
-    'Pidió que se le llame más tarde',
-];
+const motivosReprogramacion = computed(() => {
+    if (formContacto.modalidad === 'Llamada por teléfono / WhatsApp') {
+        return [
+            'No responde',
+            'Teléfono apagado',
+            'Número equivocado / cambió de número',
+            'Pidió que se le llame en otro momento',
+        ];
+    } else if (formContacto.modalidad === 'Encuentro presencial') {
+        return [
+            'No hay nadie en el domicilio',
+            'No se encuentra en el domicilio',
+            'Se mudó',
+            'Domicilio equivocado / dirección no existe',
+            'No acudió a la cita',
+            'Pidió que se le llame / visite en otro momento',
+        ];
+    }
+
+    return [];
+});
 
 const dificultadesNoAdherencia = [
     'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
@@ -184,6 +199,20 @@ const fechaProgramadaCitaTitle = computed(() => {
 
 const lugarAcordadoCitaTitle = computed(() => {
     let title = 'Lugar acordado para cita';
+
+    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+        title += ' de entrenamiento';
+    }
+
+    if (formContacto.motivo === 'Agendar cita final') {
+        title += ' final';
+    }
+
+    return title;
+});
+
+const horaProgramadaCitaTitle = computed(() => {
+    let title = 'Hora para la cita';
 
     if (formContacto.motivo === 'Agendar cita de entrenamiento') {
         title += ' de entrenamiento';
@@ -343,10 +372,6 @@ const handleChangeAlertaClinicaPreguntaE = () => {
 };
 
 const handleChangePedidoAyudaPreguntaA = () => {
-    if (!formContacto.pedido_ayuda_pregunta_a.includes('Otro')) {
-        formContacto.pedido_ayuda_otro = null;
-    }
-
     if (!formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')) {
         formContacto.pedido_ayuda_pregunta_b = null;
         formContacto.pedido_ayuda_pregunta_c = '';
@@ -365,6 +390,14 @@ const submit = async () => {
 
         if (hora24) {
             formContacto.hora = hora24;
+        }
+    }
+
+    if (formContacto.hora_cita_display && formContacto.hora_cita_meridiano) {
+        const hora24 = convertirHora12a24(formContacto.hora_cita_display, formContacto.hora_cita_meridiano);
+
+        if (hora24) {
+            formContacto.hora_cita = hora24;
         }
     }
 
@@ -437,7 +470,6 @@ const fillDataInteraccion = () => {
     formContacto.alerta_clinica_pregunta_e = props.interaccion.alerta_clinica_pregunta_e;
     formContacto.alerta_clinica_pregunta_f = props.interaccion.alerta_clinica_pregunta_f;
     formContacto.pedido_ayuda_pregunta_a = props.interaccion.pedido_ayuda_pregunta_a;
-    formContacto.pedido_ayuda_otro = props.interaccion.pedido_ayuda_otro;
     formContacto.pedido_ayuda_pregunta_b = props.interaccion.pedido_ayuda_pregunta_b;
     formContacto.pedido_ayuda_pregunta_c = props.interaccion.pedido_ayuda_pregunta_c;
     formContacto.pedido_ayuda_pregunta_d = props.interaccion.pedido_ayuda_pregunta_d;
@@ -479,6 +511,10 @@ watch(() => formContacto.motivo, () => {
 
 watch(() => formContacto.contactado, () => {
     handleChangeResultado();
+});
+
+watch(() => formContacto.modalidad, () => {
+    formContacto.motivo_reprogramacion = '';
 });
 
 watch(() => formContacto.seguimiento_pregunta_a, () => {
@@ -552,6 +588,38 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
 
         <div class="col-12">
             <div class="row">
+                <div class="col-12 col-lg-8 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="row">
+                                <label for="contacto_motivo" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                                    Motivo de contacto
+                                </label>
+                                <div class="col-12 col-sm-8 col-xl-7">
+                                    <select
+                                        name="contacto_motivo"
+                                        id="contacto_motivo"
+                                        class="form-select"
+                                        :class="{ 'is-invalid': formContacto.errors?.motivo }"
+                                        v-model="formContacto.motivo"
+                                        :disabled="alerta"
+                                    >
+                                        <option value="">Seleccionar motivo</option>
+                                        <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
+                                    </select>
+                                    <div class="invalid-feedback" v-if="formContacto.errors?.motivo">
+                                        {{ formContacto.errors.motivo }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="row">
                 <div class="col-12 col-lg-6 mb-sm-3">
                     <div class="row">
                         <label for="contacto_resultado" class="col-12 col-sm-4 col-form-label">
@@ -608,48 +676,48 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         </div>
                     </div>
                 </div>
-                    <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
-                        <div class="row">
-                            <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
-                                Hora de contacto
-                            </label>
-                            <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
-                                <div class="row gx-2">
-                                    <div class="col-6">
-                                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora }">
-                                            <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora }">
-                                                <i class="fa fa-clock"></i>
-                                            </span>
-                                            <input
-                                                type="text"
-                                                inputmode="numeric"
-                                                name="contacto_hora"
-                                                id="contacto_hora"
-                                                class="form-control"
-                                                :class="{ 'is-invalid': formContacto.errors?.hora }"
-                                                v-model="formContacto.hora_display"
-                                                v-maska="'##:##'"
-                                                data-maska-eager
-                                                placeholder="HH:MM"
-                                            />
-                                        </div>
-                                        <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
-                                            {{ formContacto.errors.hora }}
-                                        </div>
+                <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
+                    <div class="row">
+                        <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
+                            Hora de contacto
+                        </label>
+                        <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
+                            <div class="row gx-2">
+                                <div class="col-6">
+                                    <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora }">
+                                        <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora }">
+                                            <i class="fa fa-clock"></i>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            inputmode="numeric"
+                                            name="contacto_hora"
+                                            id="contacto_hora"
+                                            class="form-control"
+                                            :class="{ 'is-invalid': formContacto.errors?.hora }"
+                                            v-model="formContacto.hora_display"
+                                            v-maska="'##:##'"
+                                            data-maska-eager
+                                            placeholder="HH:MM"
+                                        />
                                     </div>
-                                    <div class="col-6">
-                                        <select
-                                            class="form-select"
-                                            v-model="formContacto.hora_meridiano"
-                                        >
-                                            <option value="AM">AM</option>
-                                            <option value="PM">PM</option>
-                                        </select>
+                                    <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
+                                        {{ formContacto.errors.hora }}
                                     </div>
+                                </div>
+                                <div class="col-6">
+                                    <select
+                                        class="form-select"
+                                        v-model="formContacto.hora_meridiano"
+                                    >
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
             </div>
         </div>
         <div class="col-12">
@@ -674,37 +742,6 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     </select>
                                     <div class="invalid-feedback" v-if="formContacto.errors?.modalidad">
                                         {{ formContacto.errors.modalidad }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="row">
-                <div class="col-12 col-lg-8 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="row">
-                                <label for="contacto_motivo" class="col-12 col-sm-4 col-lg-3 col-form-label">
-                                    Motivo de contacto
-                                </label>
-                                <div class="col-12 col-sm-8 col-xl-7">
-                                    <select
-                                        name="contacto_motivo"
-                                        id="contacto_motivo"
-                                        class="form-select"
-                                        :class="{ 'is-invalid': formContacto.errors?.motivo }"
-                                        v-model="formContacto.motivo"
-                                        :disabled="alerta"
-                                    >
-                                        <option value="">Seleccionar motivo</option>
-                                        <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
-                                    </select>
-                                    <div class="invalid-feedback" v-if="formContacto.errors?.motivo">
-                                        {{ formContacto.errors.motivo }}
                                     </div>
                                 </div>
                             </div>
@@ -766,7 +803,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             </div>
                             <div
                                 v-if="formContacto.lugar_cita === 'Otro'"
-                                class="col-12 col-sm-8 col-lg-5 col-xl-4 offset-sm-4 offset-lg-0 mt-2 mt-lg-0"
+                                class="col-12 col-sm-8 col-lg-8 col-xl-6 offset-sm-4 mt-2 mt-lg-0"
                             >
                                 <input
                                     type="text"
@@ -779,6 +816,50 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 />
                                 <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_otro">
                                     {{ formContacto.errors.lugar_cita_otro }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
+                        <div class="row">
+                            <label for="contacto_hora" class="col-12 col-sm-4 col-form-label">
+                                {{ horaProgramadaCitaTitle }}
+                            </label>
+                            <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
+                                <div class="row gx-2">
+                                    <div class="col-6">
+                                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita }">
+                                        <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita }">
+                                            <i class="fa fa-clock"></i>
+                                        </span>
+                                            <input
+                                                type="text"
+                                                inputmode="numeric"
+                                                name="contacto_hora"
+                                                id="contacto_hora"
+                                                class="form-control"
+                                                :class="{ 'is-invalid': formContacto.errors?.hora_cita }"
+                                                v-model="formContacto.hora_cita_display"
+                                                v-maska="'##:##'"
+                                                data-maska-eager
+                                                placeholder="HH:MM"
+                                            />
+                                        </div>
+                                        <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_cita">
+                                            {{ formContacto.errors.hora_cita }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <select
+                                            class="form-select"
+                                            v-model="formContacto.hora_cita_meridiano"
+                                        >
+                                            <option value="AM">AM</option>
+                                            <option value="PM">PM</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1450,18 +1531,6 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         </div>
                         <div class="invalid-feedback d-block" v-if="formContacto.errors?.pedido_ayuda_pregunta_a">
                             {{ formContacto.errors.pedido_ayuda_pregunta_a }}
-                        </div>
-                        <input
-                            type="text"
-                            id="contacto_pedido_ayuda_otro"
-                            name="contacto_pedido_ayuda_otro"
-                            class="form-control"
-                            :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_otro }"
-                            v-model="formContacto.pedido_ayuda_otro"
-                            :disabled="!formContacto.pedido_ayuda_pregunta_a.includes('Otro')"
-                        />
-                        <div class="invalid-feedback" v-if="formContacto.errors?.pedido_ayuda_otro">
-                            {{ formContacto.errors.pedido_ayuda_otro }}
                         </div>
                     </div>
                     <div

@@ -33,12 +33,6 @@ const props = defineProps({
                             </td>
                         </tr>
                         <tr>
-                            <td>Estado de ánimo</td>
-                            <td v-for="(dato, key) in datosClinicos" :key="key">
-                                {{ dato.estado_animo_valor ?? '-' }}
-                            </td>
-                        </tr>
-                        <tr>
                             <td>Presión sistólica</td>
                             <td v-for="(dato, key) in datosClinicos" :key="key">
                                 {{ dato.presion_sistolica ?? '-' }}

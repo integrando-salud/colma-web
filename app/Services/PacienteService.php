@@ -254,13 +254,6 @@ class PacienteService
                 FROM presion_arterial
                 WHERE paciente_id = :paciente_id_fechas_presion
                     AND fecha_registro BETWEEN :fecha_inicio_fechas_presion AND :fecha_fin_fechas_presion
-
-                UNION
-
-                SELECT DATE(fecha_registro) AS fecha
-                FROM estado_animo
-                WHERE paciente_id = :paciente_id_fechas_estado_animo
-                    AND fecha_registro BETWEEN :fecha_inicio_fechas_estado_animo AND :fecha_fin_fechas_estado_animo
             ),
             fechas AS (
                 SELECT fecha
@@ -294,31 +287,16 @@ class PacienteService
                       AND fecha_registro BETWEEN :fecha_inicio_ultima_presion AND :fecha_fin_ultima_presion
                 ) t
                 WHERE rn = 1
-            ),
-            ult_estado_animo AS (
-                SELECT * FROM (
-                    SELECT
-                        id, paciente_id, valor,
-                        DATE(fecha_registro) AS fecha,
-                        fecha_registro,
-                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
-                    FROM estado_animo
-                    WHERE paciente_id = :paciente_id_ultimo_estado_animo
-                      AND fecha_registro BETWEEN :fecha_inicio_ultimo_estado_animo AND :fecha_fin_ultimo_estado_animo
-                ) t
-                WHERE rn = 1
             )
             SELECT
                 DATE_FORMAT(f.fecha, '%d/%m/%Y') AS fecha,
                 g.valor_mgdl AS glucosa_valor,
                 g.ayuno AS glucosa_ayuno,
                 p.presion_sistolica,
-                p.presion_diastolica,
-                ea.valor AS estado_animo_valor
+                p.presion_diastolica
             FROM fechas f
             LEFT JOIN ult_glucosa g ON g.fecha = f.fecha
             LEFT JOIN ult_presion p ON p.fecha = f.fecha
-            LEFT JOIN ult_estado_animo ea ON ea.fecha = f.fecha
             ORDER BY f.fecha ASC
         ", [
             'paciente_id_fechas_glucosa' => $paciente->id,
@@ -327,18 +305,12 @@ class PacienteService
             'paciente_id_fechas_presion' => $paciente->id,
             'fecha_inicio_fechas_presion' => $fechaDesde,
             'fecha_fin_fechas_presion' => $fechaHasta,
-            'paciente_id_fechas_estado_animo' => $paciente->id,
-            'fecha_inicio_fechas_estado_animo' => $fechaDesde,
-            'fecha_fin_fechas_estado_animo' => $fechaHasta,
             'paciente_id_ultima_glucosa' => $paciente->id,
             'fecha_inicio_ultima_glucosa' => $fechaDesde,
             'fecha_fin_ultima_glucosa' => $fechaHasta,
             'paciente_id_ultima_presion' => $paciente->id,
             'fecha_inicio_ultima_presion' => $fechaDesde,
             'fecha_fin_ultima_presion' => $fechaHasta,
-            'paciente_id_ultimo_estado_animo' => $paciente->id,
-            'fecha_inicio_ultimo_estado_animo' => $fechaDesde,
-            'fecha_fin_ultimo_estado_animo' => $fechaHasta,
         ]);
     }
 
