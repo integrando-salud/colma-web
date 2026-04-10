@@ -37,16 +37,14 @@ class InteraccionService
                 ? implode('-', array_reverse(explode('/', $data['fecha_cita_final'])))
                 : null;
             $interaccion->hora_cita_final = data_get($data, 'hora_cita_final');
-            $interaccion->lugar_cita_final = data_get($data, 'lugar_cita_final');
-            $interaccion->lugar_cita_final_otro = data_get($data, 'lugar_cita_final_otro');
             $interaccion->seguimiento_pregunta_a = data_get($data, 'seguimiento_pregunta_a');
             $interaccion->seguimiento_pregunta_b = data_get($data, 'seguimiento_pregunta_b');
             $interaccion->seguimiento_pregunta_c = data_get($data, 'seguimiento_pregunta_c');
             $interaccion->seguimiento_pregunta_d = data_get($data, 'seguimiento_pregunta_d');
             $interaccion->seguimiento_pregunta_e = data_get($data, 'seguimiento_pregunta_e');
-            $interaccion->seguimiento_pregunta_f = !empty($data['seguimiento_pregunta_f'])
-                ? implode('-', array_reverse(explode('/', $data['seguimiento_pregunta_f'])))
-                : null;
+            $interaccion->fecha_reentrenamiento = data_get($data, 'fecha_reentrenamiento');
+            $interaccion->hora_reentrenamiento = data_get($data, 'hora_reentrenamiento');
+            $interaccion->lugar_reentrenamiento = data_get($data, 'lugar_reentrenamiento');
             $interaccion->razon_contacto_participante = data_get($data, 'razon_contacto_participante');
             $interaccion->razon_contacto_participante_otro = data_get($data, 'razon_contacto_participante_otro');
             $interaccion->contacto_participante_acciones = data_get($data, 'contacto_participante_acciones');

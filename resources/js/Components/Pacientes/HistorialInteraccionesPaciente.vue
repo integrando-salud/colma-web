@@ -282,19 +282,6 @@ onMounted(() => {
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                            Lugar
-                        </div>
-                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.lugar_cita_final }}
-                            <span v-if="interaccionSelected.lugar_cita_final_otro">
-                                ({{ interaccionSelected.lugar_cita_final_otro }})
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div
                 v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || interaccionSelected.motivo === 'Seguimiento mensual'"

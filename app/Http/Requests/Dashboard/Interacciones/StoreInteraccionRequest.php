@@ -28,8 +28,20 @@ class StoreInteraccionRequest extends FormRequest
             'paciente_id' => ['required', 'exists:pacientes,id'],
             'alerta_id' => ['nullable', 'integer'],
             'contactado' => ['required', 'boolean'],
-            'fecha' => ['required', 'date_format:d/m/Y'],
-            'hora' => ['required', 'date_format:H:i'],
+            'fecha' => [
+                'nullable',
+                'date_format:d/m/Y',
+                Rule::requiredIf(function () {
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
+            ],
+            'hora' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
+            ],
             'modalidad' => [
                 'required',
                 'in:' . implode(',', Interaccion::MODALIDADES)
@@ -94,20 +106,6 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
                 })
             ],
-            'lugar_cita_final' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
-                })
-            ],
-            'lugar_cita_final_otro' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') && $this->input('lugar_cita_final') === 'Otro';
-                })
-            ],
             'seguimiento_pregunta_a' => [
                 'nullable',
                 'in:Si,No',
@@ -143,9 +141,22 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_c') === 'No';
                 })
             ],
-            'seguimiento_pregunta_f' => [
+            'fecha_reentrenamiento' => [
                 'nullable',
                 'date_format:d/m/Y',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
+            ],
+            'hora_reentrenamiento' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
+            ],
+            'lugar_reentrenamiento' => [
+                'nullable',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
                 })

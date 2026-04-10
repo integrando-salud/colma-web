@@ -11,7 +11,7 @@ class Interaccion extends Model
 
     public const MODALIDADES = [
         'Llamada por teléfono / WhatsApp',
-        'Encuentro presencial',
+        'Encuentro presencial / en persona',
     ];
 
     public const MOTIVOS_REPROGRAMACION = [
@@ -79,14 +79,14 @@ class Interaccion extends Model
         'lugar_cita_otro',
         'fecha_cita_final',
         'hora_cita_final',
-        'lugar_cita_final',
-        'lugar_cita_final_otro',
         'seguimiento_pregunta_a',
         'seguimiento_pregunta_b',
         'seguimiento_pregunta_c',
         'seguimiento_pregunta_d',
         'seguimiento_pregunta_e',
-        'seguimiento_pregunta_f',
+        'fecha_reentrenamiento',
+        'hora_reentrenamiento',
+        'lugar_reentrenamiento',
         'razon_contacto_participante',
         'razon_contacto_participante_otro',
         'contacto_participante_acciones',
@@ -118,7 +118,6 @@ class Interaccion extends Model
         'fecha_cita' => 'datetime',
         'fecha_cita_final' => 'datetime',
         'hora_cita_final' => 'datetime',
-        'seguimiento_pregunta_f' => 'datetime',
         'nueva_fecha_contacto' => 'datetime',
         'no_adherencia_pregunta_a' => 'array',
         'no_adherencia_pregunta_c' => 'datetime',

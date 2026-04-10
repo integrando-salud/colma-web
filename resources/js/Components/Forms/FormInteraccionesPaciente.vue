@@ -104,7 +104,7 @@ const convertirHora24a12 = (hora24) => {
 
 const modalidades = [
     'Llamada por teléfono / WhatsApp',
-    'Encuentro presencial',
+    'Encuentro presencial / en persona',
 ];
 
 const motivosReprogramacion = computed(() => {
@@ -115,7 +115,7 @@ const motivosReprogramacion = computed(() => {
             'Número equivocado / cambió de número',
             'Pidió que se le llame en otro momento',
         ];
-    } else if (formContacto.modalidad === 'Encuentro presencial') {
+    } else if (formContacto.modalidad === 'Encuentro presencial / en persona') {
         return [
             'No hay nadie en el domicilio',
             'No se encuentra en el domicilio',
@@ -256,8 +256,6 @@ const handleChangeMotivoContacto = () => {
         if (formContacto.motivo !== 'Cita de entrenamiento' && formContacto.motivo !== 'Cita final' && formContacto.motivo !== 'Re-entrenamiento') {
             formContacto.fecha_cita_final = null;
             formContacto.hora_cita_final = null;
-            formContacto.lugar_cita_final = '';
-            formContacto.lugar_cita_final_otro = null;
         }
 
         if (formContacto.motivo !== 'Seguimiento 2 semanas luego del entrenamiento' && formContacto.motivo !== 'Seguimiento mensual') {
@@ -266,7 +264,9 @@ const handleChangeMotivoContacto = () => {
             formContacto.seguimiento_pregunta_c = '';
             formContacto.seguimiento_pregunta_d = null;
             formContacto.seguimiento_pregunta_e = '';
-            formContacto.seguimiento_pregunta_f = null;
+            formContacto.fecha_reentrenamiento = null;
+            formContacto.hora_reentrenamiento = null;
+            formContacto.lugar_reentrenamiento = null;
         }
 
         if (formContacto.motivo !== 'Contacto iniciado por el participante') {
@@ -286,25 +286,21 @@ const handleChangeSeguimientoPreguntaA = () => {
 
 const handleChangeSeguimientoPreguntaC = () => {
     if (formContacto.seguimiento_pregunta_c !== 'No') {
-        formContacto.seguimiento_pregunta_f = null;
+
     }
 };
 
 const handleChangeSeguimientoPreguntaE = () => {
     if (formContacto.seguimiento_pregunta_e !== 'No') {
-        formContacto.seguimiento_pregunta_f = null;
+        formContacto.fecha_reentrenamiento = null;
+        formContacto.hora_reentrenamiento = null;
+        formContacto.lugar_reentrenamiento = null;
     }
 };
 
 const handleChangeLugarCita = () => {
     if (formContacto.lugar_cita !== 'Otro') {
         formContacto.lugar_cita_otro = null;
-    }
-};
-
-const handleChangeLugarCitaFinal = () => {
-    if (formContacto.lugar_cita_final !== 'Otro') {
-        formContacto.lugar_cita_final_otro = null;
     }
 };
 
@@ -440,17 +436,19 @@ const fillDataInteraccion = () => {
     formContacto.fecha_cita_final = props.interaccion.fecha_cita_final;
 
     const datosHoraCitaFinal = convertirHora24a12(props.interaccion.hora_cita_final);
+    const datosHoraReentrenamiento = convertirHora24a12(props.interaccion.hora_reentrenamiento);
     formContacto.hora_cita_final = props.interaccion.hora_cita_final;
     formContacto.hora_cita_final_display = datosHoraCitaFinal.hora12;
     formContacto.hora_cita_final_meridiano = datosHoraCitaFinal.meridiano;
-    formContacto.lugar_cita_final = props.interaccion.lugar_cita_final;
-    formContacto.lugar_cita_final_otro = props.interaccion.lugar_cita_final_otro;
     formContacto.seguimiento_pregunta_a = props.interaccion.seguimiento_pregunta_a;
     formContacto.seguimiento_pregunta_b = props.interaccion.seguimiento_pregunta_b;
     formContacto.seguimiento_pregunta_c = props.interaccion.seguimiento_pregunta_c;
     formContacto.seguimiento_pregunta_d = props.interaccion.seguimiento_pregunta_d;
     formContacto.seguimiento_pregunta_e = props.interaccion.seguimiento_pregunta_e;
-    formContacto.seguimiento_pregunta_f = props.interaccion.seguimiento_pregunta_f;
+    formContacto.fecha_reentrenamiento = props.interaccion.fecha_reentrenamiento;
+    formContacto.hora_reentrenamiento = props.interaccion.hora_reentrenamiento;
+    formContacto.hora_reentrenamiento_display = datosHoraReentrenamiento.hora12;
+    formContacto.lugar_reentrenamiento = props.interaccion.lugar_reentrenamiento;
     formContacto.razon_contacto_participante = props.interaccion.razon_contacto_participante;
     formContacto.razon_contacto_participante_otro = props.interaccion.razon_contacto_participante_otro;
     formContacto.contacto_participante_acciones = props.interaccion.contacto_participante_acciones;
@@ -531,10 +529,6 @@ watch(() => formContacto.seguimiento_pregunta_e, () => {
 
 watch(() => formContacto.lugar_cita, () => {
     handleChangeLugarCita();
-});
-
-watch(() => formContacto.lugar_cita_final, () => {
-    handleChangeLugarCitaFinal();
 });
 
 watch(() => formContacto.razon_contacto_participante, () => {
@@ -645,7 +639,10 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </div>
             </div>
         </div>
-        <div class="col-12">
+        <div
+            class="col-12"
+            v-if="(formContacto.motivo !== 'Cita de entrenamiento' && formContacto.motivo !== 'Cita final' && formContacto.motivo !== 'Re-entrenamiento') || !formContacto.contactado"
+        >
             <div class="row">
                 <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
                     <div class="row">
@@ -937,49 +934,6 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-12 col-lg-8 mb-sm-3">
-                        <div class="row">
-                            <label for="contacto_lugar_cita_final" class="col-12 col-sm-4 col-lg-3 col-form-label">
-                                Lugar
-                            </label>
-                            <div class="col-12 col-sm-8 col-lg-6">
-                                <select
-                                    name="contacto_lugar_cita_final"
-                                    id="contacto_lugar_cita_final"
-                                    class="form-select"
-                                    :class="{ 'is-invalid': formContacto.errors?.lugar_cita_final }"
-                                    v-model="formContacto.lugar_cita_final"
-                                >
-                                    <option value="">Seleccionar lugar</option>
-                                    <option value="Centro de salud">Centro de salud</option>
-                                    <option value="Vivienda del participante">Vivienda del participante</option>
-                                    <option value="Otro">Otro</option>
-                                </select>
-                                <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_final">
-                                    {{ formContacto.errors.lugar_cita_final }}
-                                </div>
-                            </div>
-                            <div
-                                v-if="formContacto.lugar_cita_final === 'Otro'"
-                                class="col-12 col-sm-8 col-lg-6 offset-sm-4 offset-lg-3 mt-2"
-                            >
-                                <input
-                                    type="text"
-                                    name="contacto_lugar_cita_final_otro"
-                                    id="contacto_lugar_cita_final_otro"
-                                    class="form-control"
-                                    placeholder="Escriba el lugar de la cita"
-                                    :class="{ 'is-invalid': formContacto.errors?.lugar_cita_final_otro }"
-                                    v-model="formContacto.lugar_cita_final_otro"
-                                />
-                                <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_final_otro">
-                                    {{ formContacto.errors.lugar_cita_final_otro }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div
                 v-if="formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || formContacto.motivo === 'Seguimiento mensual'"
@@ -1080,23 +1034,103 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 </div>
                             </div>
                             <template v-if="formContacto.seguimiento_pregunta_e === 'No'">
-                                <div class="col-12 col-lg-10 col-xl-7 py-2">
-                                    <label for="contacto_seguimiento_pregunta_f" class="form-label me-2">
-                                        Agenda una visita domiciliaria o un re-entrenamiento
-                                    </label>
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        name="contacto_seguimiento_pregunta_f"
-                                        id="contacto_seguimiento_pregunta_f"
-                                        class="form-control w-auto d-inline-block"
-                                        v-model="formContacto.seguimiento_pregunta_f"
-                                        :class="{ 'is-invalid': formContacto.errors?.seguimiento_pregunta_f }"
-                                        v-maska="'##/##/####'"
-                                        data-maska-eager
-                                    />
-                                    <div class="invalid-feedback" v-if="formContacto.errors?.seguimiento_pregunta_f">
-                                        {{ formContacto.errors.seguimiento_pregunta_f }}
+                                <div class="col-12">
+                                    <div class="form-label me-2">
+                                        Agenda un re-entrenamiento
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="row">
+                                        <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
+                                            <div class="row">
+                                                <label for="contacto_fecha_reentrenamiento" class="col-12 col-sm-4 col-form-label">
+                                                    Fecha re-entrenamiento
+                                                </label>
+                                                <div class="col-12 col-sm-4 col-md-3 col-lg-6 col-xl-4">
+                                                    <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha_reentrenamiento }">
+                                                    <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha_reentrenamiento }">
+                                                        <i class="fa fa-calendar-alt"></i>
+                                                    </span>
+                                                        <input
+                                                            type="text"
+                                                            inputmode="numeric"
+                                                            name="contacto_fecha_reentrenamiento"
+                                                            id="contacto_fecha_reentrenamiento"
+                                                            class="form-control"
+                                                            :class="{ 'is-invalid': formContacto.errors?.fecha_reentrenamiento }"
+                                                            v-model="formContacto.fecha_reentrenamiento"
+                                                            v-maska="'##/##/####'"
+                                                            data-maska-eager
+                                                            placeholder="DD/MM/AAAA"
+                                                        />
+                                                    </div>
+                                                    <div class="invalid-feedback" v-if="formContacto.errors?.fecha_reentrenamiento">
+                                                        {{ formContacto.errors.fecha_reentrenamiento }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-6 col-sm-12 col-lg-6 mb-sm-3">
+                                            <div class="row">
+                                                <label for="contacto_hora_reentrenamiento" class="col-12 col-sm-4 col-form-label">
+                                                    Hora re-entrenamiento
+                                                </label>
+                                                <div class="col-12 col-sm-4 col-md-3 col-lg-5 col-xl-4">
+                                                    <div class="row gx-2">
+                                                        <div class="col-6">
+                                                            <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }">
+                                                                    <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_reentrenamiento }">
+                                                                        <i class="fa fa-clock"></i>
+                                                                    </span>
+                                                                <input
+                                                                    type="text"
+                                                                    inputmode="numeric"
+                                                                    name="contacto_hora_reentrenamiento"
+                                                                    id="contacto_hora_reentrenamiento"
+                                                                    class="form-control"
+                                                                    :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }"
+                                                                    v-model="formContacto.hora_reentrenamiento_display"
+                                                                    v-maska="'##:##'"
+                                                                    data-maska-eager
+                                                                    placeholder="HH:MM"
+                                                                />
+                                                            </div>
+                                                            <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_reentrenamiento">
+                                                                {{ formContacto.errors.hora_reentrenamiento }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <select
+                                                                class="form-select"
+                                                                v-model="formContacto.hora_reentrenamiento_meridiano"
+                                                            >
+                                                                <option value="AM">AM</option>
+                                                                <option value="PM">PM</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 col-lg-10 col-xl-7 py-2 mb-3">
+                                            <label for="contacto_lugar_reentrenamiento" class="form-label me-2">
+                                                Lugar re-entrenamiento
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="contacto_lugar_reentrenamiento"
+                                                id="contacto_lugar_reentrenamiento"
+                                                class="form-control"
+                                                v-model="formContacto.lugar_reentrenamiento"
+                                                :class="{ 'is-invalid': formContacto.errors?.lugar_reentrenamiento }"
+                                            >
+                                            <div class="invalid-feedback" v-if="formContacto.errors?.lugar_reentrenamiento">
+                                                {{ formContacto.errors.lugar_reentrenamiento }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </template>
