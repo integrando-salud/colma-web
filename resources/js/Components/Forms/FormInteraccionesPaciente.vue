@@ -225,11 +225,47 @@ const horaProgramadaCitaTitle = computed(() => {
     return title;
 });
 
+const verFilaFechaProximoContacto = computed(() => {
+    return formContacto.contactado === 0
+        || formContacto.motivo === 'Agendar cita de entrenamiento'
+        || formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
+        || formContacto.motivo === 'Seguimiento mensual';
+});
+
+const setFechaProximoContacto = () => {
+    const getFechaMasDias = (dias) => {
+        const fecha = new Date();
+        fecha.setDate(fecha.getDate() + dias);
+
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+
+        return `${dia}/${mes}/${anio}`;
+    };
+
+    if (formContacto.contactado === 0) {
+        formContacto.nueva_fecha_contacto = null;
+    } else {
+        if (
+            formContacto.motivo === 'Agendar cita de entrenamiento' ||
+            formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
+        ) {
+            formContacto.nueva_fecha_contacto = getFechaMasDias(14);
+        } else if (formContacto.motivo === 'Seguimiento mensual') {
+            formContacto.nueva_fecha_contacto = getFechaMasDias(30);
+        } else {
+            formContacto.nueva_fecha_contacto = null;
+        }
+    }
+};
+
 const handleChangeResultado = () => {
     if (formContacto.contactado !== 0) {
         formContacto.motivo_reprogramacion = '';
-        formContacto.nueva_fecha_contacto = null;
     }
+
+    setFechaProximoContacto();
 };
 
 const handleChangeMotivoContacto = () => {
@@ -275,6 +311,8 @@ const handleChangeMotivoContacto = () => {
             formContacto.contacto_participante_acciones = null;
         }
     }
+
+    setFechaProximoContacto();
 };
 
 const handleChangeSeguimientoPreguntaA = () => {
@@ -1640,8 +1678,11 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                 </template>
             </div>
         </template>
-        <template v-if="formContacto.contactado === 0">
-            <div class="col-12 col-lg-8 mb-sm-3">
+        <template v-if="verFilaFechaProximoContacto">
+            <div
+                v-if="formContacto.contactado === 0"
+                class="col-12 col-lg-8 mb-sm-3"
+            >
                 <div class="row">
                     <label for="contacto_motivo_reprogramacion" class="col-12 col-sm-4 col-lg-3 col-form-label">
                         Motivo de reprogramación
@@ -1663,12 +1704,35 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-4 mb-sm-3">
+            <div
+                class="col-12 mb-sm-3"
+                :class="{
+                    'col-lg-4': formContacto.contactado === 0,
+                    'col-lg-6': formContacto.contactado === 1,
+                }"
+            >
                 <div class="row">
-                    <label for="contacto_nueva_fecha_contacto" class="col-12 col-sm-4 col-xl-4 col-form-label">
+                    <label
+                        for="contacto_nueva_fecha_contacto"
+                        class="col-12 col-sm-4 col-form-label"
+                        :class="{
+                            'col-lg-2': formContacto.contactado === '',
+                            'col-lg-4': formContacto.contactado !== '',
+                            'col-xl-4': formContacto.contactado !== '',
+                        }"
+                    >
                         Nueva fecha de contacto
                     </label>
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-8 col-xl-6">
+                    <div
+                        class="col-6 col-sm-4 col-md-3"
+                        :class="{
+                            'col-lg-8': formContacto.contactado === 0,
+                            'col-xl-6': formContacto.contactado === 0,
+                            'col-lg-6': formContacto.contactado === 1,
+                            'col-xl-4': formContacto.contactado === 1,
+                            'col-xl-2': formContacto.contactado === '',
+                        }"
+                    >
                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }">
                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.nueva_fecha_contacto }">
                                 <i class="fa fa-calendar-alt"></i>
