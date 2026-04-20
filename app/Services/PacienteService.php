@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,15 +14,16 @@ class PacienteService
 {
     public function queryGetPacientes(array $filters = [])
     {
+        $usuario = auth()->user();
         $query = Paciente::query();
 
-        if (auth()->user()->isA('promotor')) {
-            $query->where('promotor_id', auth()->user()->id);
-        } elseif (auth()->user()->isA('supervisor')) {
-            $query->whereIn('promotor_id', auth()->user()->promotores->pluck('id'));
-        } elseif (auth()->user()->isA('supervisor_pais')) {
-            $query->whereHas('centroSalud', function (Builder $query) {
-                $query->where('pais_id', auth()->user()->pais_id);
+        if ($usuario->isA('promotor')) {
+            $query->where('promotor_id', $usuario->id);
+        } elseif ($usuario->isA('supervisor')) {
+            $query->whereIn('promotor_id', $usuario->promotores->pluck('id'));
+        } elseif ($usuario->isA('supervisor_pais')) {
+            $query->whereHas('centroSalud', function (Builder $query) use ($usuario) {
+                $query->where('pais_id', $usuario->pais_id);
             });
         }
 
@@ -30,11 +32,48 @@ class PacienteService
         }]);
 
         $query->selectSub("
-            SELECT nueva_fecha_contacto
-            FROM interacciones
-            WHERE interacciones.paciente_id = pacientes.id
-            ORDER BY id DESC
-            LIMIT 1
+            SELECT MIN(fecha) FROM (
+                SELECT (
+                    SELECT CASE
+                        WHEN EXISTS (
+                            SELECT 1
+                            FROM interacciones i_contactado
+                            WHERE i_contactado.paciente_id = pacientes.id
+                                AND i_contactado.contactado = 1
+                                AND i_contactado.deleted_at IS NULL
+                                AND i_contactado.fecha >= (
+                                    SELECT i_programada.nueva_fecha_contacto
+                                    FROM interacciones i_programada
+                                    WHERE i_programada.paciente_id = pacientes.id
+                                        AND i_programada.nueva_fecha_contacto IS NOT NULL
+                                        AND i_programada.deleted_at IS NULL
+                                    ORDER BY i_programada.nueva_fecha_contacto
+                                    LIMIT 1
+                                )
+                        ) THEN NULL
+                        ELSE (
+                            SELECT i_programada.nueva_fecha_contacto
+                            FROM interacciones i_programada
+                            WHERE i_programada.paciente_id = pacientes.id
+                                AND i_programada.nueva_fecha_contacto IS NOT NULL
+                                AND i_programada.deleted_at IS NULL
+                            ORDER BY i_programada.nueva_fecha_contacto
+                            LIMIT 1
+                        )
+                    END
+                ) AS fecha
+                UNION ALL
+                SELECT (
+                    SELECT a.fecha_contacto
+                    FROM alertas a
+                    WHERE a.paciente_id = pacientes.id
+                        AND a.fecha_contacto IS NOT NULL
+                        AND a.revisado IS NULL
+                        AND a.deleted_at IS NULL
+                    ORDER BY a.fecha_contacto
+                    LIMIT 1
+                ) AS fecha
+            ) proximas_fechas
         ", 'nueva_fecha_contacto');
 
         if (!empty($filters['nombre'])) {
@@ -215,13 +254,6 @@ class PacienteService
                 FROM presion_arterial
                 WHERE paciente_id = :paciente_id_fechas_presion
                     AND fecha_registro BETWEEN :fecha_inicio_fechas_presion AND :fecha_fin_fechas_presion
-
-                UNION
-
-                SELECT DATE(fecha_registro) AS fecha
-                FROM estado_animo
-                WHERE paciente_id = :paciente_id_fechas_estado_animo
-                    AND fecha_registro BETWEEN :fecha_inicio_fechas_estado_animo AND :fecha_fin_fechas_estado_animo
             ),
             fechas AS (
                 SELECT fecha
@@ -255,31 +287,16 @@ class PacienteService
                       AND fecha_registro BETWEEN :fecha_inicio_ultima_presion AND :fecha_fin_ultima_presion
                 ) t
                 WHERE rn = 1
-            ),
-            ult_estado_animo AS (
-                SELECT * FROM (
-                    SELECT
-                        id, paciente_id, valor,
-                        DATE(fecha_registro) AS fecha,
-                        fecha_registro,
-                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
-                    FROM estado_animo
-                    WHERE paciente_id = :paciente_id_ultimo_estado_animo
-                      AND fecha_registro BETWEEN :fecha_inicio_ultimo_estado_animo AND :fecha_fin_ultimo_estado_animo
-                ) t
-                WHERE rn = 1
             )
             SELECT
                 DATE_FORMAT(f.fecha, '%d/%m/%Y') AS fecha,
                 g.valor_mgdl AS glucosa_valor,
                 g.ayuno AS glucosa_ayuno,
                 p.presion_sistolica,
-                p.presion_diastolica,
-                ea.valor AS estado_animo_valor
+                p.presion_diastolica
             FROM fechas f
             LEFT JOIN ult_glucosa g ON g.fecha = f.fecha
             LEFT JOIN ult_presion p ON p.fecha = f.fecha
-            LEFT JOIN ult_estado_animo ea ON ea.fecha = f.fecha
             ORDER BY f.fecha ASC
         ", [
             'paciente_id_fechas_glucosa' => $paciente->id,
@@ -288,18 +305,12 @@ class PacienteService
             'paciente_id_fechas_presion' => $paciente->id,
             'fecha_inicio_fechas_presion' => $fechaDesde,
             'fecha_fin_fechas_presion' => $fechaHasta,
-            'paciente_id_fechas_estado_animo' => $paciente->id,
-            'fecha_inicio_fechas_estado_animo' => $fechaDesde,
-            'fecha_fin_fechas_estado_animo' => $fechaHasta,
             'paciente_id_ultima_glucosa' => $paciente->id,
             'fecha_inicio_ultima_glucosa' => $fechaDesde,
             'fecha_fin_ultima_glucosa' => $fechaHasta,
             'paciente_id_ultima_presion' => $paciente->id,
             'fecha_inicio_ultima_presion' => $fechaDesde,
             'fecha_fin_ultima_presion' => $fechaHasta,
-            'paciente_id_ultimo_estado_animo' => $paciente->id,
-            'fecha_inicio_ultimo_estado_animo' => $fechaDesde,
-            'fecha_fin_ultimo_estado_animo' => $fechaHasta,
         ]);
     }
 
@@ -308,5 +319,140 @@ class PacienteService
         $paciente->activo = !$paciente->activo;
 
         return $paciente->save();
+    }
+
+    /**
+     * Obtiene las siguientes X fechas y motivos de contacto para un paciente
+     *
+     * @param Paciente $paciente
+     * @param int $cantidad
+     * @return array
+     */
+    public function getFechasProximosContactos(Paciente $paciente, int $cantidad = 3): array
+    {
+        $fechasContactoInteracciones = $this->getFechasProximosContactosProgramados($paciente);
+        $fechasContactoAlertas = $this->getFechasProximosContactosAlertas($paciente);
+        $fechas = collect()
+            ->merge($fechasContactoInteracciones->toArray())
+            ->merge($fechasContactoAlertas->toArray())
+            ->sortBy('fecha')
+            ->values()
+            ->map(function ($fecha) {
+                return [
+                    'fecha' => date('d/m/Y', strtotime($fecha['fecha'])),
+                    'motivo' => data_get(Interaccion::MOTIVOS_CONTACTO_CORTOS, $fecha['motivo'], $fecha['motivo'] ?? ''),
+                ];
+            })
+            ->take($cantidad);
+
+        return $fechas->toArray();
+    }
+
+    /**
+     * Obtiene las fechas y motivos de contacto programados para un paciente
+     *
+     * @param Paciente $paciente
+     * @return mixed
+     */
+    public function getFechasProximosContactosProgramados(Paciente $paciente): mixed
+    {
+        return $paciente->interacciones()
+            ->whereNotNull('nueva_fecha_contacto')
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('interacciones AS subquery')
+                    ->whereRaw('interacciones.nueva_fecha_contacto < subquery.fecha')
+                    ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id');
+            })
+            ->orderBy('nueva_fecha_contacto')
+            ->get(['motivo', 'nueva_fecha_contacto AS fecha']);
+    }
+
+    /**
+     * Obtiene las fechas y motivos de contacto producto de alertas para un paciente
+     *
+     * @param Paciente $paciente
+     * @return mixed
+     */
+    public function getFechasProximosContactosAlertas(Paciente $paciente): mixed
+    {
+        return $paciente->alertas()
+            ->whereNotNull('fecha_contacto')
+            ->whereNull('revisado')
+            ->orderBy('fecha_contacto')
+            ->selectRaw("
+                fecha_contacto AS fecha,
+                CASE
+                    WHEN tipo = 'operativa' THEN 'Alerta operativa'
+                    WHEN tipo = 'clinica' THEN 'Alerta clínica'
+                    ELSE ''
+                END AS motivo
+            ")
+            ->get();
+    }
+
+    /**
+     * Obtiene la fecha de contacto más próxima para un paciente
+     *
+     * @param Paciente $paciente
+     * @return mixed
+     */
+    public function getFechaProximoContacto(Paciente $paciente): mixed
+    {
+        $fechaContactoInteracciones = $this->getFechaProximoContactoProgramado($paciente);
+        $fechaContactoAlertas = $this->getFechaProximoContactoAlerta($paciente);
+
+        if (is_null($fechaContactoInteracciones)) {
+            return $fechaContactoAlertas;
+        }
+
+        if (is_null($fechaContactoAlertas)) {
+            return $fechaContactoInteracciones;
+        }
+
+        return strtotime($fechaContactoInteracciones) <= strtotime($fechaContactoAlertas)
+            ? $fechaContactoInteracciones
+            : $fechaContactoAlertas;
+    }
+
+    /**
+     * Obtiene la próxima fecha de contacto programada para un paciente
+     * Si ya fue contactado con posterioridad a esa fecha, devuelve NULL
+     *
+     * @param Paciente $paciente
+     * @return mixed|null
+     */
+    public function getFechaProximoContactoProgramado(Paciente $paciente): mixed
+    {
+        $fechaProximoContactoProgramado = $paciente->interacciones()
+            ->whereNotNull('nueva_fecha_contacto')
+            ->orderBy('nueva_fecha_contacto')
+            ->value('nueva_fecha_contacto');
+
+        if ($fechaProximoContactoProgramado) {
+            $contactado = $paciente->interacciones()
+                ->where('contactado', true)
+                ->where('fecha', '>=', $fechaProximoContactoProgramado)
+                ->first();
+
+            return $contactado ? null : $fechaProximoContactoProgramado;
+        }
+
+        return null;
+    }
+
+    /**
+     * Obtiene la próxima fecha de contacto producto de una alerta para un paciente
+     *
+     * @param Paciente $paciente
+     * @return mixed
+     */
+    public function getFechaProximoContactoAlerta(Paciente $paciente): mixed
+    {
+        return $paciente->alertas()
+            ->whereNotNull('fecha_contacto')
+            ->whereNull('revisado')
+            ->orderBy('fecha_contacto')
+            ->value('fecha_contacto');
     }
 }

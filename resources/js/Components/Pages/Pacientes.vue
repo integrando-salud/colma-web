@@ -249,7 +249,7 @@ onMounted(() => {
                                 }" @click="orderBy('numero_alertas')"></i>
                             </th>
                             <th>
-                                <span class="me-3">Fecha siguiente contacto</span>
+                                <span class="me-3">Siguiente contacto</span>
                                 <i class="fa order" :class="{
                                     'fa-chevron-down': formFiltros.orderBy !== 'fecha_proximo_contacto' || formFiltros.orderBy === 'fecha_proximo_contacto' && formFiltros.orderDir === 'asc',
                                     'fa-chevron-up': formFiltros.orderBy === 'fecha_proximo_contacto' && formFiltros.orderDir === 'desc'
@@ -363,193 +363,152 @@ onMounted(() => {
         @modalClosed="handleCloseModalDetallePaciente"
     >
         <template v-if="pacienteSelected">
-            <div class="row">
-                <div class="col-12 col-xl-4 text-primary-emphasis align-content-center mb-1 mb-xl-4">
+            <div class="row mb-4">
+                <div class="col-12 col-xl-4 align-content-center">
+                    <div class="row">
+                        <div class="col-12 text-primary-emphasis">
+                            <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
+                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo_descripcion }})</span>
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="col-12">
-                            <i class="fa-regular fa-user fa-2x me-3 pb-0"></i>
-                            <span class="fs-3 fw-semibold pb-0 me-3">{{ pacienteSelected.nombre }} {{ pacienteSelected.apellido }}</span>
-                            <span class="fs-4 pb-0">({{ pacienteSelected.edad }} años, {{ pacienteSelected.sexo }})</span>
+                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-xl-8 align-content-center mb-2 mb-xl-4">
+                <div class="col-12 col-xl-8 align-content-center">
                     <div class="row">
-                        <div class="col-12 col-lg-4">
-                            <span class="fw-semibold">Promotor:</span> {{ pacienteSelected.promotor.nombre }}
+                        <div class="col-12 col-md-4 col-lg-4 text-xl-end">
+                            <span class="fw-semibold">Usuario:</span> {{ pacienteSelected.usuario.documento }}
                         </div>
-                        <div class="col-12 col-lg-4">
-                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
-                        </div>
-                        <div class="col-12 col-lg-4">
-                            <span class="fw-semibold">Diagnósticos:</span> {{ pacienteSelectedDiagnosticos }}
+                        <div
+                            v-if="$page.props.usuario.pais?.codigo === 'PE'"
+                            class="col-12 col-md-8 col-lg-8 text-xl-end"
+                        >
+                            <span class="fw-semibold">Contraseña:</span>
+                            <Password
+                                name="paciente_password"
+                                id="paciente_password"
+                                class="ms-2 d-inline-flex"
+                                v-model="pacienteSelected.clave"
+                                :w-auto="true"
+                                :readonly="true"
+                            />
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
-                    Datos de contacto
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-primary-emphasis">Datos de contacto</h5>
                 </div>
-                <div class="col-12 col-xl-10 mb-2 mb-xl-4">
+                <div class="col-12 col-lg-4">
                     <div class="row">
-                        <div class="col-12 col-xl-3">
-                            <div>
-                                <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
-                            </div>
-                            <div>
-                                <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
-                            </div>
+                        <div class="col-12">
+                            <span class="fw-semibold">Teléfono 1:</span> {{ pacienteSelected.telefono }}
                         </div>
-                        <div class="col-12 col-xl-3">
-                            <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
+                        <div class="col-12">
+                            <span class="fw-semibold">Teléfono 2:</span> {{ pacienteSelected.telefono2 }}
                         </div>
-                        <div class="col-12 col-xl-3">
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="row">
+                        <div class="col-12">
                             <span class="fw-semibold">Dirección:</span> {{ pacienteSelected.direccion }}
                         </div>
-                        <div class="col-12 col-xl-3">
+                        <div class="col-12">
                             <span class="fw-semibold">Referencia:</span> {{ pacienteSelected.referencia }}
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
-                    Datos clínicos
-                </div>
-                <div class="col-12 col-xl-10 mb-xl-4">
-                    <div class="row">
-                        <div class="col-12 col-xl-4">
-                            <div class="table-responsive">
-                                <table class="table table-bordered bg-white text-center">
-                                    <tbody>
-                                        <template v-if="pacienteSelected.datos_clinicos.length">
-                                            <tr>
-                                                <th class="p-1">Registros</th>
-                                                <th v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                    {{ registro.fecha }}
-                                                </th>
-                                            </tr>
-                                            <tr>
-                                                <td class="p-1">Glucosa</td>
-                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                    {{ registro.glucosa_valor ?? '-' }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td class="p-1">Presión sistólica</td>
-                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                    {{ registro.presion_sistolica ?? '-' }}
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td class="p-1">Presión diastólica</td>
-                                                <td v-for="(registro, key) in pacienteSelected.datos_clinicos" :key="key" class="p-1">
-                                                    {{ registro.presion_diastolica ?? '-' }}
-                                                </td>
-                                            </tr>
-                                        </template>
-                                        <tr v-else>
-                                            <td class="p-1 border-1">Sin datos clínicos.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div class="col-12 col-xl-3 offset-xl-2 text-primary-emphasis fw-semibold">
-                            Fecha de contacto
-                        </div>
-                        <div class="col-12 col-xl-3">
-                            <div class="table-responsive">
-                                <table class="table table-bordered bg-white text-center">
-                                    <tbody>
-                                        <template v-if="pacienteSelected.interacciones.length">
-                                            <tr v-for="interaccion in pacienteSelected.interacciones" :key="interaccion.id">
-                                                <td class="p-1 border-1">
-                                                    <a
-                                                        :href="route('dashboard.pacientes.interacciones', { paciente: pacienteSelected.id, contacto: interaccion.id })"
-                                                        class="text-decoration-none d-block text-body"
-                                                    >
-                                                        {{ interaccion.fecha }}
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                        <tr v-else>
-                                            <td class="p-1 border-1">Sin contacto.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-xl-10">
-                    <div class="row">
-                        <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
-                            Datos de uso de la app
-                        </div>
-                        <div class="col-12 col-xl-10">
-                            <div class="row">
-                                <div class="col-12 col-xl-3">
-                                    <span class="fw-semibold">Fecha de inicio:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
-                                </div>
-                                <div class="col-12 col-xl-3">
-                                    <span class="fw-semibold">Sesiones completas:</span> 4/5
-                                </div>
-                                <div class="col-12 col-xl-3">
-                                    <span class="fw-semibold">Metas cumplidas:</span> 4
-                                </div>
-                                <div class="col-12 col-xl-3 mb-3">
-                                    <span class="fw-semibold">Fecha de última actualización de datos:</span> {{ pacienteSelected.fecha_ultima_sincronizacion }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
-                            Observaciones
-                        </div>
-                        <div class="col-12 col-xl-10">
-                            {{ pacienteSelected.observaciones }}
-                        </div>
-                    </div>
-                    <div class="row" v-if="$page.props.usuario.pais?.codigo === 'PE'">
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <span class="fw-semibold">DNI:</span> {{ pacienteSelected.documento }}
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3 mb-3 mb-xl-0">
-                            <span class="fw-semibold">Contraseña:</span>
-                            <Password name="paciente_password" id="paciente_password" v-model="pacienteSelected.clave" :readonly="true" />
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-2">
+                <div class="col-12 col-lg-4">
                     <div class="row">
                         <div class="col-12">
-                            <div class="mb-3 text-xl-end">
-                                <a class="btn btn-outline-primary px-3 py-2 shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
-                                    Ir a alertas
-                                    <br>
-                                    <i class="fa-solid fa-triangle-exclamation"></i>
-                                </a>
-                            </div>
-                            <div class="text-xl-end">
-                                <a class="btn bg-primary text-white px-3 shadow" :href="route('dashboard.pacientes.edit', pacienteSelected.id)">
-                                    Ir a detalle
-                                    <br>
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </a>
+                            <span class="fw-semibold">Email:</span> {{ pacienteSelected.email }}
+                        </div>
+                        <div class="col-12">
+                            <span class="fw-semibold">Fecha de inicio:</span> {{ pacienteSelected.fecha_enrolamiento_format }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-primary-emphasis">Siguiente contacto</h5>
+                </div>
+                <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-4">
+                    <div class="row">
+                        <div class="col-12 offset-sm-1 offset-md-3 offset-lg-5 offset-xl-11">
+                            <div class="table-responsive">
+                                <table class="table table-bordered bg-white text-center border">
+                                    <thead>
+                                        <tr>
+                                            <th class="p-1">Fecha</th>
+                                            <th class="p-1">Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <template v-if="pacienteSelected.proximos_contactos.length">
+                                            <tr v-for="(item, index) in pacienteSelected.proximos_contactos" :key="index">
+                                                <td class="p-1">
+                                                    {{ item.fecha }}
+                                                </td>
+                                                <td class="p-1">
+                                                    {{ item.motivo }}
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <tr v-else>
+                                            <td class="p-1">Sin contactos programados.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="text-primary-emphasis">Datos de uso de la aplicación</h5>
+                </div>
+                <div class="col-12">
+                    <span class="fw-semibold">Fecha de última actualización:</span> {{ pacienteSelected.fecha_ultima_sincronizacion }}
+                </div>
+                <div class="col-12 col-md-6">
+                    <span class="fw-semibold">Sesiones completas:</span> 4/5
+                </div>
+                <div class="col-12 col-md-6">
+                    <span class="fw-semibold">Metas cumplidas:</span> 4
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12 col-xl-2 text-primary-emphasis fw-semibold">
+                    Observaciones
+                </div>
+                <div class="col-12 col-xl-10">
+                    <textarea name="observaciones_textarea" id="observaciones_textarea" class="form-control">{{ pacienteSelected.observaciones }}</textarea>
                 </div>
             </div>
         </template>
 
         <template #footer>
+            <template v-if="pacienteSelected">
+                <a class="btn btn-outline-primary shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Ir a alertas
+                </a>
+                <a class="btn bg-primary text-white shadow" :href="route('dashboard.pacientes.edit', pacienteSelected.id)">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    Ir a detalle
+                </a>
+            </template>
             <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalDetallePaciente">
                 Cerrar
             </button>
@@ -568,5 +527,9 @@ onMounted(() => {
 
 .row-alerta .btn-ver-mas {
     color: #205BF1;
+}
+
+.order {
+    cursor: pointer;
 }
 </style>

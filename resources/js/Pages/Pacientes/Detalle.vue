@@ -164,8 +164,8 @@ const hideModalConfirmar = () => {
                                 href="#"
                                 class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
-                                    active: step === 'alertas',
-                                    'fw-bold': step === 'alertas',
+                                    active: step === 'alertas' || step === 'alertas-historial',
+                                    'fw-bold': step === 'alertas' || step === 'alertas-historial',
                                     disabled: !paciente,
                                     'opacity-25': !paciente,
                                 }"
@@ -193,12 +193,12 @@ const hideModalConfirmar = () => {
                                 }"
                                 data-bs-toggle="dropdown"
                             >
-                                Contactos pendientes
+                                Contactos
                             </a>
                             <ul class="dropdown-menu">
                                 <li>
-                                    <a v-if="paciente?.activo" :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nueva interacción</a>
-                                    <a :href="paciente ? route('dashboard.pacientes.interacciones', paciente.id) : '#'" class="dropdown-item">Historial de interacciones</a>
+                                    <a v-if="paciente?.activo" :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nuevo contacto</a>
+                                    <a :href="paciente ? route('dashboard.pacientes.interacciones', paciente.id) : '#'" class="dropdown-item">Historial de contactos</a>
                                 </li>
                             </ul>
                         </li>
@@ -288,5 +288,9 @@ const hideModalConfirmar = () => {
 <style scoped>
 .nav-tabs .nav-item:first-child a {
     border-bottom-left-radius: 0 !important;
+}
+
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    background-color: #c3c3c3;
 }
 </style>

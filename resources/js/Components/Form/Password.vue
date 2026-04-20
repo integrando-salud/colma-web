@@ -12,6 +12,10 @@ defineProps({
     disabled: {
         type: Boolean,
         default: false
+    },
+    wAuto: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -24,8 +28,8 @@ const toggle = () => {
 </script>
 
 <template>
-    <div class="input-group" :class="{ 'has-validation': error }">
-        <input :type :id :name class="form-control" :class="{ 'is-invalid': error }" v-model="model" :readonly :disabled />
+    <div class="input-group" :class="{ 'has-validation': error, 'w-auto': wAuto }">
+        <input :type :id :name class="form-control" :class="{ 'is-invalid': error, 'w-auto': wAuto }" v-model="model" :readonly :disabled />
         <button type="button" class="btn" @click="toggle">
             <i class="fa" :class="{
                 'fa-eye': type === 'password',

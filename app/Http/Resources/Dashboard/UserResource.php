@@ -33,7 +33,6 @@ class UserResource extends JsonResource
             'supervisor' => $this->supervisor ? new UserResource($this->supervisor) : null,
             'numero_pacientes' => $usuarioService->countPacientes($this->id),
             'numero_accesos' => $this->accesos,
-            'numero_alertas' => $usuarioService->countAlertas($this->id),
             'ultimo_acceso' => $this->ultimo_acceso?->format('d/m/Y H:i'),
         ];
     }

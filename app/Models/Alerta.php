@@ -48,4 +48,9 @@ class Alerta extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function interacciones()
+    {
+        return $this->hasMany(Interaccion::class);
+    }
 }

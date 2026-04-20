@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             DiagnosticosSeeder::class,
             PacienteSeeder::class,
+            UpdateDescripcionAlertasOperativasSeeder::class,
         ]);
     }
 }

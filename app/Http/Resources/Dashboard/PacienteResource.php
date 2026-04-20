@@ -19,6 +19,8 @@ class PacienteResource extends JsonResource
     {
         $pacienteService = new PacienteService();
         $registros = $pacienteService->getDatosClinicos($this->id, 2);
+        $fechaProximoContacto = $pacienteService->getFechaProximoContacto($this->resource);
+        $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
 
         return [
             'id' => $this->id,
@@ -54,14 +56,9 @@ class PacienteResource extends JsonResource
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
             'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',
             'alertas_pendientes' => $this->numero_alertas ?? $this->alertas()->whereNull('revisado')->count(),
-            'interacciones' => $this->interacciones()->orderByDesc('id')->take(3)->get(['id', 'fecha'])->map(function ($interaccion) {
-                return [
-                    'id' => $interaccion->id,
-                    'fecha' => $interaccion->fecha->format('d/m/Y'),
-                ];
-            }),
+            'proximos_contactos' => $proximosContactos,
             'datos_clinicos' => $registros,
-            'fecha_proximo_contacto' => $this->interacciones->last()?->nueva_fecha_contacto?->format('d/m/Y'),
+            'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),
             'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
         ];
     }

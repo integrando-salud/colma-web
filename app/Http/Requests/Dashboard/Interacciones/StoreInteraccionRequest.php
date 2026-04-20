@@ -28,8 +28,20 @@ class StoreInteraccionRequest extends FormRequest
             'paciente_id' => ['required', 'exists:pacientes,id'],
             'alerta_id' => ['nullable', 'integer'],
             'contactado' => ['required', 'boolean'],
-            'fecha' => ['required', 'date_format:d/m/Y'],
-            'hora' => ['required', 'date_format:H:i'],
+            'fecha' => [
+                'nullable',
+                'date_format:d/m/Y',
+                Rule::requiredIf(function () {
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
+            ],
+            'hora' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                })
+            ],
             'modalidad' => [
                 'required',
                 'in:' . implode(',', Interaccion::MODALIDADES)
@@ -73,6 +85,13 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('lugar_cita') === 'Otro';
                 })
             ],
+            'hora_cita' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                })
+            ],
             'fecha_cita_final' => [
                 'nullable',
                 'date_format:d/m/Y',
@@ -85,20 +104,6 @@ class StoreInteraccionRequest extends FormRequest
                 'date_format:H:i',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
-                })
-            ],
-            'lugar_cita_final' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
-                })
-            ],
-            'lugar_cita_final_otro' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') && $this->input('lugar_cita_final') === 'Otro';
                 })
             ],
             'seguimiento_pregunta_a' => [
@@ -136,9 +141,22 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_c') === 'No';
                 })
             ],
-            'seguimiento_pregunta_f' => [
+            'fecha_reentrenamiento' => [
                 'nullable',
                 'date_format:d/m/Y',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
+            ],
+            'hora_reentrenamiento' => [
+                'nullable',
+                'date_format:H:i',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
+            ],
+            'lugar_reentrenamiento' => [
+                'nullable',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
                 })
@@ -266,28 +284,21 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo';
-                })
-            ],
-            'pedido_ayuda_otro' => [
-                'nullable',
-                'string',
-                Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array('Otro', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda';
                 })
             ],
             'pedido_ayuda_pregunta_b' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda a través del aplicativo' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_d' => [
@@ -309,7 +320,11 @@ class StoreInteraccionRequest extends FormRequest
             'integer' => 'Este campo debe ser un número entero.',
             'boolean' => 'El valor seleccionado no es válido.',
             'date' => 'Ingrese una fecha válida.',
+            'date_format' => 'Ingrese una fecha válida en formato DD/MM/AAAA.',
             'in' => 'El valor seleccionado no es válido.',
+
+            'hora.date_format' => 'Ingrese una hora válida en formato HH:MM.',
+            'hora_cita_final.date_format' => 'Ingrese una hora válida en formato HH:MM.',
         ];
     }
 }

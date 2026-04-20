@@ -140,9 +140,8 @@ class RecalcularAlertasClinicas extends Command
     {
         $recomendaciones = [
             'No se conecta' => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
-            'No completa sesiones' => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
+            'Problemas de conexión' => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
             'Pedido de ayuda' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
-            'Pedido de ayuda a través del aplicativo' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
         ];
 
         $query = Alerta::query()

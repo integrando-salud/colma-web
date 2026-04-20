@@ -84,23 +84,23 @@ onMounted(() => {
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Fecha y hora</th>
-                                        <th>Usuario</th>
-                                        <th>Estado</th>
-                                        <th>Modalidad</th>
-                                        <th>Motivo</th>
-                                        <th>Nueva fecha de contacto</th>
+                                        <th class="text-center">Fecha y hora</th>
+                                        <th class="text-center">Usuario</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Modalidad</th>
+                                        <th class="text-center">Motivo</th>
+                                        <th class="text-center">Nueva fecha de contacto</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="interaccion in interacciones.data" :key="interaccion.id">
-                                        <td>{{ interaccion.fecha + ' ' + interaccion.hora }}</td>
-                                        <td>{{ interaccion.usuario.nombre }}</td>
-                                        <td>{{ interaccion.contactado_descripcion }}</td>
-                                        <td>{{ interaccion.modalidad }}</td>
-                                        <td>{{ interaccion.motivo }}</td>
-                                        <td>{{ interaccion.fecha_proximo_contacto }}</td>
+                                        <td class="text-center">{{ interaccion.fecha + ' ' + interaccion.hora }}</td>
+                                        <td class="text-center">{{ interaccion.usuario.nombre }}</td>
+                                        <td class="text-center">{{ interaccion.contactado_descripcion }}</td>
+                                        <td class="text-center">{{ interaccion.modalidad }}</td>
+                                        <td class="text-center">{{ interaccion.motivo }}</td>
+                                        <td class="text-center">{{ interaccion.fecha_proximo_contacto ?? 'No aplica' }}</td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-secondary btn-sm text-white me-1" @click="interaccionSelected = interaccion">Ver más</button>
                                             <template v-if="puedeEliminar">
@@ -127,7 +127,7 @@ onMounted(() => {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" class="text-center small border-top">
-                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} interacciones
+                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos realizados
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -237,6 +237,16 @@ onMounted(() => {
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
                         <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
+                            {{ 'Hora programada para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
+                        </div>
+                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
+                            {{ interaccionSelected.hora_cita_am_pm }}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
                             {{ 'Lugar acordado para cita ' + (interaccionSelected.motivo === 'Agendar cita de entrenamiento' ? 'de entrenamiento' : 'final') }}
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
@@ -269,19 +279,6 @@ onMounted(() => {
                         </div>
                         <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
                             {{ interaccionSelected.hora_cita_final_am_pm }}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
-                    <div class="row">
-                        <div class="col-12 col-sm-4 col-xl-4 py-2 align-content-center fw-bold">
-                            Lugar
-                        </div>
-                        <div class="col-12 col-sm-8 col-xl-6 py-2 align-content-center">
-                            {{ interaccionSelected.lugar_cita_final }}
-                            <span v-if="interaccionSelected.lugar_cita_final_otro">
-                                ({{ interaccionSelected.lugar_cita_final_otro }})
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -449,7 +446,7 @@ onMounted(() => {
                 </div>
             </div>
             <div
-                v-if="interaccionSelected.motivo === 'Pedido de ayuda a través del aplicativo'"
+                v-if="interaccionSelected.motivo === 'Pedido de ayuda'"
                 class="row"
             >
                 <div class="col-12 py-2 align-content-center fw-bold">
@@ -459,9 +456,6 @@ onMounted(() => {
                     <ul>
                         <li v-for="(item, index) in interaccionSelected.pedido_ayuda_pregunta_a" :key="index">
                             {{ item }}
-                            <span v-if="item === 'Otro' && interaccionSelected.pedido_ayuda_otro">
-                                ({{ interaccionSelected.pedido_ayuda_otro }})
-                            </span>
                         </li>
                     </ul>
                 </div>

@@ -51,7 +51,7 @@ onMounted(() => {
 
 <template>
     <div class="modal fade" :id data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered" :class="{ ['modal-' + size]: size, 'w-100': fullWidth }" :style="fullWidth ? 'max-width: 100%;' : ''">
+        <div class="modal-dialog modal-dialog-centered" :class="{ ['modal-' + size]: size }" :style="fullWidth ? 'max-width: 1600px;' : ''">
             <div class="modal-content bg-body-tertiary rounded-0 border-3 border-dark-subtle">
                 <div class="modal-header border-0" v-if="title">
                     <h5 class="modal-title text-primary-emphasis">

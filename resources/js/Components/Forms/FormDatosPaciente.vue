@@ -236,18 +236,24 @@ camposSoloLetras.forEach(campo => {
                     <div class="row">
                         <label for="paciente_fecha_nacimiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de nacimiento</label>
                         <div class="col-12 col-sm-8 col-xl-6">
-                            <input
-                                type="text"
-                                inputmode="numeric"
-                                name="paciente_fecha_nacimiento"
-                                id="paciente_fecha_nacimiento"
-                                class="form-control"
-                                :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }"
-                                v-model="formPaciente.fecha_nacimiento"
-                                :disabled="soloLectura"
-                                v-maska="'##/##/####'"
-                                data-maska-eager
-                            />
+                            <div class="input-group" :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }">
+                                <span class="input-group-text" :class="{ 'border-danger': formPaciente.errors?.fecha_nacimiento }">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </span>
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    name="paciente_fecha_nacimiento"
+                                    id="paciente_fecha_nacimiento"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': formPaciente.errors?.fecha_nacimiento }"
+                                    v-model="formPaciente.fecha_nacimiento"
+                                    :disabled="soloLectura"
+                                    v-maska="'##/##/####'"
+                                    data-maska-eager
+                                    placeholder="DD/MM/AAAA"
+                                />
+                            </div>
                             <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_nacimiento">
                                 {{ formPaciente.errors.fecha_nacimiento }}
                             </div>
@@ -430,20 +436,26 @@ camposSoloLetras.forEach(campo => {
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha enrolamiento</label>
+                        <label for="paciente_fecha_enrolamiento" class="col-12 col-sm-4 col-xl-4 col-form-label">Fecha de inicio</label>
                         <div class="col-12 col-sm-8 col-xl-6">
-                            <input
-                                type="text"
-                                inputmode="numeric"
-                                name="paciente_fecha_enrolamiento"
-                                id="paciente_fecha_enrolamiento"
-                                class="form-control"
-                                :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }"
-                                v-model="formPaciente.fecha_enrolamiento"
-                                :disabled="soloLectura"
-                                v-maska="'##/##/####'"
-                                data-maska-eager
-                            />
+                            <div class="input-group" :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }">
+                                <span class="input-group-text" :class="{ 'border-danger': formPaciente.errors?.fecha_enrolamiento }">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </span>
+                                <input
+                                    type="text"
+                                    inputmode="numeric"
+                                    name="paciente_fecha_enrolamiento"
+                                    id="paciente_fecha_enrolamiento"
+                                    class="form-control"
+                                    :class="{ 'is-invalid': formPaciente.errors?.fecha_enrolamiento }"
+                                    v-model="formPaciente.fecha_enrolamiento"
+                                    :disabled="soloLectura"
+                                    v-maska="'##/##/####'"
+                                    data-maska-eager
+                                    placeholder="DD/MM/AAAA"
+                                />
+                            </div>
                             <div class="invalid-feedback" v-if="formPaciente.errors?.fecha_enrolamiento">
                                 {{ formPaciente.errors.fecha_enrolamiento }}
                             </div>

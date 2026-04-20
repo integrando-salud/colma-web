@@ -11,14 +11,20 @@ class Interaccion extends Model
 
     public const MODALIDADES = [
         'Llamada por teléfono / WhatsApp',
-        'Visita domiciliaria',
+        'Encuentro presencial / en persona',
     ];
 
     public const MOTIVOS_REPROGRAMACION = [
         'No responde',
         'Teléfono apagado',
         'Número equivocado / cambió de número',
-        'Pidió que se le llame más tarde',
+        'Pidió que se le llame en otro momento',
+        'No hay nadie en el domicilio',
+        'No se encuentra en el domicilio',
+        'Se mudó',
+        'Domicilio equivocado / dirección no existe',
+        'No acudió a la cita',
+        'Pidió que se le llame / visite en otro momento',
     ];
 
     public const MOTIVOS_CONTACTO = [
@@ -32,11 +38,21 @@ class Interaccion extends Model
         'Contacto iniciado por el participante',
     ];
 
+    public const MOTIVOS_CONTACTO_CORTOS = [
+        'Agendar cita de entrenamiento' => 'Entrenamiento',
+        'Cita de entrenamiento' => 'Entrenamiento',
+        'Seguimiento 2 semanas luego del entrenamiento' => 'Seguimiento 2 semanas',
+        'Seguimiento mensual' => 'Seguimiento mensual',
+        'Agendar cita final' => 'Agendar cita final',
+        'Cita final' => 'Cita final',
+        'Re-entrenamiento' => 'Re-entrenamiento',
+    ];
+
     public const MOTIVOS_CONTACTO_ALERTA = [
         'No completa las sesiones',
         'Problemas de conexión',
         'Alerta clínica',
-        'Pedido de ayuda a través del aplicativo',
+        'Pedido de ayuda',
     ];
 
     public const DESCRIPCION_CONTACTO = [
@@ -58,18 +74,19 @@ class Interaccion extends Model
         'observaciones',
         'motivo_reprogramacion',
         'fecha_cita',
+        'hora_cita',
         'lugar_cita',
         'lugar_cita_otro',
         'fecha_cita_final',
         'hora_cita_final',
-        'lugar_cita_final',
-        'lugar_cita_final_otro',
         'seguimiento_pregunta_a',
         'seguimiento_pregunta_b',
         'seguimiento_pregunta_c',
         'seguimiento_pregunta_d',
         'seguimiento_pregunta_e',
-        'seguimiento_pregunta_f',
+        'fecha_reentrenamiento',
+        'hora_reentrenamiento',
+        'lugar_reentrenamiento',
         'razon_contacto_participante',
         'razon_contacto_participante_otro',
         'contacto_participante_acciones',
@@ -89,7 +106,6 @@ class Interaccion extends Model
         'alerta_clinica_pregunta_e',
         'alerta_clinica_pregunta_f',
         'pedido_ayuda_pregunta_a',
-        'pedido_ayuda_otro',
         'pedido_ayuda_pregunta_b',
         'pedido_ayuda_pregunta_c',
         'pedido_ayuda_pregunta_d',
@@ -102,7 +118,6 @@ class Interaccion extends Model
         'fecha_cita' => 'datetime',
         'fecha_cita_final' => 'datetime',
         'hora_cita_final' => 'datetime',
-        'seguimiento_pregunta_f' => 'datetime',
         'nueva_fecha_contacto' => 'datetime',
         'no_adherencia_pregunta_a' => 'array',
         'no_adherencia_pregunta_c' => 'datetime',
