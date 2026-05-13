@@ -38,7 +38,7 @@ onMounted(() => {
 <template>
     <Menu v-if="showMenu" />
 
-    <div class="container-fluid">
+    <div class="container-xxl">
         <slot />
     </div>
 
