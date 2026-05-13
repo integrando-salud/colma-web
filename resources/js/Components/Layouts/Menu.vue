@@ -18,7 +18,7 @@ const showMenuUsuarios = computed(() => {
 
 <template>
     <nav class="navbar navbar-expand-md">
-        <div class="container-fluid">
+        <div class="container-xxl">
             <img
                 class="me-4"
                 :src="$page.props.app.logo"
