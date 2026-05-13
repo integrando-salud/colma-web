@@ -15,4 +15,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('sync-data-paciente', [PacienteController::class, 'syncData'])
         ->name('sync-data-paciente');
+
+    Route::post('pedido-ayuda', [PacienteController::class, 'pedidoAyuda'])
+        ->name('pedido-ayuda');
 });

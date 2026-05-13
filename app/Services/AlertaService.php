@@ -55,4 +55,16 @@ class AlertaService
                 return null;
         }
     }
+
+    public function savePedidoAyuda(int $idPaciente)
+    {
+        return Alerta::create([
+            'paciente_id' => $idPaciente,
+            'tipo' => 'operativa',
+            'descripcion' => 'Pedido de ayuda',
+            'fecha' => now()->format('Y-m-d'),
+            'fecha_contacto' => now()->addDays(3)->format('Y-m-d'),
+            'recomendacion' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa."
+        ]);
+    }
 }
