@@ -9,6 +9,7 @@ use App\Http\Requests\Dashboard\Diagnostico\GetDiagnosticoRequest;
 use App\Http\Requests\Dashboard\Paquete\GetPaqueteRequest;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
+use App\Http\Resources\Dashboard\EntrenamientoResource;
 use App\Http\Resources\Dashboard\PaqueteResource;
 use App\Http\Resources\Dashboard\UserResource;
 use App\Models\Paciente;
@@ -172,6 +173,27 @@ class AjaxController extends Controller
             ]);
 
             session()->flash('error', 'Se produjo un error al contar los pacientes con alertas pendientes.');
+
+            return response()->json([], 500);
+        }
+    }
+
+    public function getEntrenamientoActual(Paciente $paciente, PacienteService $pacienteService)
+    {
+        try {
+            $entrenamientoActual = $pacienteService->getEntrenamientoActual($paciente);
+
+            if (!$entrenamientoActual) {
+                return null;
+            };
+
+            return response()->json(EntrenamientoResource::make($entrenamientoActual));
+        } catch (Throwable $th) {
+            Log::error('Error al obtener el entrenamiento actual: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'Se produjo un error al obtener el entrenamiento actual.');
 
             return response()->json([], 500);
         }

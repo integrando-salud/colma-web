@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Dashboard;
 
-use App\Services\AlertaService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;

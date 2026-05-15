@@ -8,6 +8,16 @@ export const VENTANA_CONTACTO_KEYS = [
     'citaFinal',
 ];
 
+export const VENTANA_CONTACTO_LABELS = {
+    seguimientoDosSemanas: 'Llamada de seguimiento de 2 semanas',
+    llamadaMensual: 'Llamada mensual 1',
+    llamadaMensualDos: 'Llamada mensual 2',
+    llamadaMensualTres: 'Llamada mensual 3',
+    llamadaMensualCuatro: 'Llamada mensual 4',
+    llamadaMensualCinco: 'Llamada mensual 5',
+    citaFinal: 'Agendar cita final',
+};
+
 export const VENTANA_CONTACTO_DIAS_SUMA_INICIO = {
     seguimientoDosSemanas: 14,
     llamadaMensual: 28,

@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
@@ -8,7 +8,8 @@ import { vMaska } from "maska/vue";
 import {
     VENTANA_CONTACTO_KEYS,
     VENTANA_CONTACTO_DIAS_SUMA_INICIO,
-    VENTANA_CONTACTO_DIAS_SUMA_FIN
+    VENTANA_CONTACTO_DIAS_SUMA_FIN,
+    VENTANA_CONTACTO_LABELS,
 } from "@/Constants/ventanaContacto";
 
 const props = defineProps({
@@ -28,9 +29,10 @@ const props = defineProps({
 
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
+const entrenamientoActual = ref(null);
 
-const verTablaFechas = computed(() => {
-    return formContacto.motivo === 'Agendar cita de entrenamiento';
+const verVentanaContacto = computed(() => {
+    return formContacto.motivo === 'Agendar cita de entrenamiento' || entrenamientoActual.value;
 });
 
 const ventanaContacto = reactive({
@@ -383,11 +385,11 @@ const handleChangeSeguimientoPreguntaA = () => {
     }
 };
 
-const handleChangeSeguimientoPreguntaC = () => {
-    if (formContacto.seguimiento_pregunta_c !== 'No') {
-
-    }
-};
+// const handleChangeSeguimientoPreguntaC = () => {
+//     if (formContacto.seguimiento_pregunta_c !== 'No') {
+//
+//     }
+// };
 
 const handleChangeSeguimientoPreguntaE = () => {
     if (formContacto.seguimiento_pregunta_e !== 'No') {
@@ -572,6 +574,36 @@ const fillDataInteraccion = () => {
     formContacto.pedido_ayuda_pregunta_d = props.interaccion.pedido_ayuda_pregunta_d;
 };
 
+const getEntrenamientoActual = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.paciente.entrenamientoActual', props.idPaciente));
+
+        entrenamientoActual.value = data;
+    } catch (error) {
+        notification.errorNotification(error.response?.data?.message || 'Error al obtener el entrenamiento actual');
+    }
+};
+
+const fillDataEntrenamientoActual = () => {
+    if (!entrenamientoActual.value) return;
+
+    ventanaContacto.fechaEntrenamiento = entrenamientoActual.value.fecha;
+    ventanaContacto.seguimientoDosSemanas.inicio = entrenamientoActual.value.seguimiento_dos_semanas_inicio;
+    ventanaContacto.seguimientoDosSemanas.fin = entrenamientoActual.value.seguimiento_dos_semanas_fin;
+    ventanaContacto.llamadaMensual.inicio = entrenamientoActual.value.llamada_mensual_1_inicio;
+    ventanaContacto.llamadaMensual.fin = entrenamientoActual.value.llamada_mensual_1_fin;
+    ventanaContacto.llamadaMensualDos.inicio = entrenamientoActual.value.llamada_mensual_2_inicio;
+    ventanaContacto.llamadaMensualDos.fin = entrenamientoActual.value.llamada_mensual_2_fin;
+    ventanaContacto.llamadaMensualTres.inicio = entrenamientoActual.value.llamada_mensual_3_inicio;
+    ventanaContacto.llamadaMensualTres.fin = entrenamientoActual.value.llamada_mensual_3_fin;
+    ventanaContacto.llamadaMensualCuatro.inicio = entrenamientoActual.value.llamada_mensual_4_inicio;
+    ventanaContacto.llamadaMensualCuatro.fin = entrenamientoActual.value.llamada_mensual_4_fin;
+    ventanaContacto.llamadaMensualCinco.inicio = entrenamientoActual.value.llamada_mensual_5_inicio;
+    ventanaContacto.llamadaMensualCinco.fin = entrenamientoActual.value.llamada_mensual_5_fin;
+    ventanaContacto.citaFinal.inicio = entrenamientoActual.value.agendar_cita_final_inicio;
+    ventanaContacto.citaFinal.fin = entrenamientoActual.value.agendar_cita_final_fin;
+};
+
 defineExpose({ submit });
 
 onMounted(async () => {
@@ -580,6 +612,9 @@ onMounted(async () => {
     if (props.interaccion) {
         fillDataInteraccion();
     }
+
+    await getEntrenamientoActual();
+    fillDataEntrenamientoActual();
 
     if (props.alerta?.id) {
         formContacto.alerta_id = props.alerta.id;
@@ -618,9 +653,9 @@ watch(() => formContacto.seguimiento_pregunta_a, () => {
     handleChangeSeguimientoPreguntaA();
 });
 
-watch(() => formContacto.seguimiento_pregunta_c, () => {
-    handleChangeSeguimientoPreguntaC();
-});
+// watch(() => formContacto.seguimiento_pregunta_c, () => {
+//     handleChangeSeguimientoPreguntaC();
+// });
 
 watch(() => formContacto.seguimiento_pregunta_e, () => {
     handleChangeSeguimientoPreguntaE();
@@ -1841,7 +1876,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
         </div>
 
         <div
-            v-if="verTablaFechas"
+            v-if="verVentanaContacto"
             class="col-12 col-lg-5"
         >
             <div class="table-responsive">
@@ -1862,67 +1897,17 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </td>
                             <td></td>
                         </tr>
-                        <tr>
-                            <td>Llamada de seguimiento de 2 semanas</td>
+
+                        <tr
+                            v-for="(key, index) in VENTANA_CONTACTO_KEYS"
+                            :key="index"
+                        >
+                            <td>{{ VENTANA_CONTACTO_LABELS[key] }}</td>
                             <td class="text-center">
-                                {{ ventanaContacto.seguimientoDosSemanas.inicio }}
+                                {{ ventanaContacto[key].inicio }}
                             </td>
                             <td class="text-center">
-                                {{ ventanaContacto.seguimientoDosSemanas.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 1</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensual.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensual.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 2</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualDos.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualDos.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 3</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualTres.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualTres.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 4</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualCuatro.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualCuatro.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 5</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualCinco.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.llamadaMensualCinco.fin }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Agendar cita final</td>
-                            <td class="text-center">
-                                {{ ventanaContacto.citaFinal.inicio }}
-                            </td>
-                            <td class="text-center">
-                                {{ ventanaContacto.citaFinal.fin }}
+                                {{ ventanaContacto[key].fin }}
                             </td>
                         </tr>
                     </tbody>
