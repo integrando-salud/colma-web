@@ -1,10 +1,15 @@
 <script setup>
-import { computed, onMounted, watch } from "vue";
+import { reactive, computed, onMounted, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 import { vMaska } from "maska/vue";
+import {
+    VENTANA_CONTACTO_KEYS,
+    VENTANA_CONTACTO_DIAS_SUMA_INICIO,
+    VENTANA_CONTACTO_DIAS_SUMA_FIN
+} from "@/Constants/ventanaContacto";
 
 const props = defineProps({
     idPaciente: {
@@ -23,6 +28,18 @@ const props = defineProps({
 
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
+
+const verTablaFechas = computed(() => {
+    return formContacto.motivo === 'Agendar cita de entrenamiento';
+});
+
+const ventanaContacto = reactive({
+    fechaEntrenamiento: '',
+    ...VENTANA_CONTACTO_KEYS.reduce((acc, key) => {
+        acc[key] = { inicio: '', fin: '' };
+        return acc;
+    }, {}),
+});
 
 const convertirHora12a24 = (hora12, meridiano) => {
     if (!hora12 || !meridiano) {
@@ -240,17 +257,6 @@ const verFechaHoraContacto = computed(() => {
 });
 
 const setFechaProximoContacto = () => {
-    const getFechaMasDias = (dias) => {
-        const fecha = new Date();
-        fecha.setDate(fecha.getDate() + dias);
-
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const anio = fecha.getFullYear();
-
-        return `${dia}/${mes}/${anio}`;
-    };
-
     if (formContacto.contactado === 0) {
         formContacto.nueva_fecha_contacto = null;
     } else {
@@ -265,6 +271,54 @@ const setFechaProximoContacto = () => {
             formContacto.nueva_fecha_contacto = null;
         }
     }
+};
+
+const isValidDate = (dateString) => {
+    // 1. Check format (DD/MM/YYYY) using Regex
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(dateString)) return false;
+
+    // 2. Parse the parts into numbers
+    const [day, month, year] = dateString.split('/').map(Number);
+
+    // 3. Use Date constructor (Note: month is 0-indexed in JS)
+    const date = new Date(year, month - 1, day);
+
+    // 4. Check if the components match the input
+    // This detects "impossible" dates like 31/02/2023 which JS auto-corrects to 03/03/2023
+    return (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+    );
+};
+
+const getFechaMasDias = (dias, fechaBase = null) => {
+    const fecha = new Date();
+
+    if (typeof fechaBase === 'string') {
+        const [dia, mes, anio] = fechaBase.split('/');
+        fecha.setDate(dia);
+        fecha.setMonth(mes - 1);
+        fecha.setFullYear(anio);
+    }
+
+    fecha.setDate(fecha.getDate() + dias);
+
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const anio = fecha.getFullYear();
+
+    return `${dia}/${mes}/${anio}`;
+};
+
+const setVentanasContacto = (fechaBase) => {
+    ventanaContacto.fechaEntrenamiento = fechaBase;
+
+    VENTANA_CONTACTO_KEYS.forEach(key => {
+        ventanaContacto[key].inicio = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_INICIO[key], fechaBase);
+        ventanaContacto[key].fin = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_FIN[key], fechaBase);
+    });
 };
 
 const handleChangeResultado = () => {
@@ -615,6 +669,12 @@ watch(() => formContacto.pedido_ayuda_pregunta_a, () => {
 watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
     handleChangePedidoAyudaPreguntaC();
 });
+
+watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
+    if (formContacto.motivo === 'Agendar cita de entrenamiento' && newValue && isValidDate(newValue)) {
+        setVentanasContacto(newValue);
+    }
+});
 </script>
 
 <template>
@@ -623,7 +683,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
             <h4 class="fs-5 text-primary-emphasis">Formulario de contacto</h4>
         </div>
 
-        <DetalleAlertaInteraccion v-if="alerta" :alerta />
+        <DetalleAlertaInteraccion v-if="alerta" :alerta="alerta" />
 
         <div class="col-12 col-lg-7 mb-2 mb-lg-0">
             <div class="row">
@@ -854,7 +914,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div class="row gx-2">
-                                        <div class="col-5 col-md-4 col-xl-3">
+                                        <div class="col-5 col-md-4">
                                             <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita }">
                                                 <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita }">
                                                     <i class="fa fa-clock"></i>
@@ -897,7 +957,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 <label for="contacto_fecha_cita_final" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     Fecha
                                 </label>
-                                <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                <div class="col-7 col-sm-5 col-md-4">
                                     <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha_cita_final }">
                                         <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha_cita_final }">
                                             <i class="fa fa-calendar-alt"></i>
@@ -929,7 +989,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div class="row gx-2">
-                                        <div class="col-5 col-md-4 col-xl-3">
+                                        <div class="col-5 col-md-4">
                                             <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }">
                                                 <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita_final }">
                                                     <i class="fa fa-clock"></i>
@@ -1079,7 +1139,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_fecha_reentrenamiento" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Fecha re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha_reentrenamiento }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha_reentrenamiento }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1111,7 +1171,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     </label>
                                     <div class="col-12 col-sm-8 col-lg-9">
                                         <div class="row gx-2">
-                                            <div class="col-5 col-md-4 col-xl-3">
+                                            <div class="col-5 col-md-4">
                                                 <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }">
                                                     <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_reentrenamiento }">
                                                         <i class="fa fa-clock"></i>
@@ -1317,7 +1377,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_no_adherencia_pregunta_c" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Agenda una visita domiciliaria o un re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.no_adherencia_pregunta_c }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.no_adherencia_pregunta_c }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1418,7 +1478,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 <label for="contacto_problemas_conexion_pregunta_c" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     Agenda una visita domiciliaria o un re-entrenamiento
                                 </label>
-                                <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                <div class="col-7 col-sm-5 col-md-4">
                                     <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_pregunta_c }">
                                         <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.problemas_conexion_pregunta_c }">
                                             <i class="fa fa-calendar-alt"></i>
@@ -1671,7 +1731,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_pedido_ayuda_pregunta_d" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Agenda una visita domiciliaria o un re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_d }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.pedido_ayuda_pregunta_d }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1731,7 +1791,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             <label for="contacto_nueva_fecha_contacto" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                 Nueva fecha de contacto
                             </label>
-                            <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                            <div class="col-7 col-sm-5 col-md-4">
                                 <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }">
                                     <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.nueva_fecha_contacto }">
                                         <i class="fa fa-calendar-alt"></i>
@@ -1780,47 +1840,90 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
             </div>
         </div>
 
-        <div class="col-12 col-lg-5">
+        <div
+            v-if="verTablaFechas"
+            class="col-12 col-lg-5"
+        >
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead>
                         <tr>
                             <th></th>
-                            <th>Inicio de contacto</th>
-                            <th>Fin de contacto</th>
+                            <th class="text-center">Inicio de contacto</th>
+                            <th class="text-center">Fin de contacto</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr>
                             <td>Fecha de entrenamiento</td>
-                            <td>08/05/2026</td>
+                            <td class="text-center">
+                                {{ ventanaContacto.fechaEntrenamiento }}
+                            </td>
                             <td></td>
                         </tr>
                         <tr>
                             <td>Llamada de seguimiento de 2 semanas</td>
-                            <td>22/05/2026</td>
-                            <td>29/05/2026</td>
+                            <td class="text-center">
+                                {{ ventanaContacto.seguimientoDosSemanas.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.seguimientoDosSemanas.fin }}
+                            </td>
                         </tr>
                         <tr>
                             <td>Llamada mensual 1</td>
-                            <td></td>
-                            <td></td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensual.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensual.fin }}
+                            </td>
                         </tr>
                         <tr>
                             <td>Llamada mensual 2</td>
-                            <td></td>
-                            <td></td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualDos.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualDos.fin }}
+                            </td>
                         </tr>
                         <tr>
                             <td>Llamada mensual 3</td>
-                            <td></td>
-                            <td></td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualTres.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualTres.fin }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Llamada mensual 4</td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualCuatro.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualCuatro.fin }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Llamada mensual 5</td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualCinco.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.llamadaMensualCinco.fin }}
+                            </td>
                         </tr>
                         <tr>
                             <td>Agendar cita final</td>
-                            <td></td>
-                            <td></td>
+                            <td class="text-center">
+                                {{ ventanaContacto.citaFinal.inicio }}
+                            </td>
+                            <td class="text-center">
+                                {{ ventanaContacto.citaFinal.fin }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
