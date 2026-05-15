@@ -116,6 +116,7 @@ class Interaccion extends Model
         'fecha' => 'datetime',
         'hora' => 'datetime',
         'fecha_cita' => 'datetime',
+        'hora_cita' => 'datetime',
         'fecha_cita_final' => 'datetime',
         'hora_cita_final' => 'datetime',
         'nueva_fecha_contacto' => 'datetime',

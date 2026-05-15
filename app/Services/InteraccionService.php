@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Alerta;
+use App\Models\Entrenamiento;
 use App\Models\Interaccion;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -77,6 +78,10 @@ class InteraccionService
                 : null;
             $interaccion->save();
 
+            if ($interaccion->motivo === 'Agendar cita de entrenamiento') {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto);
+            }
+
             if ($alertaId) {
                 $dataAlerta = [
                     'revisado' => $interaccion->contactado ? now() : null,
@@ -102,5 +107,24 @@ class InteraccionService
     public function deleteInteraccion(Interaccion $interaccion)
     {
         return $interaccion->delete();
+    }
+
+    public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento)
+    {
+        $entrenamiento = new Entrenamiento();
+        $entrenamiento->paciente_id = $idPaciente;
+        $entrenamiento->user_id = auth()->user()->id;
+        $entrenamiento->fecha = $fechaEntrenamiento;
+
+        foreach (Entrenamiento::DIAS_SUMA as $tipo => $diasSuma) {
+            $entrenamiento->$tipo = $this->sumarDias($tipo, $fechaEntrenamiento, $diasSuma);
+        }
+
+        return $entrenamiento->save();
+    }
+
+    private function sumarDias(string $tipo, string $fechaEntrenamiento, int $diasSuma): string
+    {
+        return date('Y-m-d', strtotime($fechaEntrenamiento . ' +' . $diasSuma . ' days'));
     }
 }

@@ -102,20 +102,20 @@ onMounted(() => {
                                         <td class="text-center">{{ interaccion.motivo }}</td>
                                         <td class="text-center">{{ interaccion.fecha_proximo_contacto ?? 'No aplica' }}</td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-secondary btn-sm text-white me-1" @click="interaccionSelected = interaccion">Ver más</button>
+                                            <button type="button" class="btn btn-secondary btn-sm text-white m-1" @click="interaccionSelected = interaccion">Ver más</button>
                                             <template v-if="puedeEliminar">
                                                 <a
                                                     :href="route('dashboard.pacientes.editInteraccion', {
                                                         paciente: interaccion.paciente.id,
                                                         interaccion: interaccion.id
                                                     })"
-                                                    class="btn btn-success btn-sm text-white me-1"
+                                                    class="btn btn-success btn-sm text-white m-1"
                                                 >
                                                     Editar
                                                 </a>
                                                 <button
                                                     type="button"
-                                                    class="btn btn-danger btn-sm text-white"
+                                                    class="btn btn-danger btn-sm text-white m-1"
                                                     @click="showModalEliminarInteraccion(interaccion)"
                                                 >
                                                     Eliminar
