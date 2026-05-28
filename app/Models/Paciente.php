@@ -88,4 +88,9 @@ class Paciente extends Model
     {
         return $this->hasMany(Alerta::class);
     }
+
+    public function entrenamientos()
+    {
+        return $this->hasMany(Entrenamiento::class);
+    }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Dashboard;
 
-use App\Services\AlertaService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -21,6 +20,7 @@ class PacienteResource extends JsonResource
         $registros = $pacienteService->getDatosClinicos($this->id, 2);
         $fechaProximoContacto = $pacienteService->getFechaProximoContacto($this->resource);
         $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
+        $diasPostFechaProximoContacto = (int) $fechaProximoContacto?->diffInDays(now()) ?? 0;
 
         return [
             'id' => $this->id,
@@ -59,6 +59,7 @@ class PacienteResource extends JsonResource
             'proximos_contactos' => $proximosContactos,
             'datos_clinicos' => $registros,
             'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),
+            'fecha_proximo_contacto_dias' => $diasPostFechaProximoContacto,
             'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
         ];
     }

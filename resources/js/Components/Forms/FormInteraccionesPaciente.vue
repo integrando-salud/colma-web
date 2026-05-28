@@ -1,10 +1,16 @@
 <script setup>
-import { computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 import { vMaska } from "maska/vue";
+import {
+    VENTANA_CONTACTO_KEYS,
+    VENTANA_CONTACTO_DIAS_SUMA_INICIO,
+    VENTANA_CONTACTO_DIAS_SUMA_FIN,
+    VENTANA_CONTACTO_LABELS,
+} from "@/Constants/ventanaContacto";
 
 const props = defineProps({
     idPaciente: {
@@ -23,6 +29,56 @@ const props = defineProps({
 
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
+const entrenamientoActual = ref(null);
+
+const verVentanaContacto = computed(() => {
+    return formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado || entrenamientoActual.value;
+});
+
+const ventanaContacto = reactive({
+    fechaEntrenamiento: '',
+    ...VENTANA_CONTACTO_KEYS.reduce((acc, key) => {
+        acc[key] = { inicio: '', fin: '', color: 'text-black' };
+        return acc;
+    }, {}),
+});
+
+const colorFecha = (fechaInicio, fechaFin) => {
+    const hoy = new Date();
+
+    if (!fechaInicio || !fechaFin) {
+        return 'text-black';
+    }
+
+    const fechaInicioDate = new Date(fechaInicio.split('/').reverse().join('-'));
+    const fechaFinDate = new Date(fechaFin.split('/').reverse().join('-'));
+
+    if (hoy > fechaFinDate) {
+        return 'text-danger';
+    } else if (hoy >= fechaInicioDate && hoy <= fechaFinDate) {
+        return 'text-success';
+    }
+
+    return 'text-black';
+};
+
+const colorFechaEntrenamiento = computed(() => {
+    const hoy = new Date();
+
+    if (! ventanaContacto.fechaEntrenamiento) {
+        return 'text-black';
+    }
+
+    const fechaEntrenamientoDate = new Date(ventanaContacto.fechaEntrenamiento.split('/').reverse().join('-'));
+
+    if (hoy > fechaEntrenamientoDate) {
+        return 'text-danger';
+    } else if (hoy === fechaEntrenamientoDate) {
+        return 'text-success';
+    } else if (hoy < fechaEntrenamientoDate) {
+        return 'text-black';
+    }
+});
 
 const convertirHora12a24 = (hora12, meridiano) => {
     if (!hora12 || !meridiano) {
@@ -239,18 +295,7 @@ const verFechaHoraContacto = computed(() => {
         || formContacto.contactado !== 1;
 });
 
-const setFechaProximoContacto = () => {
-    const getFechaMasDias = (dias) => {
-        const fecha = new Date();
-        fecha.setDate(fecha.getDate() + dias);
-
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const anio = fecha.getFullYear();
-
-        return `${dia}/${mes}/${anio}`;
-    };
-
+const setFechaProximoContacto = async () => {
     if (formContacto.contactado === 0) {
         formContacto.nueva_fecha_contacto = null;
     } else {
@@ -267,12 +312,84 @@ const setFechaProximoContacto = () => {
     }
 };
 
-const handleChangeResultado = () => {
+const isValidDate = (dateString) => {
+    // 1. Check format (DD/MM/YYYY) using Regex
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(dateString)) return false;
+
+    // 2. Parse the parts into numbers
+    const [day, month, year] = dateString.split('/').map(Number);
+
+    // 3. Use Date constructor (Note: month is 0-indexed in JS)
+    const date = new Date(year, month - 1, day);
+
+    // 4. Check if the components match the input
+    // This detects "impossible" dates like 31/02/2023 which JS auto-corrects to 03/03/2023
+    return (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+    );
+};
+
+const getFechaMasDias = (dias, fechaBase = null) => {
+    const fecha = new Date();
+
+    if (typeof fechaBase === 'string') {
+        const [dia, mes, anio] = fechaBase.split('/');
+        fecha.setDate(dia);
+        fecha.setMonth(mes - 1);
+        fecha.setFullYear(anio);
+    }
+
+    fecha.setDate(fecha.getDate() + dias);
+
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const anio = fecha.getFullYear();
+
+    return `${dia}/${mes}/${anio}`;
+};
+
+const setVentanasContacto = (fechaBase) => {
+    if (entrenamientoActual.value) {
+        return;
+    }
+
+    ventanaContacto.fechaEntrenamiento = fechaBase;
+
+    VENTANA_CONTACTO_KEYS.forEach(key => {
+        ventanaContacto[key].inicio = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_INICIO[key], fechaBase);
+        ventanaContacto[key].fin = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_FIN[key], fechaBase);
+        ventanaContacto[key].color = colorFecha(ventanaContacto[key].inicio, ventanaContacto[key].fin);
+    });
+};
+
+const resetVentanasContacto = () => {
+    if (entrenamientoActual.value) {
+        return;
+    }
+
+    ventanaContacto.fechaEntrenamiento = '';
+
+    VENTANA_CONTACTO_KEYS.forEach(key => {
+        ventanaContacto[key].inicio = '';
+        ventanaContacto[key].fin = '';
+    });
+};
+
+const handleChangeResultado = async () => {
     if (formContacto.contactado !== 0) {
         formContacto.motivo_reprogramacion = '';
     }
 
-    setFechaProximoContacto();
+    await setFechaProximoContacto();
+
+    if (formContacto.contactado === 1 && formContacto.motivo === 'Agendar cita de entrenamiento') {
+        setVentanasContacto(formContacto.nueva_fecha_contacto);
+    } else if (formContacto.contactado !== 1) {
+        resetVentanasContacto();
+    }
 };
 
 const handleChangeMotivoContacto = () => {
@@ -326,12 +443,6 @@ const handleChangeSeguimientoPreguntaA = () => {
     if (formContacto.seguimiento_pregunta_a !== 'Si') {
         formContacto.seguimiento_pregunta_b = null;
         formContacto.seguimiento_pregunta_c = '';
-    }
-};
-
-const handleChangeSeguimientoPreguntaC = () => {
-    if (formContacto.seguimiento_pregunta_c !== 'No') {
-
     }
 };
 
@@ -518,6 +629,50 @@ const fillDataInteraccion = () => {
     formContacto.pedido_ayuda_pregunta_d = props.interaccion.pedido_ayuda_pregunta_d;
 };
 
+const getEntrenamientoActual = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.paciente.entrenamientoActual', props.idPaciente));
+
+        entrenamientoActual.value = data || null;
+    } catch (error) {
+        notification.errorNotification(error.response?.data?.message || 'Error al obtener el entrenamiento actual');
+    }
+};
+
+const fillDataEntrenamientoActual = () => {
+    if (!entrenamientoActual.value) return;
+
+    ventanaContacto.fechaEntrenamiento = entrenamientoActual.value.fecha;
+
+    ventanaContacto.seguimientoDosSemanas.inicio = entrenamientoActual.value.seguimiento_dos_semanas_inicio;
+    ventanaContacto.seguimientoDosSemanas.fin = entrenamientoActual.value.seguimiento_dos_semanas_fin;
+    ventanaContacto.seguimientoDosSemanas.color = colorFecha(ventanaContacto.seguimientoDosSemanas.inicio, ventanaContacto.seguimientoDosSemanas.fin);
+
+    ventanaContacto.llamadaMensual.inicio = entrenamientoActual.value.llamada_mensual_1_inicio;
+    ventanaContacto.llamadaMensual.fin = entrenamientoActual.value.llamada_mensual_1_fin;
+    ventanaContacto.llamadaMensual.color = colorFecha(ventanaContacto.llamadaMensual.inicio, ventanaContacto.llamadaMensual.fin);
+
+    ventanaContacto.llamadaMensualDos.inicio = entrenamientoActual.value.llamada_mensual_2_inicio;
+    ventanaContacto.llamadaMensualDos.fin = entrenamientoActual.value.llamada_mensual_2_fin;
+    ventanaContacto.llamadaMensualDos.color = colorFecha(ventanaContacto.llamadaMensualDos.inicio, ventanaContacto.llamadaMensualDos.fin);
+
+    ventanaContacto.llamadaMensualTres.inicio = entrenamientoActual.value.llamada_mensual_3_inicio;
+    ventanaContacto.llamadaMensualTres.fin = entrenamientoActual.value.llamada_mensual_3_fin;
+    ventanaContacto.llamadaMensualTres.color = colorFecha(ventanaContacto.llamadaMensualTres.inicio, ventanaContacto.llamadaMensualTres.fin);
+
+    ventanaContacto.llamadaMensualCuatro.inicio = entrenamientoActual.value.llamada_mensual_4_inicio;
+    ventanaContacto.llamadaMensualCuatro.fin = entrenamientoActual.value.llamada_mensual_4_fin;
+    ventanaContacto.llamadaMensualCuatro.color = colorFecha(ventanaContacto.llamadaMensualCuatro.inicio, ventanaContacto.llamadaMensualCuatro.fin);
+
+    ventanaContacto.llamadaMensualCinco.inicio = entrenamientoActual.value.llamada_mensual_5_inicio;
+    ventanaContacto.llamadaMensualCinco.fin = entrenamientoActual.value.llamada_mensual_5_fin;
+    ventanaContacto.llamadaMensualCinco.color = colorFecha(ventanaContacto.llamadaMensualCinco.inicio, ventanaContacto.llamadaMensualCinco.fin);
+
+    ventanaContacto.citaFinal.inicio = entrenamientoActual.value.agendar_cita_final_inicio;
+    ventanaContacto.citaFinal.fin = entrenamientoActual.value.agendar_cita_final_fin;
+    ventanaContacto.citaFinal.color = colorFecha(ventanaContacto.citaFinal.inicio, ventanaContacto.citaFinal.fin);
+};
+
 defineExpose({ submit });
 
 onMounted(async () => {
@@ -526,6 +681,9 @@ onMounted(async () => {
     if (props.interaccion) {
         fillDataInteraccion();
     }
+
+    await getEntrenamientoActual();
+    fillDataEntrenamientoActual();
 
     if (props.alerta?.id) {
         formContacto.alerta_id = props.alerta.id;
@@ -562,10 +720,6 @@ watch(() => formContacto.modalidad, () => {
 
 watch(() => formContacto.seguimiento_pregunta_a, () => {
     handleChangeSeguimientoPreguntaA();
-});
-
-watch(() => formContacto.seguimiento_pregunta_c, () => {
-    handleChangeSeguimientoPreguntaC();
 });
 
 watch(() => formContacto.seguimiento_pregunta_e, () => {
@@ -615,6 +769,17 @@ watch(() => formContacto.pedido_ayuda_pregunta_a, () => {
 watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
     handleChangePedidoAyudaPreguntaC();
 });
+
+watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
+    if (newValue === null) {
+        resetVentanasContacto();
+        return;
+    }
+
+    if (formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado && newValue && isValidDate(newValue)) {
+        setVentanasContacto(newValue);
+    }
+});
 </script>
 
 <template>
@@ -623,7 +788,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
             <h4 class="fs-5 text-primary-emphasis">Formulario de contacto</h4>
         </div>
 
-        <DetalleAlertaInteraccion v-if="alerta" :alerta />
+        <DetalleAlertaInteraccion v-if="alerta" :alerta="alerta" />
 
         <div class="col-12 col-lg-7 mb-2 mb-lg-0">
             <div class="row">
@@ -642,7 +807,11 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 :disabled="alerta"
                             >
                                 <option value="">Seleccionar motivo</option>
-                                <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
+                                <option
+                                    v-for="motivo in motivosContacto"
+                                    :value="motivo"
+                                    :disabled="motivo === 'Agendar cita de entrenamiento' && entrenamientoActual"
+                                >{{ motivo }}</option>
                             </select>
                             <div class="invalid-feedback" v-if="formContacto.errors?.motivo">
                                 {{ formContacto.errors.motivo }}
@@ -854,7 +1023,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div class="row gx-2">
-                                        <div class="col-5 col-md-4 col-xl-3">
+                                        <div class="col-5 col-md-4">
                                             <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita }">
                                                 <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita }">
                                                     <i class="fa fa-clock"></i>
@@ -897,7 +1066,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 <label for="contacto_fecha_cita_final" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     Fecha
                                 </label>
-                                <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                <div class="col-7 col-sm-5 col-md-4">
                                     <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha_cita_final }">
                                         <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha_cita_final }">
                                             <i class="fa fa-calendar-alt"></i>
@@ -929,7 +1098,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div class="row gx-2">
-                                        <div class="col-5 col-md-4 col-xl-3">
+                                        <div class="col-5 col-md-4">
                                             <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_cita_final }">
                                                 <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_cita_final }">
                                                     <i class="fa fa-clock"></i>
@@ -1079,7 +1248,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_fecha_reentrenamiento" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Fecha re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.fecha_reentrenamiento }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.fecha_reentrenamiento }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1111,7 +1280,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     </label>
                                     <div class="col-12 col-sm-8 col-lg-9">
                                         <div class="row gx-2">
-                                            <div class="col-5 col-md-4 col-xl-3">
+                                            <div class="col-5 col-md-4">
                                                 <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }">
                                                     <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_reentrenamiento }">
                                                         <i class="fa fa-clock"></i>
@@ -1317,7 +1486,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_no_adherencia_pregunta_c" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Agenda una visita domiciliaria o un re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.no_adherencia_pregunta_c }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.no_adherencia_pregunta_c }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1418,7 +1587,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                 <label for="contacto_problemas_conexion_pregunta_c" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     Agenda una visita domiciliaria o un re-entrenamiento
                                 </label>
-                                <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                <div class="col-7 col-sm-5 col-md-4">
                                     <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_pregunta_c }">
                                         <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.problemas_conexion_pregunta_c }">
                                             <i class="fa fa-calendar-alt"></i>
@@ -1671,7 +1840,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                                     <label for="contacto_pedido_ayuda_pregunta_d" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                         Agenda una visita domiciliaria o un re-entrenamiento
                                     </label>
-                                    <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                                    <div class="col-7 col-sm-5 col-md-4">
                                         <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.pedido_ayuda_pregunta_d }">
                                             <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.pedido_ayuda_pregunta_d }">
                                                 <i class="fa fa-calendar-alt"></i>
@@ -1731,7 +1900,7 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
                             <label for="contacto_nueva_fecha_contacto" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                 Nueva fecha de contacto
                             </label>
-                            <div class="col-7 col-sm-5 col-md-4 col-xl-3">
+                            <div class="col-7 col-sm-5 col-md-4">
                                 <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }">
                                     <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.nueva_fecha_contacto }">
                                         <i class="fa fa-calendar-alt"></i>
@@ -1780,47 +1949,40 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
             </div>
         </div>
 
-        <div class="col-12 col-lg-5">
+        <div
+            v-if="verVentanaContacto"
+            class="col-12 col-lg-5"
+        >
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered bg-body">
                     <thead>
                         <tr>
-                            <th></th>
-                            <th>Inicio de contacto</th>
-                            <th>Fin de contacto</th>
+                            <th class="bg-body-secondary"></th>
+                            <th class="bg-body-secondary text-black text-center">Inicio de contacto</th>
+                            <th class="bg-body-secondary text-black text-center">Fin de contacto</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr>
                             <td>Fecha de entrenamiento</td>
-                            <td>08/05/2026</td>
+                            <td class="text-center" :class="colorFechaEntrenamiento">
+                                {{ ventanaContacto.fechaEntrenamiento }}
+                            </td>
                             <td></td>
                         </tr>
-                        <tr>
-                            <td>Llamada de seguimiento de 2 semanas</td>
-                            <td>22/05/2026</td>
-                            <td>29/05/2026</td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 1</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 2</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>Llamada mensual 3</td>
-                            <td></td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>Agendar cita final</td>
-                            <td></td>
-                            <td></td>
+
+                        <tr
+                            v-for="(key, index) in VENTANA_CONTACTO_KEYS"
+                            :key="index"
+                        >
+                            <td>{{ VENTANA_CONTACTO_LABELS[key] }}</td>
+                            <td class="text-center" :class="ventanaContacto[key].color">
+                                {{ ventanaContacto[key].inicio }}
+                            </td>
+                            <td class="text-center" :class="ventanaContacto[key].color">
+                                {{ ventanaContacto[key].fin }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>

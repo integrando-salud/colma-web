@@ -84,5 +84,7 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('{paciente}/cambiar-estado', [AjaxController::class, 'cambiarEstadoPaciente'])
             ->name('ajax.paciente.cambiarEstado');
+        Route::get('{paciente}/entrenamiento-actual', [AjaxController::class, 'getEntrenamientoActual'])
+            ->name('ajax.paciente.entrenamientoActual');
     });
 });

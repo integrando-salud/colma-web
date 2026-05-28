@@ -426,7 +426,7 @@ class PacienteService
     {
         $fechaProximoContactoProgramado = $paciente->interacciones()
             ->whereNotNull('nueva_fecha_contacto')
-            ->orderBy('nueva_fecha_contacto')
+            ->orderBy('nueva_fecha_contacto', 'desc')
             ->value('nueva_fecha_contacto');
 
         if ($fechaProximoContactoProgramado) {
@@ -454,5 +454,16 @@ class PacienteService
             ->whereNull('revisado')
             ->orderBy('fecha_contacto')
             ->value('fecha_contacto');
+    }
+
+    /**
+     * Obtiene el entrenamiento actual de un paciente
+     *
+     * @param Paciente $paciente
+     * @return mixed
+     */
+    public function getEntrenamientoActual(Paciente $paciente): mixed
+    {
+        return $paciente->entrenamientos()->where('activo', true)->latest()->first();
     }
 }
