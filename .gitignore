@@ -23,7 +23,11 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /db
-/docker/config/nginx/default.conf
-/docker/config/php/php.ini
+/docker/config/nginx/development.conf
+/docker/config/nginx/production.conf
+/docker/config/php/development.ini
+/docker/config/php/production.ini
 /data
 /letsencrypt
+.agents
+.codex
