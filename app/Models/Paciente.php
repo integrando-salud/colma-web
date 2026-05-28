@@ -31,6 +31,7 @@ class Paciente extends Model
         'fecha_ultima_sincronizacion',
         'fecha_primer_login_app',
         'clave',
+        'test',
     ];
 
     public $casts = [
@@ -39,6 +40,7 @@ class Paciente extends Model
         'activo' => 'boolean',
         'fecha_ultima_sincronizacion' => 'datetime',
         'fecha_primer_login_app' => 'datetime',
+        'test' => 'boolean',
     ];
 
     public function usuario()

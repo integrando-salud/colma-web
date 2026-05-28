@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
+use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -465,5 +466,26 @@ class PacienteService
     public function getEntrenamientoActual(Paciente $paciente): mixed
     {
         return $paciente->entrenamientos()->where('activo', true)->latest()->first();
+    }
+
+    /**
+     * Resetea los datos de un paciente de prueba
+     *
+     * @param Paciente $paciente
+     * @return void
+     * @throws Exception
+     */
+    public function resetearDatosPacienteTest(Paciente $paciente): void
+    {
+        if (!$paciente->test) {
+            throw new Exception('No se pueden resetear los datos de un paciente que no es de prueba.', 500);
+        }
+
+        $paciente->glucosa()->delete();
+        $paciente->presionArterial()->delete();
+        $paciente->estadoAnimo()->delete();
+        $paciente->interacciones()->delete();
+        $paciente->alertas()->delete();
+        $paciente->entrenamientos()->delete();
     }
 }

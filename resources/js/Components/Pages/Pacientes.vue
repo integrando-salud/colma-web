@@ -20,10 +20,13 @@ const props = defineProps({
 const page = usePage();
 const pacienteSelected = ref(null);
 const pacienteSelectedCambiarEstado = ref(null);
+const pacienteSelectedResetearDatos = ref(null);
 const notification = useNotificationStore();
 const modalCambiarEstado = useTemplateRef('modalCambiarEstado');
+const modalResetearDatosPaciente = useTemplateRef('modalResetearDatosPaciente');
 const modalDetallePaciente = useTemplateRef('modalDetallePaciente');
 const guardandoEstado = ref(false);
+const reseteandoDatosPaciente = ref(false);
 const diagnosticos = ref([]);
 
 const mensajeCambiarEstado = computed(() => {
@@ -49,6 +52,23 @@ const showModalCambiarEstado = (paciente) => {
 
 const hideModalCambiarEstado = () => {
     modalCambiarEstado.value.hideModal();
+};
+
+const showModalResetearDatosPaciente = (idPaciente) => {
+    pacienteSelectedResetearDatos.value = idPaciente;
+    hideModalDetallePaciente();
+    modalResetearDatosPaciente.value.showModal();
+};
+
+const hideModalResetearDatosPaciente = () => {
+    modalResetearDatosPaciente.value.hideModal();
+};
+
+const handleCloseModalResetearDatosPaciente = () => {
+    const paciente = props.pacientes.data.find(paciente => paciente.id === pacienteSelectedResetearDatos.value);
+    pacienteSelectedResetearDatos.value = null;
+    hideModalResetearDatosPaciente();
+    showModalDetallePaciente(paciente);
 };
 
 const handleCloseModalCambiarEstado = () => {
@@ -78,22 +98,6 @@ const formFiltros = reactive({
     orderDir: props.filtros.orderDir || null,
 });
 
-const showDetails = (paciente) => {
-    pacienteSelected.value = paciente;
-};
-
-const hideDetails = () => {
-    pacienteSelected.value = null;
-}
-
-const pacienteSelectedDiagnosticos = computed(() => {
-    if (!pacienteSelected.value || pacienteSelected.value.diagnosticos.length === 0) {
-        return '';
-    }
-
-    return pacienteSelected.value.diagnosticos.map(diagnostico => diagnostico.nombre).join(', ');
-});
-
 const filterPacientes = () => {
     router.get(props.urlBase, formFiltros, { preserveState: true, replace: true });
 };
@@ -121,9 +125,22 @@ const cambiarEstado = async () => {
     }
 };
 
-// const listarDiagnosticos = (diagnosticos) => {
-//     return diagnosticos.map(diagnostico => diagnostico.nombre).join(', ');
-// };
+const resetearDatosPaciente = async () => {
+    try {
+        const { data } = await axios.post(route('ajax.paciente.resetearDatos', {
+            paciente: pacienteSelectedResetearDatos.value
+        }));
+
+        const index = props.pacientes.data.findIndex(paciente => paciente.id === data.id);
+        props.pacientes.data[index] = data;
+
+        notification.successNotification('Se resetearon los datos con éxito.');
+
+        handleCloseModalResetearDatosPaciente();
+    } catch (error) {
+        notification.errorNotification(error.response?.data?.message || 'Error al resetear los datos del paciente.');
+    }
+};
 
 const getDiagnosticos = async () => {
     try {
@@ -355,6 +372,59 @@ onMounted(() => {
     </Modal>
 
     <Modal
+        id="modalResetearDatosPaciente"
+        ref="modalResetearDatosPaciente"
+        title="Resetear datos"
+        :loading="reseteandoDatosPaciente"
+    >
+        <p>Se resetearán los datos del paciente, incluidos:</p>
+        <ul>
+            <li>Registros de glucosa</li>
+            <li>Registros de presión arterial</li>
+            <li>Registros de estado de ánimo</li>
+            <li>Interacciones</li>
+            <li>Alertas</li>
+            <li>Entrenamientos</li>
+        </ul>
+        <p>¿Desea continuar?</p>
+
+        <template #footer>
+            <template v-if="reseteandoDatosPaciente === false">
+                <button
+                    type="button"
+                    class="btn btn-grey fw-semibold shadow"
+                    :disabled="reseteandoDatosPaciente"
+                    @click="handleCloseModalResetearDatosPaciente"
+                >
+                    No, cancelar
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-secondary text-white fw-semibold shadow"
+                    :disabled="reseteandoDatosPaciente"
+                    @click="resetearDatosPaciente"
+                >
+                    Si, continuar
+                </button>
+            </template>
+            <template v-else>
+                <button
+                    type="button"
+                    class="btn btn-secondary text-white fw-semibold shadow"
+                    disabled
+                >
+                    <span
+                        class="spinner-border spinner-border-sm me-2"
+                        role="status"
+                        aria-hidden="true"
+                    ></span>
+                    Reseteando datos, espere...
+                </button>
+            </template>
+        </template>
+    </Modal>
+
+    <Modal
         id="modalDetallePaciente"
         ref="modalDetallePaciente"
         class="p-2"
@@ -492,13 +562,28 @@ onMounted(() => {
                     Observaciones
                 </div>
                 <div class="col-12 col-xl-10">
-                    <textarea name="observaciones_textarea" id="observaciones_textarea" class="form-control">{{ pacienteSelected.observaciones }}</textarea>
+                    <textarea
+                        name="observaciones_textarea"
+                        id="observaciones_textarea"
+                        class="form-control"
+                        rows="4"
+                        readonly
+                    >{{ pacienteSelected.observaciones }}</textarea>
                 </div>
             </div>
         </template>
 
         <template #footer>
             <template v-if="pacienteSelected">
+                <button
+                    v-if="pacienteSelected.test"
+                    type="button"
+                    class="btn btn-danger shadow"
+                    @click="showModalResetearDatosPaciente(pacienteSelected.id)"
+                >
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Resetear datos
+                </button>
                 <a class="btn btn-outline-primary shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     Ir a alertas
@@ -525,7 +610,7 @@ onMounted(() => {
 }
 
 .row-alerta .btn-ver-mas {
-    color: #205BF1;
+    color: #333;
 }
 
 .order {

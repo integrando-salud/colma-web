@@ -86,5 +86,7 @@ Route::middleware('auth')->group(function () {
             ->name('ajax.paciente.cambiarEstado');
         Route::get('{paciente}/entrenamiento-actual', [AjaxController::class, 'getEntrenamientoActual'])
             ->name('ajax.paciente.entrenamientoActual');
+        Route::post('{paciente}/resetear-datos', [AjaxController::class, 'resetearDatosPaciente'])
+            ->name('ajax.paciente.resetearDatos');
     });
 });
