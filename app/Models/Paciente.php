@@ -29,6 +29,7 @@ class Paciente extends Model
         'paquete_id',
         'activo',
         'fecha_ultima_sincronizacion',
+        'fecha_primer_login_app',
         'clave',
     ];
 
@@ -37,6 +38,7 @@ class Paciente extends Model
         'fecha_enrolamiento' => 'date',
         'activo' => 'boolean',
         'fecha_ultima_sincronizacion' => 'datetime',
+        'fecha_primer_login_app' => 'datetime',
     ];
 
     public function usuario()
