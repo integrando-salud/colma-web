@@ -78,7 +78,7 @@ class InteraccionService
                 : null;
             $interaccion->save();
 
-            if ($interaccion->motivo === 'Agendar cita de entrenamiento') {
+            if ($interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado) {
                 $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto);
             }
 

@@ -220,13 +220,6 @@ onMounted(() => {
                                     'fa-chevron-up': formFiltros.orderBy === 'fecha_enrolamiento' && formFiltros.orderDir === 'desc'
                                 }" @click="orderBy('fecha_enrolamiento')"></i>
                             </th>
-<!--                            <th>-->
-<!--                                <span class="me-3">Diagnóstico</span>-->
-<!--                                <i class="fa order" :class="{-->
-<!--                                    'fa-chevron-down': formFiltros.orderBy !== 'diagnostico' || formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'asc',-->
-<!--                                    'fa-chevron-up': formFiltros.orderBy === 'diagnostico' && formFiltros.orderDir === 'desc'-->
-<!--                                }" @click="orderBy('diagnostico')"></i>-->
-<!--                            </th>-->
                             <th v-if="$page.props.usuario.rol?.nombre !== 'promotor'">
                                 <span class="me-3">Promotor</span>
                                 <i class="fa order" :class="{
@@ -279,14 +272,20 @@ onMounted(() => {
                             <td>{{ paciente.id }}</td>
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
-<!--                            <td>{{ listarDiagnosticos(paciente.diagnosticos) }}</td>-->
                             <td v-if="$page.props.usuario.rol?.nombre !== 'promotor'">{{ paciente.promotor?.nombre }}</td>
                             <td>{{ paciente.sesiones.completadas }}/{{ paciente.sesiones.total }}</td>
                             <td>
                                 {{ paciente.alertas_pendientes ? paciente.alertas_pendientes : '-' }}
                                 <i class="fa fa-warning text-danger" v-if="paciente.alertas_pendientes"></i>
                             </td>
-                            <td>{{ paciente.fecha_proximo_contacto ?? '-' }}</td>
+                            <td
+                                :class="{
+                                    'text-warning': paciente.fecha_proximo_contacto_dias > 0 && paciente.fecha_proximo_contacto_dias <= 7,
+                                    'text-danger': paciente.fecha_proximo_contacto_dias > 7,
+                                }"
+                            >
+                                {{ paciente.fecha_proximo_contacto ?? '-' }}
+                            </td>
                             <td>{{ paciente.usuario.ultimo_acceso }}</td>
                             <td>
                                 <span

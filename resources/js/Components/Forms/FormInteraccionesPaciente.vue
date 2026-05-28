@@ -32,15 +32,52 @@ const formContacto = useForm(structuredClone(FORM_CONTACTO));
 const entrenamientoActual = ref(null);
 
 const verVentanaContacto = computed(() => {
-    return formContacto.motivo === 'Agendar cita de entrenamiento' || entrenamientoActual.value;
+    return formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado || entrenamientoActual.value;
 });
 
 const ventanaContacto = reactive({
     fechaEntrenamiento: '',
     ...VENTANA_CONTACTO_KEYS.reduce((acc, key) => {
-        acc[key] = { inicio: '', fin: '' };
+        acc[key] = { inicio: '', fin: '', color: 'text-black' };
         return acc;
     }, {}),
+});
+
+const colorFecha = (fechaInicio, fechaFin) => {
+    const hoy = new Date();
+
+    if (!fechaInicio || !fechaFin) {
+        return 'text-black';
+    }
+
+    const fechaInicioDate = new Date(fechaInicio.split('/').reverse().join('-'));
+    const fechaFinDate = new Date(fechaFin.split('/').reverse().join('-'));
+
+    if (hoy > fechaFinDate) {
+        return 'text-danger';
+    } else if (hoy >= fechaInicioDate && hoy <= fechaFinDate) {
+        return 'text-success';
+    }
+
+    return 'text-black';
+};
+
+const colorFechaEntrenamiento = computed(() => {
+    const hoy = new Date();
+
+    if (! ventanaContacto.fechaEntrenamiento) {
+        return 'text-black';
+    }
+
+    const fechaEntrenamientoDate = new Date(ventanaContacto.fechaEntrenamiento.split('/').reverse().join('-'));
+
+    if (hoy > fechaEntrenamientoDate) {
+        return 'text-danger';
+    } else if (hoy === fechaEntrenamientoDate) {
+        return 'text-success';
+    } else if (hoy < fechaEntrenamientoDate) {
+        return 'text-black';
+    }
 });
 
 const convertirHora12a24 = (hora12, meridiano) => {
@@ -258,7 +295,7 @@ const verFechaHoraContacto = computed(() => {
         || formContacto.contactado !== 1;
 });
 
-const setFechaProximoContacto = () => {
+const setFechaProximoContacto = async () => {
     if (formContacto.contactado === 0) {
         formContacto.nueva_fecha_contacto = null;
     } else {
@@ -315,20 +352,44 @@ const getFechaMasDias = (dias, fechaBase = null) => {
 };
 
 const setVentanasContacto = (fechaBase) => {
+    if (entrenamientoActual.value) {
+        return;
+    }
+
     ventanaContacto.fechaEntrenamiento = fechaBase;
 
     VENTANA_CONTACTO_KEYS.forEach(key => {
         ventanaContacto[key].inicio = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_INICIO[key], fechaBase);
         ventanaContacto[key].fin = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_FIN[key], fechaBase);
+        ventanaContacto[key].color = colorFecha(ventanaContacto[key].inicio, ventanaContacto[key].fin);
     });
 };
 
-const handleChangeResultado = () => {
+const resetVentanasContacto = () => {
+    if (entrenamientoActual.value) {
+        return;
+    }
+
+    ventanaContacto.fechaEntrenamiento = '';
+
+    VENTANA_CONTACTO_KEYS.forEach(key => {
+        ventanaContacto[key].inicio = '';
+        ventanaContacto[key].fin = '';
+    });
+};
+
+const handleChangeResultado = async () => {
     if (formContacto.contactado !== 0) {
         formContacto.motivo_reprogramacion = '';
     }
 
-    setFechaProximoContacto();
+    await setFechaProximoContacto();
+
+    if (formContacto.contactado === 1 && formContacto.motivo === 'Agendar cita de entrenamiento') {
+        setVentanasContacto(formContacto.nueva_fecha_contacto);
+    } else if (formContacto.contactado !== 1) {
+        resetVentanasContacto();
+    }
 };
 
 const handleChangeMotivoContacto = () => {
@@ -384,12 +445,6 @@ const handleChangeSeguimientoPreguntaA = () => {
         formContacto.seguimiento_pregunta_c = '';
     }
 };
-
-// const handleChangeSeguimientoPreguntaC = () => {
-//     if (formContacto.seguimiento_pregunta_c !== 'No') {
-//
-//     }
-// };
 
 const handleChangeSeguimientoPreguntaE = () => {
     if (formContacto.seguimiento_pregunta_e !== 'No') {
@@ -578,7 +633,7 @@ const getEntrenamientoActual = async () => {
     try {
         const { data } = await axios.get(route('ajax.paciente.entrenamientoActual', props.idPaciente));
 
-        entrenamientoActual.value = data;
+        entrenamientoActual.value = data || null;
     } catch (error) {
         notification.errorNotification(error.response?.data?.message || 'Error al obtener el entrenamiento actual');
     }
@@ -588,20 +643,34 @@ const fillDataEntrenamientoActual = () => {
     if (!entrenamientoActual.value) return;
 
     ventanaContacto.fechaEntrenamiento = entrenamientoActual.value.fecha;
+
     ventanaContacto.seguimientoDosSemanas.inicio = entrenamientoActual.value.seguimiento_dos_semanas_inicio;
     ventanaContacto.seguimientoDosSemanas.fin = entrenamientoActual.value.seguimiento_dos_semanas_fin;
+    ventanaContacto.seguimientoDosSemanas.color = colorFecha(ventanaContacto.seguimientoDosSemanas.inicio, ventanaContacto.seguimientoDosSemanas.fin);
+
     ventanaContacto.llamadaMensual.inicio = entrenamientoActual.value.llamada_mensual_1_inicio;
     ventanaContacto.llamadaMensual.fin = entrenamientoActual.value.llamada_mensual_1_fin;
+    ventanaContacto.llamadaMensual.color = colorFecha(ventanaContacto.llamadaMensual.inicio, ventanaContacto.llamadaMensual.fin);
+
     ventanaContacto.llamadaMensualDos.inicio = entrenamientoActual.value.llamada_mensual_2_inicio;
     ventanaContacto.llamadaMensualDos.fin = entrenamientoActual.value.llamada_mensual_2_fin;
+    ventanaContacto.llamadaMensualDos.color = colorFecha(ventanaContacto.llamadaMensualDos.inicio, ventanaContacto.llamadaMensualDos.fin);
+
     ventanaContacto.llamadaMensualTres.inicio = entrenamientoActual.value.llamada_mensual_3_inicio;
     ventanaContacto.llamadaMensualTres.fin = entrenamientoActual.value.llamada_mensual_3_fin;
+    ventanaContacto.llamadaMensualTres.color = colorFecha(ventanaContacto.llamadaMensualTres.inicio, ventanaContacto.llamadaMensualTres.fin);
+
     ventanaContacto.llamadaMensualCuatro.inicio = entrenamientoActual.value.llamada_mensual_4_inicio;
     ventanaContacto.llamadaMensualCuatro.fin = entrenamientoActual.value.llamada_mensual_4_fin;
+    ventanaContacto.llamadaMensualCuatro.color = colorFecha(ventanaContacto.llamadaMensualCuatro.inicio, ventanaContacto.llamadaMensualCuatro.fin);
+
     ventanaContacto.llamadaMensualCinco.inicio = entrenamientoActual.value.llamada_mensual_5_inicio;
     ventanaContacto.llamadaMensualCinco.fin = entrenamientoActual.value.llamada_mensual_5_fin;
+    ventanaContacto.llamadaMensualCinco.color = colorFecha(ventanaContacto.llamadaMensualCinco.inicio, ventanaContacto.llamadaMensualCinco.fin);
+
     ventanaContacto.citaFinal.inicio = entrenamientoActual.value.agendar_cita_final_inicio;
     ventanaContacto.citaFinal.fin = entrenamientoActual.value.agendar_cita_final_fin;
+    ventanaContacto.citaFinal.color = colorFecha(ventanaContacto.citaFinal.inicio, ventanaContacto.citaFinal.fin);
 };
 
 defineExpose({ submit });
@@ -653,10 +722,6 @@ watch(() => formContacto.seguimiento_pregunta_a, () => {
     handleChangeSeguimientoPreguntaA();
 });
 
-// watch(() => formContacto.seguimiento_pregunta_c, () => {
-//     handleChangeSeguimientoPreguntaC();
-// });
-
 watch(() => formContacto.seguimiento_pregunta_e, () => {
     handleChangeSeguimientoPreguntaE();
 });
@@ -706,7 +771,12 @@ watch(() => formContacto.pedido_ayuda_pregunta_c, () => {
 });
 
 watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
-    if (formContacto.motivo === 'Agendar cita de entrenamiento' && newValue && isValidDate(newValue)) {
+    if (newValue === null) {
+        resetVentanasContacto();
+        return;
+    }
+
+    if (formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado && newValue && isValidDate(newValue)) {
         setVentanasContacto(newValue);
     }
 });
@@ -737,7 +807,11 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 :disabled="alerta"
                             >
                                 <option value="">Seleccionar motivo</option>
-                                <option v-for="motivo in motivosContacto" :value="motivo">{{ motivo }}</option>
+                                <option
+                                    v-for="motivo in motivosContacto"
+                                    :value="motivo"
+                                    :disabled="motivo === 'Agendar cita de entrenamiento' && entrenamientoActual"
+                                >{{ motivo }}</option>
                             </select>
                             <div class="invalid-feedback" v-if="formContacto.errors?.motivo">
                                 {{ formContacto.errors.motivo }}
@@ -1880,19 +1954,19 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
             class="col-12 col-lg-5"
         >
             <div class="table-responsive">
-                <table class="table table-bordered">
+                <table class="table table-bordered bg-body">
                     <thead>
                         <tr>
-                            <th></th>
-                            <th class="text-center">Inicio de contacto</th>
-                            <th class="text-center">Fin de contacto</th>
+                            <th class="bg-body-secondary"></th>
+                            <th class="bg-body-secondary text-black text-center">Inicio de contacto</th>
+                            <th class="bg-body-secondary text-black text-center">Fin de contacto</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         <tr>
                             <td>Fecha de entrenamiento</td>
-                            <td class="text-center">
+                            <td class="text-center" :class="colorFechaEntrenamiento">
                                 {{ ventanaContacto.fechaEntrenamiento }}
                             </td>
                             <td></td>
@@ -1903,10 +1977,10 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             :key="index"
                         >
                             <td>{{ VENTANA_CONTACTO_LABELS[key] }}</td>
-                            <td class="text-center">
+                            <td class="text-center" :class="ventanaContacto[key].color">
                                 {{ ventanaContacto[key].inicio }}
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" :class="ventanaContacto[key].color">
                                 {{ ventanaContacto[key].fin }}
                             </td>
                         </tr>

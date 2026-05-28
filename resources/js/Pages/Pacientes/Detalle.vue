@@ -269,7 +269,7 @@ const hideModalConfirmar = () => {
         <div class="row">
             <div class="col-12">
                 <p>
-                    ¿Estás seguro/a que desea guardar la información?
+                    ¿Estás seguro/a que deseas guardar la información?
                 </p>
             </div>
         </div>
