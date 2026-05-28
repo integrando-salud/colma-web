@@ -20,6 +20,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $fechaPrimerLogin = $user->paciente->fecha_primer_login_app;
+
+        if (!$fechaPrimerLogin) {
+            $user->paciente->update([
+                'fecha_primer_login_app' => now(),
+            ]);
+        }
+
         return response()->json([
             'token' => $user->createToken('mobile-app')->plainTextToken,
             'usuario'  => new InfoUsuarioResource($user),

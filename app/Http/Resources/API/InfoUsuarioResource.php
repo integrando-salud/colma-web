@@ -27,7 +27,8 @@ class InfoUsuarioResource extends JsonResource
             'centro_salud' => [
                 'id' => $this->centroSalud?->id ?? null,
                 'nombre' => $this->centroSalud?->nombre ?? null,
-            ]
+            ],
+            'primer_login' => $this->paciente?->fecha_primer_login_app?->format('Y-m-d H:i:s') ?? null,
         ];
     }
 }
