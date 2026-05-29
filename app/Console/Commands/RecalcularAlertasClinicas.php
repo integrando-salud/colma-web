@@ -65,7 +65,8 @@ class RecalcularAlertasClinicas extends Command
                 foreach ($registros as $registro) {
                     $recomendacion = $service->getRecomendacionPresionArterial(
                         (int) $registro->presion_sistolica,
-                        (int) $registro->presion_diastolica
+                        (int) $registro->presion_diastolica,
+                        (int) $registro->paciente_id
                     );
                     if ($recomendacion === null) {
                         continue;
