@@ -58,7 +58,7 @@ watch(() => form.documento, (value) => {
                     </div>
                 </div>
 
-                <a href="#" class="text-secondary text-decoration-none">Recuperar contraseña</a>
+<!--                <a href="#" class="text-secondary text-decoration-none">Recuperar contraseña</a>-->
             </div>
         </div>
     </Main>
