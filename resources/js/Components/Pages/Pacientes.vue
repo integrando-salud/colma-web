@@ -442,7 +442,7 @@ onMounted(() => {
                     </div>
                     <div class="row">
                         <div class="col-12">
-                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud.nombre }}
+                            <span class="fw-semibold">Centro de salud:</span> {{ pacienteSelected.centro_salud?.nombre }}
                         </div>
                     </div>
                 </div>

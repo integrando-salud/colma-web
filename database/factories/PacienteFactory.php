@@ -25,12 +25,10 @@ class PacienteFactory extends Factory
     public function definition(): array
     {
         $sexo = fake()->randomElement(['M', 'F']);
-        $nombre = fake()->firstName($sexo === 'M' ? 'male' : 'female');
-        $apellido = fake()->lastName;
-        $email = Str::lower(Str::replace(' ', '.', $nombre) . '.' . Str::replace(' ', '.', $apellido)) . '@correo.com';
-        if (Paciente::where('email', $email)->exists()) {
-            $email = fake()->unique()->email;
-        }
+        $nombre = fake('es_ES')->firstName($sexo === 'M' ? 'male' : 'female');
+        $apellido = fake('es_ES')->lastName;
+        $documento = fake()->unique()->numerify('########');
+        $email = (Str::slug("$nombre $apellido $documento")) . '@correo.com';
         $promotor = User::whereHas('roles', function ($query) {
             $query->where('name', User::ROL_PROMOTOR);
         })->inRandomOrder()->first();
@@ -40,16 +38,15 @@ class PacienteFactory extends Factory
             'apellido' => $apellido,
             'fecha_nacimiento' => fake()->dateTimeBetween('-70 years', '-30 years')->format('Y-m-d'),
             'sexo' => $sexo,
-            'documento' => fake()->unique()->numerify('########'),
+            'documento' => $documento,
             'telefono' => fake()->phoneNumber,
             'telefono2' => fake()->optional()->phoneNumber,
             'email' => $email,
-            'direccion' => fake()->address,
-            'referencia' => fake()->optional()->sentence,
-            'centro_salud_id' => $promotor->centro_salud_id,
-            'promotor_id' => $promotor->id,
+            'direccion' => fake('es_ES')->address,
+            'referencia' => fake('es_ES')->optional()->sentence,
+            'centro_salud_id' => $promotor?->centro_salud_id ?? null,
+            'promotor_id' => $promotor?->id ?? null,
             'fecha_enrolamiento' => fake()->dateTimeBetween('-1 years'),
-            'paquete_id' => Paquete::inRandomOrder()->value('id') ?? null,
             'activo' => fake()->boolean(90),
         ];
     }
@@ -57,11 +54,6 @@ class PacienteFactory extends Factory
     public function configure()
     {
         return $this->afterCreating(function (Paciente $paciente) {
-            if (User::where('email', $paciente->email)->exists()) {
-                $paciente->update(['email' => fake()->unique()->email]);
-                $paciente->refresh();
-            }
-
             $user = User::factory()->create([
                 'nombre' => "$paciente->nombre $paciente->apellido",
                 'sexo' => $paciente->sexo,
@@ -79,9 +71,14 @@ class PacienteFactory extends Factory
                 case 1:
                     $registros = Glucosa::factory()
                         ->count(rand(1, 5))
-                        ->state(fn () => [
-                            'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
-                        ])
+                        ->state(function () use ($paciente) {
+                            $fecha = fake()->dateTimeBetween($paciente->fecha_enrolamiento);
+
+                            return [
+                                'fecha_registro' => $fecha,
+                                'fecha_usuario' => $fecha,
+                            ];
+                        })
                         ->create([
                         'paciente_id' => $paciente->id,
                     ]);
@@ -105,9 +102,14 @@ class PacienteFactory extends Factory
                 case 2:
                     $registros = PresionArterial::factory()
                         ->count(rand(1, 5))
-                        ->state(fn () => [
-                            'fecha_registro' => fake()->dateTimeBetween($paciente->fecha_enrolamiento),
-                        ])
+                        ->state(function () use ($paciente) {
+                            $fecha = fake()->dateTimeBetween($paciente->fecha_enrolamiento);
+
+                            return [
+                                'fecha_registro' => $fecha,
+                                'fecha_usuario' => $fecha,
+                            ];
+                        })
                         ->create([
                         'paciente_id' => $paciente->id,
                     ]);

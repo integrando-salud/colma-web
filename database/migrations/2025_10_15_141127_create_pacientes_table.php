@@ -31,9 +31,10 @@ return new class extends Migration {
             $table->string('direccion');
             $table->string('referencia')->nullable();
             $table->foreignIdFor(CentroSalud::class, 'centro_salud_id')
+                ->nullable()
                 ->constrained()
                 ->onUpdate('cascade')
-                ->onDelete('cascade');
+                ->nullOnDelete();
             $table->foreignIdFor(User::class, 'promotor_id')
                 ->nullable()
                 ->constrained()

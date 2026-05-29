@@ -14,7 +14,7 @@ class PacienteSeeder extends Seeder
     public function run(): void
     {
         if (config('app.env') === 'local' && Paciente::count() < 100) {
-            Paciente::factory()->count(100)->create();
+            Paciente::factory()->count(30)->create();
         }
     }
 }

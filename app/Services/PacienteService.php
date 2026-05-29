@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Diagnostico;
 use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
@@ -9,6 +10,8 @@ use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 class PacienteService
@@ -162,11 +165,11 @@ class PacienteService
             $paciente->direccion = $data['direccion'];
             $paciente->referencia = data_get($data, 'referencia');
             $paciente->observaciones = data_get($data, 'observaciones');
-            $paciente->centro_salud_id = $data['centro_salud_id'];
-            $paciente->promotor_id = $data['promotor_id'];
+            $paciente->centro_salud_id = data_get($data, 'centro_salud_id');
+            $paciente->promotor_id = data_get($data, 'promotor_id');
             $paciente->fecha_enrolamiento = implode('-', array_reverse(explode('/', $data['fecha_enrolamiento'])));
-//            $paciente->paquete_id = data_get($data, 'paquete_id');
             $paciente->clave = Crypt::encryptString($data['password']);
+            $paciente->test = data_get($data, 'test', false);
 
             if (empty($data['id'])) {
                 $usuario = $this->createUsuario($paciente, $data['password']);
@@ -210,8 +213,8 @@ class PacienteService
             'sexo' => "$paciente->sexo",
             'documento' => "$paciente->documento",
             'email' => $paciente->email,
-            'pais_id' => $paciente->centroSalud->pais_id,
-            'centro_salud_id' => $paciente->centro_salud_id,
+            'pais_id' => $paciente->centroSalud?->pais_id ?? null,
+            'centro_salud_id' => $paciente->centro_salud_id ?? null,
         ];
 
         if ($password) {
@@ -487,5 +490,54 @@ class PacienteService
         $paciente->interacciones()->delete();
         $paciente->alertas()->delete();
         $paciente->entrenamientos()->delete();
+    }
+
+    /**
+     * Crea un paciente de prueba
+     *
+     * @return Paciente|false
+     */
+    public function crearPacienteTest(): Paciente|false
+    {
+        try {
+            $sexo = fake()->randomElement(['M', 'F']);
+            $ultimoDocumento = Paciente::where('test', true)
+                ->latest()
+                ->value('documento');
+
+            if ($ultimoDocumento) {
+                [$test, $numero] = explode('-', $ultimoDocumento);
+                $numero++;
+                $documento = "$test-$numero";
+            } else {
+                $documento = 'test-1';
+            }
+
+            $nombre = $sexo === 'M'
+                ? fake('es_ES')->name()
+                : fake('es_ES')->firstNameFemale();
+            $apellido = fake('es_ES')->lastName();
+            $email = (Str::slug("$nombre $apellido $documento")) . '@prueba.com';
+
+            $data = [
+                'nombre' => $nombre,
+                'apellido' => $apellido,
+                'fecha_nacimiento' => fake()->dateTimeBetween('-70 years', '-30 years')->format('d/m/Y'),
+                'sexo' => $sexo,
+                'documento' => $documento,
+                'telefono' => fake('es_ES')->phoneNumber(),
+                'email' => $email,
+                'direccion' => fake('es_ES')->address(),
+                'fecha_enrolamiento' => now()->format('d/m/Y'),
+                'password' => $documento,
+                'diagnosticos' => Diagnostico::where('activo', true)->pluck('id')->toArray(),
+                'test' => true,
+            ];
+
+            return $this->storePaciente($data);
+        } catch (Throwable $th) {
+            Log::error($th);
+            return false;
+        }
     }
 }
