@@ -6,7 +6,6 @@ use App\Models\Alerta;
 use App\Models\Diagnostico;
 use App\Models\Glucosa;
 use App\Models\Paciente;
-use App\Models\Paquete;
 use App\Models\PresionArterial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;

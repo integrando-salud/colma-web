@@ -16,14 +16,15 @@ class UserFactory extends Factory
     public function definition(): array
     {
         $sexo = fake()->randomElement(['M', 'F']);
-        $nombre = fake()->firstName($sexo === 'M' ? 'male' : 'female') . ' ' . fake()->lastName;
-        $email = Str::lower(Str::replace(' ', '.', $nombre)) . '@correo.com';
+        $nombre = fake('es_ES')->firstName($sexo === 'M' ? 'male' : 'female') . ' ' . fake('es_ES')->lastName;
+        $documento = fake()->unique()->numerify('########');
+        $email = Str::slug("$nombre $documento") . '@correo.com';
         $centroSalud = CentroSalud::inRandomOrder()->first();
 
         return [
             'nombre' => $nombre,
             'sexo' => $sexo,
-            'documento' => fake()->unique()->numerify('########'),
+            'documento' => $documento,
             'email' => $email,
             'password' => Hash::make('123456'),
             'pais_id' => $centroSalud->pais_id,
