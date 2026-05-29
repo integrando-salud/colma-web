@@ -40,7 +40,7 @@ const showMenuUsuarios = computed(() => {
                         <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
                     </li>
                 </ul>
-                <a :href="route('dashboard.logout')" class="btn btn-secondary text-white me-md-1">
+                <a :href="route('dashboard.logout')" class="btn btn-secondary text-white">
                     <i class="fa fa-sign-out"></i>
                     Cerrar sesión
                 </a>

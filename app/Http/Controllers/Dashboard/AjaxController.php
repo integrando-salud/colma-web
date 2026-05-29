@@ -10,6 +10,7 @@ use App\Http\Requests\Dashboard\Paquete\GetPaqueteRequest;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
 use App\Http\Resources\Dashboard\EntrenamientoResource;
+use App\Http\Resources\Dashboard\PacienteResource;
 use App\Http\Resources\Dashboard\PaqueteResource;
 use App\Http\Resources\Dashboard\UserResource;
 use App\Models\Paciente;
@@ -196,6 +197,25 @@ class AjaxController extends Controller
             session()->flash('error', 'Se produjo un error al obtener el entrenamiento actual.');
 
             return response()->json([], 500);
+        }
+    }
+
+    public function resetearDatosPaciente(Paciente $paciente, PacienteService $pacienteService)
+    {
+        try {
+            $pacienteService->resetearDatosPacienteTest($paciente);
+
+            $paciente->refresh();
+
+            return response()->json(PacienteResource::make($paciente));
+        } catch (Throwable $th) {
+            Log::error('Error al resetear los datos del paciente: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'message' => 'Se produjo un error al resetear los datos del paciente.',
+            ], 500);
         }
     }
 }

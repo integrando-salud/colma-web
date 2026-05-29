@@ -19,13 +19,18 @@ class PresionArterialFactory extends Factory
     {
         $sistolica = fake()->numberBetween(90, 200);
         $diastolica = fake()->numberBetween(50, min(120, $sistolica - 10));
+        $fechaRegistro = fake()->dateTimeBetween('-6 months');
 
         return [
             'paciente_id' => Paciente::inRandomOrder()->value('id'),
             'presion_sistolica' => $sistolica,
             'presion_diastolica' => $diastolica,
-            'fecha_registro' => fake()->dateTimeBetween('-6 months'),
+            'fecha_registro' => $fechaRegistro,
+            'fecha_usuario' => $fechaRegistro,
             'fecha_sincronizacion' => now(),
+            'advertencia' => fake()->randomElement([
+                'Baja', 'Normal', 'Alta',
+            ])
         ];
     }
 }

@@ -61,6 +61,7 @@ class PacienteResource extends JsonResource
             'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),
             'fecha_proximo_contacto_dias' => $diasPostFechaProximoContacto,
             'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
+            'test' => $this->test,
         ];
     }
 }

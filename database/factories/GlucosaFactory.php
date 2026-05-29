@@ -18,15 +18,20 @@ class GlucosaFactory extends Factory
     public function definition(): array
     {
         $ayuno = fake()->boolean();
+        $fechaRegistro = fake()->dateTimeBetween('-6 months');
 
         return [
             'paciente_id' => Paciente::inRandomOrder()->value('id'),
-            'valor' => $ayuno
+            'valor_mgdl' => $ayuno
                 ? fake()->numberBetween(70, 250)
                 : fake()->numberBetween(90, 300),
             'ayuno' => $ayuno,
-            'fecha_registro' => fake()->dateTimeBetween('-6 months', 'now'),
+            'fecha_registro' => $fechaRegistro,
+            'fecha_usuario' => $fechaRegistro,
             'fecha_sincronizacion' => now(),
+            'advertencia' => fake()->randomElement([
+                'Baja', 'Normal', 'Alta',
+            ]),
         ];
     }
 }
