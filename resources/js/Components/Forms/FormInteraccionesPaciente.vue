@@ -1,7 +1,13 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, toRaw } from "vue";
 import { useForm } from "@inertiajs/vue3";
-import { FORM_CONTACTO } from "@/Constants/paciente";
+import {
+    FORM_CONTACTO, MOTIVO_CONTACTO, MOTIVOS_CONTACTO_ALERTA_OPERATIVA,
+    MOTIVO_CONTACTO_ALERTA_CLINICA, MOTIVOS_CONTACTO_SIN_ALERTA, TIPO_ALERTA, ALERTA_DESCRIPCION,
+    MODALIDAD, MOTIVO_REPROGRAMACION_MODALIDAD_TELEFONO, MOTIVO_REPROGRAMACION_MODALIDAD_PRESENCIAL,
+    DIFICULTADES_NO_ADHERENCIA, DIFICULTADES_PROBLEMAS_CONEXION, DIFICULTADES_PEDIDO_AYUDA,
+    OPCION_SI, OPCION_NO, LUGAR_CITA, RAZON_CONTACTO_PARTICIPANTE,
+} from "@/Constants/contacto";
 import { useNotificationStore } from "@/Stores/notification";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 import { vMaska } from "maska/vue";
@@ -33,11 +39,11 @@ const entrenamientoActual = ref(null);
 const ventanaContactoEntrenamientoActual = ref(null);
 
 const verVentanaContacto = computed(() => {
-    return !!(formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado || entrenamientoActual.value);
+    return !!(formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO && formContacto.contactado || entrenamientoActual.value);
 });
 
 const reagendaEntrenamiento = computed(() => {
-    return entrenamientoActual.value && formContacto.motivo === 'Cita de entrenamiento' && formContacto.contactado === 0;
+    return entrenamientoActual.value && formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO && formContacto.contactado === 0;
 });
 
 const ventanaContacto = reactive({
@@ -48,19 +54,39 @@ const ventanaContacto = reactive({
     }, {}),
 });
 
-const colorFecha = (fechaInicio, fechaFin) => {
-    const hoy = new Date();
+const parseFechaLocal = (fecha) => {
+    if (!fecha) {
+        return null;
+    }
 
-    if (!fechaInicio || !fechaFin) {
+    const [dia, mes, anio] = fecha.split('/').map(Number);
+
+    if (!dia || !mes || !anio) {
+        return null;
+    }
+
+    return new Date(anio, mes - 1, dia);
+};
+
+const inicioDelDia = (fecha) => {
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+};
+
+const colorFecha = (fechaInicio, fechaFin) => {
+    const inicio = parseFechaLocal(fechaInicio);
+    const fin = parseFechaLocal(fechaFin);
+
+    if (!inicio || !fin) {
         return 'text-black';
     }
 
-    const fechaInicioDate = new Date(fechaInicio.split('/').reverse().join('-'));
-    const fechaFinDate = new Date(fechaFin.split('/').reverse().join('-'));
+    const hoy = inicioDelDia(new Date());
 
-    if (hoy > fechaFinDate) {
+    if (hoy > fin) {
         return 'text-danger';
-    } else if (hoy >= fechaInicioDate && hoy <= fechaFinDate) {
+    }
+
+    if (hoy >= inicio && hoy <= fin) {
         return 'text-success';
     }
 
@@ -74,16 +100,25 @@ const colorFechaEntrenamiento = computed(() => {
         return 'text-black';
     }
 
-    const fechaEntrenamientoDate = new Date(ventanaContacto.fechaEntrenamiento.split('/').reverse().join('-'));
+    const [dia, mes, anio] = ventanaContacto.fechaEntrenamiento.split('/').map(Number);
+    const fechaEntrenamientoDate = new Date(anio, mes - 1, dia);
+
+    if (esMismaFecha(hoy, fechaEntrenamientoDate)) {
+        return 'text-success';
+    }
 
     if (hoy > fechaEntrenamientoDate) {
         return 'text-danger';
-    } else if (hoy === fechaEntrenamientoDate) {
-        return 'text-success';
-    } else if (hoy < fechaEntrenamientoDate) {
-        return 'text-black';
     }
+
+    return 'text-black';
 });
+
+const esMismaFecha = (a, b) => {
+    return a.getFullYear() === b.getFullYear()
+        && a.getMonth() === b.getMonth()
+        && a.getDate() === b.getDate();
+};
 
 const convertirHora12a24 = (hora12, meridiano) => {
     if (!hora12 || !meridiano) {
@@ -163,95 +198,36 @@ const convertirHora24a12 = (hora24) => {
     };
 };
 
-const modalidades = [
-    'Llamada por teléfono / WhatsApp',
-    'Encuentro presencial / en persona',
-];
-
 const motivosReprogramacion = computed(() => {
-    if (formContacto.modalidad === 'Llamada por teléfono / WhatsApp') {
-        return [
-            'No responde',
-            'Teléfono apagado',
-            'Número equivocado / cambió de número',
-            'Pidió que se le llame en otro momento',
-        ];
-    } else if (formContacto.modalidad === 'Encuentro presencial / en persona') {
-        return [
-            'No hay nadie en el domicilio',
-            'No se encuentra en el domicilio',
-            'Se mudó',
-            'Domicilio equivocado / dirección no existe',
-            'No acudió a la cita',
-            'Pidió que se le llame / visite en otro momento',
-        ];
+    if (formContacto.modalidad === MODALIDAD.TELEFONO) {
+        return MOTIVO_REPROGRAMACION_MODALIDAD_TELEFONO;
+    } else if (formContacto.modalidad === MODALIDAD.PRESENCIAL) {
+        return MOTIVO_REPROGRAMACION_MODALIDAD_PRESENCIAL;
     }
 
     return [];
 });
 
-const dificultadesNoAdherencia = [
-    'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
-    'Problemas con la señal (completó las sesiones, pero la información no se subió)',
-    'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
-    'El celular no funciona y no puede usar el aplicativo',
-    'Le robaron el celular',
-    'Falta de interés',
-    'Falta de tiempo',
-    'Ya no quiere participar en el proyecto',
-    'Otro',
-];
-
-const dificultadesProblemasConexion = [
-    'Problemas con el internet (no tiene Wi-Fi o datos móviles para subir la información de las sesiones)',
-    'Problemas con la señal (completó las sesiones, pero la información no se subió)',
-    'Problemas para usar el celular (ej. no sabe cómo abrir el aplicativo)',
-    'El celular no funciona y no puede usar el aplicativo',
-    'Le robaron el celular',
-    'Otro',
-];
-
-const dificultadesPedidoAyuda = [
-    'Problemas con el celular',
-    'Problemas con el aplicativo',
-    'Problemas con la conexión a internet',
-    'Ya no quiere participar en el proyecto',
-    'Otro',
-];
-
 const motivosContacto = computed(() => {
     if (props.alerta?.id) {
-        if (props.alerta.tipo === 'clinica') {
-            return [ 'Alerta clínica' ];
+        if (props.alerta.tipo === TIPO_ALERTA.CLINICA) {
+            return MOTIVO_CONTACTO_ALERTA_CLINICA;
         } else {
-            return [
-                'No completa las sesiones',
-                'Problemas de conexión',
-                'Pedido de ayuda',
-            ];
+            return MOTIVOS_CONTACTO_ALERTA_OPERATIVA;
         }
     } else {
-        return [
-            'Agendar cita de entrenamiento',
-            'Cita de entrenamiento',
-            'Seguimiento 2 semanas luego del entrenamiento',
-            'Seguimiento mensual',
-            'Agendar cita final',
-            'Cita final',
-            'Re-entrenamiento',
-            'Contacto iniciado por el participante',
-        ];
+        return MOTIVOS_CONTACTO_SIN_ALERTA;
     }
 });
 
 const fechaProgramadaCitaTitle = computed(() => {
     let title = 'Fecha programada para cita';
 
-    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
         title += ' de entrenamiento';
     }
 
-    if (formContacto.motivo === 'Agendar cita final') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_FINAL) {
         title += ' final';
     }
 
@@ -261,11 +237,11 @@ const fechaProgramadaCitaTitle = computed(() => {
 const lugarAcordadoCitaTitle = computed(() => {
     let title = 'Lugar acordado para cita';
 
-    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
         title += ' de entrenamiento';
     }
 
-    if (formContacto.motivo === 'Agendar cita final') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_FINAL) {
         title += ' final';
     }
 
@@ -275,11 +251,11 @@ const lugarAcordadoCitaTitle = computed(() => {
 const horaProgramadaCitaTitle = computed(() => {
     let title = 'Hora para la cita';
 
-    if (formContacto.motivo === 'Agendar cita de entrenamiento') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
         title += ' de entrenamiento';
     }
 
-    if (formContacto.motivo === 'Agendar cita final') {
+    if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_FINAL) {
         title += ' final';
     }
 
@@ -288,19 +264,19 @@ const horaProgramadaCitaTitle = computed(() => {
 
 const verFilaFechaProximoContacto = computed(() => {
     return formContacto.contactado === 0
-        || formContacto.motivo === 'Agendar cita de entrenamiento'
-        || formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
-        || formContacto.motivo === 'Seguimiento mensual';
+        || formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO
+        || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
+        || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL;
 });
 
 const verFechaHoraContacto = computed(() => {
-    return formContacto.motivo !== 'Cita de entrenamiento'
-        && formContacto.motivo !== 'Cita final'
-        && formContacto.motivo !== 'Re-entrenamiento'
+    return formContacto.motivo !== MOTIVO_CONTACTO.CITA_ENTRENAMIENTO
+        && formContacto.motivo !== MOTIVO_CONTACTO.CITA_FINAL
+        && formContacto.motivo !== MOTIVO_CONTACTO.REENTRENAMIENTO
         || formContacto.contactado !== 1;
 });
 
-const setFechaProximoContacto = async () => {
+const setFechaProximoContacto = () => {
     if (reagendaEntrenamiento.value) {
         formContacto.nueva_fecha_contacto = getFechaMasDias(14);
         return;
@@ -312,11 +288,11 @@ const setFechaProximoContacto = async () => {
     }
 
     if (
-        formContacto.motivo === 'Agendar cita de entrenamiento' ||
-        formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
+        formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO ||
+        formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
     ) {
         formContacto.nueva_fecha_contacto = getFechaMasDias(14);
-    } else if (formContacto.motivo === 'Seguimiento mensual') {
+    } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
         formContacto.nueva_fecha_contacto = getFechaMasDias(30);
     } else {
         formContacto.nueva_fecha_contacto = null;
@@ -344,13 +320,11 @@ const isValidDate = (dateString) => {
 };
 
 const getFechaMasDias = (dias, fechaBase = null) => {
-    const fecha = new Date();
+    let fecha = new Date();
 
     if (typeof fechaBase === 'string') {
-        const [dia, mes, anio] = fechaBase.split('/');
-        fecha.setDate(dia);
-        fecha.setMonth(mes - 1);
-        fecha.setFullYear(anio);
+        const [dia, mes, anio] = fechaBase.split('/').map(Number);
+        fecha = new Date(anio, mes - 1, dia);
     }
 
     fecha.setDate(fecha.getDate() + dias);
@@ -366,7 +340,7 @@ const setVentanasContacto = (fechaBase) => {
     if (entrenamientoActual.value) {
         if (reagendaEntrenamiento.value) {
             ventanaContactoEntrenamientoActual.value = structuredClone(toRaw(ventanaContacto));
-        } else if (formContacto.motivo === 'Cita de entrenamiento' && formContacto.contactado === 1) {
+        } else if (formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO && formContacto.contactado === 1) {
             if (!ventanaContactoEntrenamientoActual.value) {
                 return;
             }
@@ -391,7 +365,7 @@ const setVentanasContacto = (fechaBase) => {
 };
 
 const resetVentanasContacto = () => {
-    if (entrenamientoActual.value && formContacto.motivo !== 'Cita de entrenamiento' && formContacto.contactado !== 0) {
+    if (entrenamientoActual.value && formContacto.motivo !== MOTIVO_CONTACTO.CITA_ENTRENAMIENTO && formContacto.contactado !== 0) {
         return;
     }
 
@@ -403,50 +377,65 @@ const resetVentanasContacto = () => {
     });
 };
 
-const handleChangeResultado = async () => {
+const handleChangeResultado = () => {
     if (formContacto.contactado !== 0) {
         formContacto.motivo_reprogramacion = '';
     }
 
-    await setFechaProximoContacto();
+    setFechaProximoContacto();
 
-    if (
-        (formContacto.contactado === 1 && formContacto.motivo === 'Agendar cita de entrenamiento' || formContacto.motivo === 'Cita de entrenamiento')
-        || reagendaEntrenamiento.value
-    ) {
+    const agendaEntrenamientoContactado =
+        formContacto.contactado === 1 &&
+        formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO;
+
+    const esCitaEntrenamiento = formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO;
+
+    const debeActualizarVentanasContacto =
+        agendaEntrenamientoContactado ||
+        esCitaEntrenamiento ||
+        reagendaEntrenamiento.value;
+
+    if (debeActualizarVentanasContacto) {
         setVentanasContacto(formContacto.nueva_fecha_contacto);
-    } else if (formContacto.contactado !== 1 && entrenamientoActual.value === null) {
+        return;
+    }
+
+    const debeResetearVentanasContacto =
+        formContacto.contactado !== 1 &&
+        entrenamientoActual.value === null;
+
+    if (debeResetearVentanasContacto) {
         resetVentanasContacto();
     }
 };
 
 const handleChangeMotivoContacto = () => {
     if (props.alerta?.id) {
-        if (formContacto.motivo !== 'No completa las sesiones') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.NO_COMPLETA_SESIONES) {
             formContacto.no_adherencia_pregunta_a = [];
             formContacto.no_adherencia_pregunta_b = '';
         }
 
-        if (formContacto.motivo !== 'Problemas de conexión') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.PROBLEMAS_CONEXION) {
             formContacto.problemas_conexion_pregunta_a = [];
             formContacto.problemas_conexion_pregunta_b = '';
         }
 
-        if (formContacto.motivo !== 'Alerta clínica') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.ALERTA_CLINICA) {
             formContacto.alerta_clinica_pregunta_a = '';
         }
 
-        if (formContacto.motivo !== 'Pedido de ayuda') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.PEDIDO_AYUDA) {
             formContacto.pedido_ayuda_pregunta_a = [];
             formContacto.pedido_ayuda_pregunta_b = null;
         }
     } else {
-        if (formContacto.motivo !== 'Cita de entrenamiento' && formContacto.motivo !== 'Cita final' && formContacto.motivo !== 'Re-entrenamiento') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.CITA_ENTRENAMIENTO && formContacto.motivo !== MOTIVO_CONTACTO.CITA_FINAL && formContacto.motivo !== MOTIVO_CONTACTO.REENTRENAMIENTO) {
             formContacto.fecha_cita_final = null;
             formContacto.hora_cita_final = null;
         }
 
-        if (formContacto.motivo !== 'Seguimiento 2 semanas luego del entrenamiento' && formContacto.motivo !== 'Seguimiento mensual') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS && formContacto.motivo !== MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
             formContacto.seguimiento_pregunta_a = '';
             formContacto.seguimiento_pregunta_b = null;
             formContacto.seguimiento_pregunta_c = '';
@@ -457,7 +446,7 @@ const handleChangeMotivoContacto = () => {
             formContacto.lugar_reentrenamiento = null;
         }
 
-        if (formContacto.motivo !== 'Contacto iniciado por el participante') {
+        if (formContacto.motivo !== MOTIVO_CONTACTO.INICIADO_POR_PACIENTE) {
             formContacto.razon_contacto_participante = '';
             formContacto.razon_contacto_participante_otro = null;
             formContacto.contacto_participante_acciones = null;
@@ -468,14 +457,14 @@ const handleChangeMotivoContacto = () => {
 };
 
 const handleChangeSeguimientoPreguntaA = () => {
-    if (formContacto.seguimiento_pregunta_a !== 'Si') {
+    if (formContacto.seguimiento_pregunta_a !== OPCION_SI) {
         formContacto.seguimiento_pregunta_b = null;
         formContacto.seguimiento_pregunta_c = '';
     }
 };
 
 const handleChangeSeguimientoPreguntaE = () => {
-    if (formContacto.seguimiento_pregunta_e !== 'No') {
+    if (formContacto.seguimiento_pregunta_e !== OPCION_NO) {
         formContacto.fecha_reentrenamiento = null;
         formContacto.hora_reentrenamiento = null;
         formContacto.lugar_reentrenamiento = null;
@@ -483,83 +472,83 @@ const handleChangeSeguimientoPreguntaE = () => {
 };
 
 const handleChangeLugarCita = () => {
-    if (formContacto.lugar_cita !== 'Otro') {
+    if (formContacto.lugar_cita !== LUGAR_CITA.OTRO) {
         formContacto.lugar_cita_otro = null;
     }
 };
 
 const handleChangeRazonContactoParticipante = () => {
-    if (formContacto.razon_contacto_participante !== 'Otro') {
+    if (formContacto.razon_contacto_participante !== RAZON_CONTACTO_PARTICIPANTE.OTRO) {
         formContacto.razon_contacto_participante_otro = null;
         formContacto.contacto_participante_acciones = null;
     }
 };
 
 const handleChangeNoAdherenciaPreguntaA = () => {
-    if (!formContacto.no_adherencia_pregunta_a.includes('Otro')) {
+    if (!formContacto.no_adherencia_pregunta_a.includes(DIFICULTADES_NO_ADHERENCIA.OTRO)) {
         formContacto.no_adherencia_otro = null;
     }
 
-    if (!formContacto.no_adherencia_pregunta_a.includes('Ya no quiere participar en el proyecto')) {
+    if (!formContacto.no_adherencia_pregunta_a.includes(DIFICULTADES_NO_ADHERENCIA.NO_QUIERE_PARTICIPAR)) {
         formContacto.no_adherencia_pregunta_b = '';
         formContacto.no_adherencia_pregunta_c = null;
     }
 };
 
 const handleChangeNoAdherenciaPreguntaB = () => {
-    if (formContacto.no_adherencia_pregunta_b !== 'No') {
+    if (formContacto.no_adherencia_pregunta_b !== OPCION_NO) {
         formContacto.no_adherencia_pregunta_c = null;
     }
 };
 
 const handleChangeProblemasConexionPreguntaA = () => {
-    if (!formContacto.problemas_conexion_pregunta_a.includes('Otro')) {
+    if (!formContacto.problemas_conexion_pregunta_a.includes(DIFICULTADES_PROBLEMAS_CONEXION.OTRO)) {
         formContacto.problemas_conexion_otro = null;
     }
 };
 
 const handleChangeProblemasConexionPreguntaB = () => {
-    if (formContacto.problemas_conexion_pregunta_b !== 'No') {
+    if (formContacto.problemas_conexion_pregunta_b !== OPCION_NO) {
         formContacto.problemas_conexion_pregunta_c = null;
     }
 };
 
 const handleChangeAlertaClinicaPreguntaA = () => {
-    if (formContacto.alerta_clinica_pregunta_a !== 'No') {
+    if (formContacto.alerta_clinica_pregunta_a !== OPCION_NO) {
         formContacto.alerta_clinica_pregunta_b = '';
     }
 
-    if (formContacto.alerta_clinica_pregunta_a !== 'Si') {
+    if (formContacto.alerta_clinica_pregunta_a !== OPCION_SI) {
         formContacto.alerta_clinica_pregunta_c = '';
     }
 };
 
 const handleChangeAlertaClinicaPreguntaC = () => {
-    if (formContacto.alerta_clinica_pregunta_c !== 'No') {
+    if (formContacto.alerta_clinica_pregunta_c !== OPCION_NO) {
         formContacto.alerta_clinica_pregunta_d = null;
     }
 
-    if (formContacto.alerta_clinica_pregunta_c !== 'Si') {
+    if (formContacto.alerta_clinica_pregunta_c !== OPCION_SI) {
         formContacto.alerta_clinica_pregunta_e = '';
         formContacto.alerta_clinica_pregunta_f = null;
     }
 };
 
 const handleChangeAlertaClinicaPreguntaE = () => {
-    if (formContacto.alerta_clinica_pregunta_e !== 'No') {
+    if (formContacto.alerta_clinica_pregunta_e !== OPCION_NO) {
         formContacto.alerta_clinica_pregunta_f = null;
     }
 };
 
 const handleChangePedidoAyudaPreguntaA = () => {
-    if (!formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')) {
+    if (!formContacto.pedido_ayuda_pregunta_a.includes(DIFICULTADES_PEDIDO_AYUDA.NO_QUIERE_PARTICIPAR)) {
         formContacto.pedido_ayuda_pregunta_b = null;
         formContacto.pedido_ayuda_pregunta_c = '';
     }
 };
 
 const handleChangePedidoAyudaPreguntaC = () => {
-    if (formContacto.pedido_ayuda_pregunta_c !== 'No') {
+    if (formContacto.pedido_ayuda_pregunta_c !== OPCION_NO) {
         formContacto.pedido_ayuda_pregunta_d = null;
     }
 };
@@ -592,6 +581,17 @@ const submit = async () => {
         }
     }
 
+    if (formContacto.hora_reentrenamiento_display && formContacto.hora_reentrenamiento_meridiano) {
+        const horaReentrenamiento24 = convertirHora12a24(
+            formContacto.hora_reentrenamiento_display,
+            formContacto.hora_reentrenamiento_meridiano
+        );
+
+        if (horaReentrenamiento24) {
+            formContacto.hora_reentrenamiento = horaReentrenamiento24;
+        }
+    }
+
     if (entrenamientoActual.value) {
         formContacto.id_entrenamiento = entrenamientoActual.value.id;
     }
@@ -619,6 +619,11 @@ const fillDataInteraccion = () => {
     formContacto.observaciones = props.interaccion.observaciones;
     formContacto.motivo_reprogramacion = props.interaccion.motivo_reprogramacion;
     formContacto.fecha_cita = props.interaccion.fecha_cita;
+
+    const datosHoraCita = convertirHora24a12(props.interaccion.hora_cita);
+    formContacto.hora_cita = props.interaccion.hora_cita;
+    formContacto.hora_cita_display = datosHoraCita.hora12;
+    formContacto.hora_cita_meridiano = datosHoraCita.meridiano;
     formContacto.lugar_cita = props.interaccion.lugar_cita;
     formContacto.lugar_cita_otro = props.interaccion.lugar_cita_otro;
     formContacto.fecha_cita_final = props.interaccion.fecha_cita_final;
@@ -720,18 +725,18 @@ onMounted(async () => {
     if (props.alerta?.id) {
         formContacto.alerta_id = props.alerta.id;
 
-        if (props.alerta.tipo === 'clinica') {
-            formContacto.motivo = 'Alerta clínica';
-        } else if (props.alerta.tipo === 'operativa') {
+        if (props.alerta.tipo === TIPO_ALERTA.CLINICA) {
+            formContacto.motivo = MOTIVO_CONTACTO.ALERTA_CLINICA;
+        } else if (props.alerta.tipo === TIPO_ALERTA.OPERATIVA) {
             switch (props.alerta.descripcion) {
-                case 'Problemas de conexión':
-                    formContacto.motivo = 'Problemas de conexión';
+                case ALERTA_DESCRIPCION.PROBLEMAS_CONEXION:
+                    formContacto.motivo = MOTIVO_CONTACTO.PROBLEMAS_CONEXION;
                     break;
-                case 'No se conecta':
-                    formContacto.motivo = 'No completa las sesiones';
+                case ALERTA_DESCRIPCION.NO_SE_CONECTA:
+                    formContacto.motivo = MOTIVO_CONTACTO.NO_COMPLETA_SESIONES;
                     break;
-                case 'Pedido de ayuda':
-                    formContacto.motivo = 'Pedido de ayuda';
+                case ALERTA_DESCRIPCION.PEDIDO_AYUDA:
+                    formContacto.motivo = MOTIVO_CONTACTO.PEDIDO_AYUDA;
                     break;
             }
         }
@@ -809,7 +814,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
     }
 
     if (
-        formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado && newValue && isValidDate(newValue)
+        formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO && formContacto.contactado && newValue && isValidDate(newValue)
         || reagendaEntrenamiento.value && isValidDate(newValue)
     ) {
         setVentanasContacto(newValue);
@@ -844,8 +849,9 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 <option value="">Seleccionar motivo</option>
                                 <option
                                     v-for="motivo in motivosContacto"
+                                    :key="motivo"
                                     :value="motivo"
-                                    :disabled="motivo === 'Agendar cita de entrenamiento' && entrenamientoActual"
+                                    :disabled="motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO && entrenamientoActual"
                                 >{{ motivo }}</option>
                             </select>
                             <div class="invalid-feedback" v-if="formContacto.errors?.motivo">
@@ -968,7 +974,11 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 v-model="formContacto.modalidad"
                             >
                                 <option value="">Seleccionar modalidad</option>
-                                <option v-for="modalidad in modalidades" :value="modalidad">{{ modalidad }}</option>
+                                <option
+                                    v-for="modalidad in MODALIDAD"
+                                    :key="modalidad"
+                                    :value="modalidad"
+                                >{{ modalidad }}</option>
                             </select>
                             <div class="invalid-feedback" v-if="formContacto.errors?.modalidad">
                                 {{ formContacto.errors.modalidad }}
@@ -978,7 +988,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                 </div>
 
                 <template v-if="formContacto.contactado === 1">
-                    <template v-if="formContacto.motivo === 'Agendar cita de entrenamiento' || formContacto.motivo === 'Agendar cita final'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO || formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_FINAL">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_fecha_cita" class="col-12 col-sm-4 col-lg-3 col-form-label">
@@ -1023,9 +1033,13 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                         v-model="formContacto.lugar_cita"
                                     >
                                         <option value="">Seleccionar lugar</option>
-                                        <option value="Centro de salud">Centro de salud</option>
-                                        <option value="Vivienda del participante">Vivienda del participante</option>
-                                        <option value="Otro">Otro</option>
+                                        <option
+                                            v-for="lugar in LUGAR_CITA"
+                                            :key="lugar"
+                                            :value="lugar"
+                                        >
+                                            {{ lugar }}
+                                        </option>
                                     </select>
                                     <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita">
                                         {{ formContacto.errors.lugar_cita }}
@@ -1053,7 +1067,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
 
                         <div class="col-12 mb-2">
                             <div class="row">
-                                <label for="contacto_hora" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                                <label for="hora_cita" class="col-12 col-sm-4 col-lg-3 col-form-label">
                                     {{ horaProgramadaCitaTitle }}
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
@@ -1066,8 +1080,8 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                                 <input
                                                     type="text"
                                                     inputmode="numeric"
-                                                    name="contacto_hora"
-                                                    id="contacto_hora"
+                                                    name="hora_cita"
+                                                    id="hora_cita"
                                                     class="form-control"
                                                     :class="{ 'is-invalid': formContacto.errors?.hora_cita }"
                                                     v-model="formContacto.hora_cita_display"
@@ -1095,7 +1109,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Cita de entrenamiento' || formContacto.motivo === 'Cita final' || formContacto.motivo === 'Re-entrenamiento'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO || formContacto.motivo === MOTIVO_CONTACTO.CITA_FINAL || formContacto.motivo === MOTIVO_CONTACTO.REENTRENAMIENTO">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_fecha_cita_final" class="col-12 col-sm-4 col-lg-3 col-form-label">
@@ -1170,7 +1184,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || formContacto.motivo === 'Seguimiento mensual'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL">
                         <div class="col-12 mb-2">
                             <label for="contacto_seguimiento_pregunta_a" class="form-label me-2">
                                 ¿El/la participante tuvo dificultades utilizando el aplicativo desde su último contacto?
@@ -1191,7 +1205,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </div>
 
-                        <template v-if="formContacto.seguimiento_pregunta_a === 'Si'">
+                        <template v-if="formContacto.seguimiento_pregunta_a === OPCION_SI">
                             <div class="col-12 mb-2">
                                 <label for="contacto_seguimiento_pregunta_b" class="form-label me-2">
                                     En caso si, ¿qué dificultades tuvo?
@@ -1230,7 +1244,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </template>
 
-                        <template v-if="formContacto.seguimiento_pregunta_c === 'Si'">
+                        <template v-if="formContacto.seguimiento_pregunta_c === OPCION_SI">
                             <div class="col-12 mb-2">
                                 <label for="contacto_seguimiento_pregunta_d" class="form-label me-2">
                                     En caso si, ¿cómo resolvió estas dificultades?
@@ -1249,7 +1263,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </template>
 
-                        <template v-if="formContacto.seguimiento_pregunta_c === 'No'">
+                        <template v-if="formContacto.seguimiento_pregunta_c === OPCION_NO">
                             <div class="col-12 mb-2">
                                 <label for="contacto_seguimiento_pregunta_e" class="form-label me-2">
                                     ¿Pudiste ayudar al participante a resolver estas dificultades durante la llamada/visita?
@@ -1271,7 +1285,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </template>
 
-                        <template v-if="formContacto.seguimiento_pregunta_e === 'No'">
+                        <template v-if="formContacto.seguimiento_pregunta_e === OPCION_NO">
                             <div class="col-12 mb-2">
                                 <div class="form-label">
                                     Agenda un re-entrenamiento
@@ -1370,7 +1384,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </template>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Contacto iniciado por el participante'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.INICIADO_POR_PACIENTE">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_razon_contacto_participante" class="col-12 col-sm-4 col-lg-3 col-form-label">
@@ -1385,18 +1399,20 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                         :class="{ 'is-invalid': formContacto.errors?.razon_contacto_participante }"
                                     >
                                         <option value=""></option>
-                                        <option value="Problemas con el celular">Problemas con el celular</option>
-                                        <option value="Problemas de conexión">Problemas de conexión</option>
-                                        <option value="Problemas con el aplicativo">Problemas con el aplicativo</option>
-                                        <option value="Problemas relacionados a su atención en el centro de salud">Problemas relacionados a su atención en el centro de salud</option>
-                                        <option value="Otro">Otro</option>
+                                        <option
+                                            v-for="razonContacto in RAZON_CONTACTO_PARTICIPANTE"
+                                            :key="razonContacto"
+                                            :value="razonContacto"
+                                        >
+                                            {{ razonContacto }}
+                                        </option>
                                     </select>
                                     <div class="invalid-feedback" v-if="formContacto.errors?.razon_contacto_participante">
                                         {{ formContacto.errors.razon_contacto_participante }}
                                     </div>
                                 </div>
                                 <div
-                                    v-if="formContacto.razon_contacto_participante === 'Otro'"
+                                    v-if="formContacto.razon_contacto_participante === RAZON_CONTACTO_PARTICIPANTE.OTRO"
                                     class="col-12 col-sm-8 col-xl-7 offset-sm-4 offset-lg-3 mt-2 mt-lg-0"
                                 >
                                     <input
@@ -1437,7 +1453,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'No completa las sesiones'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.NO_COMPLETA_SESIONES">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_no_adherencia_pregunta_a" class="col-12 col-sm-4 col-lg-3 col-form-label">
@@ -1446,7 +1462,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div
-                                        v-for="dificultad in dificultadesNoAdherencia"
+                                        v-for="dificultad in DIFICULTADES_NO_ADHERENCIA"
                                         :key="dificultad"
                                         class="form-check mb-2"
                                     >
@@ -1474,7 +1490,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                         class="form-control"
                                         v-model="formContacto.no_adherencia_otro"
                                         :class="{ 'is-invalid': formContacto.errors?.no_adherencia_otro }"
-                                        :disabled="!formContacto.no_adherencia_pregunta_a.includes('Otro')"
+                                        :disabled="!formContacto.no_adherencia_pregunta_a.includes(DIFICULTADES_NO_ADHERENCIA.OTRO)"
                                     />
                                     <div class="invalid-feedback" v-if="formContacto.errors?.no_adherencia_otro">
                                         {{ formContacto.errors.no_adherencia_otro }}
@@ -1485,7 +1501,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
 
 
                         <div
-                            v-if="formContacto.no_adherencia_pregunta_a.includes('Ya no quiere participar en el proyecto')"
+                            v-if="formContacto.no_adherencia_pregunta_a.includes(DIFICULTADES_NO_ADHERENCIA.NO_QUIERE_PARTICIPAR)"
                             class="col-12 mb-2"
                         >
                             <div class="alert alert-danger">
@@ -1514,7 +1530,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
 
                             <div
-                                v-if="formContacto.no_adherencia_pregunta_b === 'No'"
+                                v-if="formContacto.no_adherencia_pregunta_b === OPCION_NO"
                                 class="col-12 mb-2"
                             >
                                 <div class="row">
@@ -1548,7 +1564,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </template>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Problemas de conexión'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.PROBLEMAS_CONEXION">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_problemas_conexion_pregunta_a" class="col-12 col-sm-4 col-xl-3 col-form-label">
@@ -1557,7 +1573,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-xl-9">
                                     <div
-                                        v-for="dificultad in dificultadesProblemasConexion"
+                                        v-for="dificultad in DIFICULTADES_PROBLEMAS_CONEXION"
                                         :key="dificultad"
                                         class="form-check mb-2"
                                     >
@@ -1585,7 +1601,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                         class="form-control"
                                         :class="{ 'is-invalid': formContacto.errors?.problemas_conexion_otro }"
                                         v-model="formContacto.problemas_conexion_otro"
-                                        :disabled="!formContacto.problemas_conexion_pregunta_a.includes('Otro')"
+                                        :disabled="!formContacto.problemas_conexion_pregunta_a.includes(DIFICULTADES_PROBLEMAS_CONEXION.OTRO)"
                                     />
                                     <div class="invalid-feedback" v-if="formContacto.errors?.problemas_conexion_otro">
                                         {{ formContacto.errors.problemas_conexion_otro }}
@@ -1615,7 +1631,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
 
                         <div
-                            v-if="formContacto.problemas_conexion_pregunta_b === 'No'"
+                            v-if="formContacto.problemas_conexion_pregunta_b === OPCION_NO"
                             class="col-12 mb-2"
                         >
                             <div class="row">
@@ -1648,7 +1664,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Alerta clínica'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.ALERTA_CLINICA">
                         <div class="col-12 mb-2">
                             <label for="contacto_alerta_clinica_pregunta_a" class="form-label me-2">
                                 ¿El/la participante vio la recomendación de buscar atención en el aplicativo?
@@ -1669,7 +1685,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </div>
 
-                        <template v-if="formContacto.alerta_clinica_pregunta_a === 'No'">
+                        <template v-if="formContacto.alerta_clinica_pregunta_a === OPCION_NO">
                             <div class="alert alert-danger mt-2">
                                 Recomienda al participante que busque atención en su centro de salud.
                             </div>
@@ -1695,14 +1711,14 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
 
                             <div
-                                v-if="formContacto.alerta_clinica_pregunta_b === 'No'"
+                                v-if="formContacto.alerta_clinica_pregunta_b === OPCION_NO"
                                 class="col-12 mb-2 text-danger"
                             >
                                 Indique las razones en el campo "Observaciones"
                             </div>
                         </template>
 
-                        <template v-if="formContacto.alerta_clinica_pregunta_a === 'Si'">
+                        <template v-if="formContacto.alerta_clinica_pregunta_a === OPCION_SI">
                             <div class="col-12 mb-2">
                                 <label for="contacto_alerta_clinica_pregunta_c" class="form-label me-2">
                                     ¿El/la participante siguió la recomendación indicada por el aplicativo?
@@ -1723,7 +1739,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 </div>
                             </div>
 
-                            <template v-if="formContacto.alerta_clinica_pregunta_c === 'Si'">
+                            <template v-if="formContacto.alerta_clinica_pregunta_c === OPCION_SI">
                                 <div class="col-12 py-2">
                                     <label for="contacto_alerta_clinica_pregunta_e" class="form-label me-2">
                                         ¿El/la participante pudo acceder a la atención recomendada?
@@ -1744,7 +1760,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                     </div>
                                 </div>
                                 <div
-                                    v-if="formContacto.alerta_clinica_pregunta_e === 'No'"
+                                    v-if="formContacto.alerta_clinica_pregunta_e === OPCION_NO"
                                     class="col-12 mb-2"
                                 >
                                     <label for="contacto_alerta_clinica_pregunta_f" class="form-label me-2">
@@ -1765,7 +1781,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </template>
 
                             <div
-                                v-if="formContacto.alerta_clinica_pregunta_c === 'No'"
+                                v-if="formContacto.alerta_clinica_pregunta_c === OPCION_NO"
                                 class="col-12 mb-2"
                             >
                                 <label for="contacto_alerta_clinica_pregunta_d" class="form-label me-2">
@@ -1786,7 +1802,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </template>
                     </template>
 
-                    <template v-if="formContacto.motivo === 'Pedido de ayuda'">
+                    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.PEDIDO_AYUDA">
                         <div class="col-12 mb-2">
                             <div class="row">
                                 <label for="contacto_pedido_ayuda_pregunta_a" class="col-12 col-sm-4 col-lg-3 col-form-label">
@@ -1795,7 +1811,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 </label>
                                 <div class="col-12 col-sm-8 col-lg-9">
                                     <div
-                                        v-for="dificultad in dificultadesPedidoAyuda"
+                                        v-for="dificultad in DIFICULTADES_PEDIDO_AYUDA"
                                         :key="dificultad"
                                         class="form-check mb-2"
                                     >
@@ -1821,7 +1837,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </div>
 
                         <div
-                            v-if="formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')"
+                            v-if="formContacto.pedido_ayuda_pregunta_a.includes(DIFICULTADES_PEDIDO_AYUDA.NO_QUIERE_PARTICIPAR)"
                             class="col-12 mb-2"
                         >
                             <div class="alert alert-danger">
@@ -1829,7 +1845,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
                         </div>
 
-                        <template v-if="!formContacto.pedido_ayuda_pregunta_a.includes('Ya no quiere participar en el proyecto')">
+                        <template v-else>
                             <div class="col-12 mb-2">
                                 <label for="contacto_pedido_ayuda_pregunta_b" class="form-label me-2">
                                     Describe las dificultades que tuvo el/la participante
@@ -1868,7 +1884,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             </div>
 
                             <div
-                                v-if="formContacto.pedido_ayuda_pregunta_c === 'No'"
+                                v-if="formContacto.pedido_ayuda_pregunta_c === OPCION_NO"
                                 class="col-12 mb-2"
                             >
                                 <div class="row">
@@ -1921,7 +1937,11 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                     v-model="formContacto.motivo_reprogramacion"
                                 >
                                     <option value="">Seleccionar motivo</option>
-                                    <option v-for="motivo in motivosReprogramacion" :value="motivo">{{ motivo }}</option>
+                                    <option
+                                        v-for="motivo in motivosReprogramacion"
+                                        :key="motivo"
+                                        :value="motivo"
+                                    >{{ motivo }}</option>
                                 </select>
                                 <div class="invalid-feedback" v-if="formContacto.errors?.motivo_reprogramacion">
                                     {{ formContacto.errors.motivo_reprogramacion }}
@@ -2008,8 +2028,8 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                         </tr>
 
                         <tr
-                            v-for="(key, index) in VENTANA_CONTACTO_KEYS"
-                            :key="index"
+                            v-for="key in VENTANA_CONTACTO_KEYS"
+                            :key="key"
                         >
                             <td>{{ VENTANA_CONTACTO_LABELS[key] }}</td>
                             <td class="text-center" :class="ventanaContacto[key].color">
