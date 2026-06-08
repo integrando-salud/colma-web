@@ -307,7 +307,8 @@ class StoreInteraccionRequest extends FormRequest
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
                 })
-            ]
+            ],
+            'id_entrenamiento' => ['nullable'],
         ];
     }
 

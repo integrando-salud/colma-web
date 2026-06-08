@@ -78,8 +78,11 @@ class InteraccionService
                 : null;
             $interaccion->save();
 
-            if ($interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado) {
-                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto);
+            if (
+                $interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado
+                || $interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado
+            ) {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto, data_get($data, 'id_entrenamiento'));
             }
 
             if ($alertaId) {
@@ -109,9 +112,9 @@ class InteraccionService
         return $interaccion->delete();
     }
 
-    public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento)
+    public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento, ?int $idEntrenamiento = null)
     {
-        $entrenamiento = new Entrenamiento();
+        $entrenamiento = $idEntrenamiento ? Entrenamiento::find($idEntrenamiento) : new Entrenamiento();
         $entrenamiento->paciente_id = $idPaciente;
         $entrenamiento->user_id = auth()->user()->id;
         $entrenamiento->fecha = $fechaEntrenamiento;
