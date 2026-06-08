@@ -73,4 +73,5 @@ export const FORM_CONTACTO = {
     pedido_ayuda_pregunta_b: null,
     pedido_ayuda_pregunta_c: '',
     pedido_ayuda_pregunta_d: null,
+    id_entrenamiento: null,
 };

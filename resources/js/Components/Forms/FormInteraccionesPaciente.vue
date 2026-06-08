@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ref, reactive, computed, onMounted, watch, toRaw } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { FORM_CONTACTO } from "@/Constants/paciente";
 import { useNotificationStore } from "@/Stores/notification";
@@ -30,9 +30,14 @@ const props = defineProps({
 const notification = useNotificationStore();
 const formContacto = useForm(structuredClone(FORM_CONTACTO));
 const entrenamientoActual = ref(null);
+const ventanaContactoEntrenamientoActual = ref(null);
 
 const verVentanaContacto = computed(() => {
-    return formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado || entrenamientoActual.value;
+    return !!(formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado || entrenamientoActual.value);
+});
+
+const reagendaEntrenamiento = computed(() => {
+    return entrenamientoActual.value && formContacto.motivo === 'Cita de entrenamiento' && formContacto.contactado === 0;
 });
 
 const ventanaContacto = reactive({
@@ -296,19 +301,25 @@ const verFechaHoraContacto = computed(() => {
 });
 
 const setFechaProximoContacto = async () => {
-    if (formContacto.contactado === 0) {
+    if (reagendaEntrenamiento.value) {
+        formContacto.nueva_fecha_contacto = getFechaMasDias(14);
+        return;
+    }
+
+    if (entrenamientoActual.value === null && formContacto.contactado === 0) {
         formContacto.nueva_fecha_contacto = null;
+        return;
+    }
+
+    if (
+        formContacto.motivo === 'Agendar cita de entrenamiento' ||
+        formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
+    ) {
+        formContacto.nueva_fecha_contacto = getFechaMasDias(14);
+    } else if (formContacto.motivo === 'Seguimiento mensual') {
+        formContacto.nueva_fecha_contacto = getFechaMasDias(30);
     } else {
-        if (
-            formContacto.motivo === 'Agendar cita de entrenamiento' ||
-            formContacto.motivo === 'Seguimiento 2 semanas luego del entrenamiento'
-        ) {
-            formContacto.nueva_fecha_contacto = getFechaMasDias(14);
-        } else if (formContacto.motivo === 'Seguimiento mensual') {
-            formContacto.nueva_fecha_contacto = getFechaMasDias(30);
-        } else {
-            formContacto.nueva_fecha_contacto = null;
-        }
+        formContacto.nueva_fecha_contacto = null;
     }
 };
 
@@ -353,7 +364,21 @@ const getFechaMasDias = (dias, fechaBase = null) => {
 
 const setVentanasContacto = (fechaBase) => {
     if (entrenamientoActual.value) {
-        return;
+        if (reagendaEntrenamiento.value) {
+            ventanaContactoEntrenamientoActual.value = structuredClone(toRaw(ventanaContacto));
+        } else if (formContacto.motivo === 'Cita de entrenamiento' && formContacto.contactado === 1) {
+            if (!ventanaContactoEntrenamientoActual.value) {
+                return;
+            }
+
+            ventanaContacto.fechaEntrenamiento = ventanaContactoEntrenamientoActual.value.fechaEntrenamiento;
+            VENTANA_CONTACTO_KEYS.forEach(key => {
+                ventanaContacto[key] = ventanaContactoEntrenamientoActual.value[key];
+            });
+            return;
+        } else {
+            return;
+        }
     }
 
     ventanaContacto.fechaEntrenamiento = fechaBase;
@@ -366,7 +391,7 @@ const setVentanasContacto = (fechaBase) => {
 };
 
 const resetVentanasContacto = () => {
-    if (entrenamientoActual.value) {
+    if (entrenamientoActual.value && formContacto.motivo !== 'Cita de entrenamiento' && formContacto.contactado !== 0) {
         return;
     }
 
@@ -385,9 +410,12 @@ const handleChangeResultado = async () => {
 
     await setFechaProximoContacto();
 
-    if (formContacto.contactado === 1 && formContacto.motivo === 'Agendar cita de entrenamiento') {
+    if (
+        (formContacto.contactado === 1 && formContacto.motivo === 'Agendar cita de entrenamiento' || formContacto.motivo === 'Cita de entrenamiento')
+        || reagendaEntrenamiento.value
+    ) {
         setVentanasContacto(formContacto.nueva_fecha_contacto);
-    } else if (formContacto.contactado !== 1) {
+    } else if (formContacto.contactado !== 1 && entrenamientoActual.value === null) {
         resetVentanasContacto();
     }
 };
@@ -562,6 +590,10 @@ const submit = async () => {
         if (horaCitaFinal24) {
             formContacto.hora_cita_final = horaCitaFinal24;
         }
+    }
+
+    if (entrenamientoActual.value) {
+        formContacto.id_entrenamiento = entrenamientoActual.value.id;
     }
 
     formContacto.post(route('interacciones.store'), {
@@ -776,7 +808,10 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
         return;
     }
 
-    if (formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado && newValue && isValidDate(newValue)) {
+    if (
+        formContacto.motivo === 'Agendar cita de entrenamiento' && formContacto.contactado && newValue && isValidDate(newValue)
+        || reagendaEntrenamiento.value && isValidDate(newValue)
+    ) {
         setVentanasContacto(newValue);
     }
 });
