@@ -142,4 +142,10 @@ class Interaccion extends Model
     {
         return $this->belongsTo(Alerta::class);
     }
+
+    public function isMonthlyAppointment(): bool {
+        if ($this->motivo == 'Seguimiento mensual') return true;
+        return false;
+    }
+
 }
