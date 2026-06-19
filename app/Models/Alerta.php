@@ -11,13 +11,15 @@ class Alerta extends Model
 
     public const TIPOS_ALERTA = [
         'clinica',
-        'operativa'
+        'operativa',
+        'supervisory'
     ];
 
     public const TIPOS_ENTIDADES = [
         'glucosa',
         'presion_arterial',
         'estado_animo',
+        'appointment'
     ];
 
     protected $fillable = [
