@@ -183,21 +183,16 @@ class AppointmentAlerts extends Command
             case 'Seguimiento 2 semanas luego del entrenamiento':
                 return ['start' => $visitSchedule->seguimiento_dos_semanas_inicio, 'end'=> $visitSchedule->seguimiento_dos_semanas_fin];
             //return [Entrenamiento::DIAS_SUMA['seguimiento_dos_semanas_inicio'], Entrenamiento::DIAS_SUMA['seguimiento_dos_semanas_fin']];
-            case 'Seguimiento mensual':
-                //figure out which monthy meeting.
-                switch ($monthlyVisitNumber) {
-                    case 1:
-                        return ['start' => $visitSchedule->llamada_mensual_1_inicio, 'end'=> $visitSchedule->llamada_mensual_1_fin];
-                    case 2:
-                        return ['start' => $visitSchedule->llamada_mensual_2_inicio, 'end'=> $visitSchedule->llamada_mensual_2_fin];
-                    case 3:
-                        return ['start' => $visitSchedule->llamada_mensual_3_inicio, 'end'=> $visitSchedule->llamada_mensual_3_fin];
-                    case 4:
-                        return ['start' => $visitSchedule->llamada_mensual_4_inicio, 'end'=> $visitSchedule->llamada_mensual_4_fin];
-                    case 5:
-                        return ['start' => $visitSchedule->llamada_mensual_5_inicio, 'end'=> $visitSchedule->llamada_mensual_5_fin];
-                }
-                return null;
+            case 'Seguimiento mensual 1':
+                return ['start' => $visitSchedule->llamada_mensual_1_inicio, 'end'=> $visitSchedule->llamada_mensual_1_fin];
+            case 'Seguimiento mensual 2':
+                return ['start' => $visitSchedule->llamada_mensual_2_inicio, 'end'=> $visitSchedule->llamada_mensual_2_fin];
+            case 'Seguimiento mensual 3':
+                return ['start' => $visitSchedule->llamada_mensual_3_inicio, 'end'=> $visitSchedule->llamada_mensual_3_fin];
+            case 'Seguimiento mensual 4':
+                return ['start' => $visitSchedule->llamada_mensual_4_inicio, 'end'=> $visitSchedule->llamada_mensual_4_fin];
+            case 'Seguimiento mensual 5':
+                return ['start' => $visitSchedule->llamada_mensual_5_inicio, 'end'=> $visitSchedule->llamada_mensual_5_fin];
             case 'Agendar cita final':
                 return null;
             case 'Cita final':

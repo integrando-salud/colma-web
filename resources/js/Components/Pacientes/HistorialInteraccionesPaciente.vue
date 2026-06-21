@@ -284,7 +284,7 @@ onMounted(() => {
                 </div>
             </div>
             <div
-                v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || interaccionSelected.motivo === 'Seguimiento mensual'"
+                v-if="interaccionSelected.motivo === 'Seguimiento 2 semanas luego del entrenamiento' || str_contain(interaccionSelected.motivo, ['Seguimiento mensual'])"
                 class="row"
             >
                 <div class="col-12 py-2 align-content-center fw-bold">

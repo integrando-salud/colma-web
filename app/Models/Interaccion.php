@@ -31,7 +31,11 @@ class Interaccion extends Model
         'Agendar cita de entrenamiento',
         'Cita de entrenamiento',
         'Seguimiento 2 semanas luego del entrenamiento',
-        'Seguimiento mensual',
+        'Seguimiento mensual 1',
+        'Seguimiento mensual 2',
+        'Seguimiento mensual 3',
+        'Seguimiento mensual 4',
+        'Seguimiento mensual 5',
         'Agendar cita final',
         'Cita final',
         'Re-entrenamiento',
@@ -42,7 +46,11 @@ class Interaccion extends Model
         'Agendar cita de entrenamiento' => 'Entrenamiento',
         'Cita de entrenamiento' => 'Entrenamiento',
         'Seguimiento 2 semanas luego del entrenamiento' => 'Seguimiento 2 semanas',
-        'Seguimiento mensual' => 'Seguimiento mensual',
+        'Seguimiento mensual 1' => 'Seguimiento mensual 1',
+        'Seguimiento mensual 2' => 'Seguimiento mensual 2',
+        'Seguimiento mensual 3' => 'Seguimiento mensual 3',
+        'Seguimiento mensual 4' => 'Seguimiento mensual 4',
+        'Seguimiento mensual 5' => 'Seguimiento mensual 5',
         'Agendar cita final' => 'Agendar cita final',
         'Cita final' => 'Cita final',
         'Re-entrenamiento' => 'Re-entrenamiento',
@@ -144,7 +152,7 @@ class Interaccion extends Model
     }
 
     public function isMonthlyAppointment(): bool {
-        if ($this->motivo == 'Seguimiento mensual') return true;
+        if (str_contains($this->motivo, ['Seguimiento mensual'])) return true;
         return false;
     }
 

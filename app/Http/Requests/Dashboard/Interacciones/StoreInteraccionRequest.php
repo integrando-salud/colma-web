@@ -110,7 +110,13 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Seguimiento 2 semanas luego del entrenamiento', 'Seguimiento mensual']);
+                    return $this->input('contactado') && in_array($this->input('motivo'),
+                            ['Seguimiento 2 semanas luego del entrenamiento',
+                                'Seguimiento mensual1',
+                                'Seguimiento mensual2',
+                                'Seguimiento mensual3',
+                                'Seguimiento mensual4',
+                                'Seguimiento mensual5']);
                 })
             ],
             'seguimiento_pregunta_b' => [
