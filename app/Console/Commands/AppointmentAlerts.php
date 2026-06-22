@@ -33,8 +33,9 @@ class AppointmentAlerts extends Command
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
+        $warning_counter = 0;
 
-        $this->info('Checking for missed appointments and appointments nearing due date...');
+        $this->info('Checking for windows opening..');
 
 
         Paciente::chunk($chunkSize, function ($patients) use ($dryRun) {
@@ -56,10 +57,13 @@ class AppointmentAlerts extends Command
                             $result['recommendation'],
                             $dryRun
                         );
+                        $warning_counter++;
                     }
                 }
             }
         });
+        $this->info("{$warning_counter} warnings added to alerts table");
+
         return self::SUCCESS;
     }
 
@@ -78,7 +82,7 @@ class AppointmentAlerts extends Command
     ): void {
         $alerta = Alerta::query()
             ->where('paciente_id', $pacienteId)
-            ->where('tipo', 'supervisory')
+            ->where('tipo', 'operativa')
             ->where('entidad_tipo', $entidadTipo)
             ->where('entidad_id', $entidadId)
             ->first();
@@ -100,7 +104,7 @@ class AppointmentAlerts extends Command
             $fecha = now();
             Alerta::create([
                 'paciente_id' => $pacienteId,
-                'tipo' => 'supervisory',
+                'tipo' => 'operativa',
                 'entidad_id' => $entidadId,
                 'entidad_tipo' => $entidadTipo,
                 'descripcion' => $descripcion,

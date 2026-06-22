@@ -12,7 +12,6 @@ class Alerta extends Model
     public const TIPOS_ALERTA = [
         'clinica',
         'operativa',
-        'supervisory'
     ];
 
     public const TIPOS_ENTIDADES = [
