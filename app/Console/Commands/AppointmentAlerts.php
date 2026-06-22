@@ -33,12 +33,12 @@ class AppointmentAlerts extends Command
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
-        $warning_counter = 0;
+
 
         $this->info('Checking for windows opening..');
 
-
-        Paciente::chunk($chunkSize, function ($patients) use ($dryRun) {
+        $warning_counter = 0;
+        Paciente::chunk($chunkSize, function ($patients) use ($dryRun, &$warning_counter) {
             foreach ($patients as $p) {
                 // Get last last appointment for each patient
                 $appointment = $p->interacciones()->latest('fecha')->first();
