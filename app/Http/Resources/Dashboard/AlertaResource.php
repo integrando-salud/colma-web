@@ -33,6 +33,7 @@ class AlertaResource extends JsonResource
                 'id' => $this->user?->id ?? null,
                 'nombre' => $this->user?->nombre ?? null,
             ],
+            'entidad_tipo' => $this->entidad_tipo ?? null,
         ];
     }
 }

@@ -223,28 +223,31 @@ const motivosContacto = computed(() => {
     if (props.alerta?.id) {
         if (props.alerta.tipo === 'clinica') {
             return [ 'Alerta clínica' ];
-        } else {
+            // PvdV changed logic to allow the contact form to be used to do a session with the user in case
+            // of a warning indicating that the session can / should take place
+        } else if ('appointment' !== props.alerta.entidad_tipo) {
             return [
                 'No completa las sesiones',
                 'Problemas de conexión',
                 'Pedido de ayuda',
             ];
         }
-    } else {
-        return [
-            'Agendar cita de entrenamiento',
-            'Cita de entrenamiento',
-            'Seguimiento 2 semanas luego del entrenamiento',
-            'Seguimiento mensual 1',
-            'Seguimiento mensual 2',
-            'Seguimiento mensual 3',
-            'Seguimiento mensual 4',
-            'Seguimiento mensual 5',
-            'Agendar cita final',
-            'Cita final',
-            'Re-entrenamiento',
-            'Contacto iniciado por el participante',
-        ];
+     else {
+            return [
+                'Agendar cita de entrenamiento',
+                'Cita de entrenamiento',
+                'Seguimiento 2 semanas luego del entrenamiento',
+                'Seguimiento mensual 1',
+                'Seguimiento mensual 2',
+                'Seguimiento mensual 3',
+                'Seguimiento mensual 4',
+                'Seguimiento mensual 5',
+                'Agendar cita final',
+                'Cita final',
+                'Re-entrenamiento',
+                'Contacto iniciado por el participante',
+            ];
+        }
     }
 });
 
@@ -847,7 +850,9 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 class="form-select"
                                 :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                 v-model="formContacto.motivo"
-                                :disabled="alerta"
+                                <!-- This is really dirty hack, but below line ensures the motivo becomes active
+                                when the alert was an alert to schedule a session -->
+                                :disabled="alerta && alerta.entidad_tipo !== 'appointment'"
                             >
                                 <option value="">Seleccionar motivo</option>
                                 <option
