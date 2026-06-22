@@ -5,23 +5,30 @@ namespace App\Console\Commands;
 use App\Models\Entrenamiento;
 use App\Models\Interaccion;
 use App\Models\Alerta;
+use App\Models\Paciente;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
-
+/**
+ * This Command should run exactly once every day at the start of the day.
+ * The code does not prevent multiple database entries in case the Command is run more often.
+ */
 class AppointmentAlerts extends Command
 {
     protected $signature = 'colma:raise_appointment_alerts {--chunk=500} {--dry-run}';
 
-    protected $description = 'Raise alerts for missed appointments are appointments not yet completed nearing their deadline.';
+    protected $description = 'Raise alerts related to appointments.';
 
     // time in days for recipient of this alert to react to it
     const DAYS_TO_REACT = 2;
+
     // time in days until due date that triggers a warning
     // Make sure this value is always larger than DAYS_TO_REACT
     const DAYS_FOR_WARNING = 7;
 
+    // Days after a window has started before the warning to schedule is sent:
+    const DAYS_FOR_SCHEDULE_WARNING = 3;
     public function handle(): int
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
@@ -30,47 +37,36 @@ class AppointmentAlerts extends Command
         $this->info('Checking for missed appointments and appointments nearing due date...');
 
 
-        DB::table('interacciones')
-            ->select('paciente_id')
-            ->distinct()
-            ->orderBy('paciente_id')
-            ->chunk(100, function ($patients) use ($dryRun) {
-                foreach ($patients as $p) {
-                    // Deal with appointments per patient
-                    $appointments = Interaccion::where('paciente_id', $p->paciente_id)->get();
-                    // TODO: check if there can only be one Entrenamiento record per patient
-                    $visitSchedule = Entrenamiento::select('*')->where('paciente_id', $p->paciente_id)->get()->first();
-                    $monthly_appointment_count = 0;
-                    foreach ($appointments as $appointment) {
-                        if ($appointment->contactado) {
-                            if ($appointment->isMonthlyAppointment())
-                                $monthly_appointment_count++;
-                        } else {
-                            $result= self::getAppointmentRecommendation($appointment, $visitSchedule, $monthly_appointment_count+1,self::DAYS_FOR_WARNING);
-
-                            if ($result !== null) {
-
-                                $this->upsertAlerta(
-                                    $appointment->paciente_id,
-                                    'appointment',
-                                    $appointment->id,
-                                    $result['description'],
-                                    $result['recommendation'],
-                                    $dryRun
-                                );
-                            }
-                        }
+        Paciente::chunk($chunkSize, function ($patients) use ($dryRun) {
+            foreach ($patients as $p) {
+                // Get last last appointment for each patient
+                $appointment = $p->interacciones()->latest('fecha')->first();
+                if ($appointment !== null) {
+                    // TODO: the relationship in Paciente model suggests a hasmany relationship with Entrenamiento. Which one should be picked?
+                    $test = Entrenamiento::all();
+                    $visitSchedule = $p->entrenamientos()->latest('fecha')->first();
+                    $result = self::getNextAppointmentReminder($appointment, $visitSchedule);
+                    if ($result !== null) {
+                        $this->upsertAlerta(
+                            $appointment->paciente_id,
+                            'appointment',
+                            //TODO: Does it make sense to tie this warning to an appointment?
+                            $appointment->id,
+                            $result['description'],
+                            $result['recommendation'],
+                            $dryRun
+                        );
                     }
-
                 }
-            });
+            }
+        });
         return self::SUCCESS;
     }
 
 
 
     /*
-     * Using the same function as in RecalcularAlertasClinicas but with tip changed to supervisory
+     * Using the same function as in RecalcularAlertasClinicas but with tipo changed to supervisory
      */
     private function upsertAlerta(
         int $pacienteId,
@@ -116,8 +112,41 @@ class AppointmentAlerts extends Command
 
     }
 
-    /***
-     * Determine
+    /**
+     * Provide reminder for next appointment if the past appointment has been completed and the window
+     * for the next appointment has opened.
+     *
+     * @param Interaccion $appointment
+     * @param Entrenamiento $visitSchedule
+     * @return string[]|void|null
+     */
+    private function getNextAppointmentReminder(Interaccion $appointment, Entrenamiento $visitSchedule)
+    {
+
+        if ($appointment->contactado) {
+            $nextAppointment_motivo = $appointment->nextAppointmentMotivo();
+            $dates = $this->get_window($nextAppointment_motivo, $visitSchedule);
+            if ($dates !== null) {
+
+                $start = Carbon::parse($dates['start']);
+                //TODO: Ensure that CHWs and supervisors get the warning at different times (via user_id?)
+                if ($start->copy()->startOfDay()->diffInDays(now()->copy()->startOfDay(),false)==-self::DAYS_FOR_SCHEDULE_WARNING) {
+                    return [
+                        'description' => "Appointment $nextAppointment_motivo can now be scheduled",
+                        'recommendation' => "You can now schedule appointment $nextAppointment_motivo"
+                    ];
+                }
+            }
+        }
+        return null;
+    }
+
+    //TODO: Not currently used but starting point for further warnings should these be required.
+        /***
+     * This function generates a warning when the window for the next appointment for a patient starts.
+     * Note that this function could be used for other date related checks, such as checking that the chosen due date is inside the window,
+     * or that an appointment has not been scheduled for a patient, or when the date for the latest appointment (for each patient) becomes
+     * a date in the past..
      *
      * @param Interaccion $appointment
      * @param Entrenamiento $visitSchedule
@@ -125,9 +154,10 @@ class AppointmentAlerts extends Command
      * @param int $bufferDays
      * @return string[]|null
      */
-    function getAppointmentRecommendation(Interaccion $appointment, Entrenamiento $visitSchedule, int $monthly_appointment, int $bufferDays): ?array
+    private function getAppointmentRecommendation(String $appointment_motivo, Entrenamiento $visitSchedule, int $bufferDays): ?array
     {
-        $dates = $this->get_window($appointment->motivo, $visitSchedule, $monthly_appointment);
+
+        $dates = $this->get_window($appointment_motivo, $visitSchedule);
         if ($dates !== null) {
 
             $start = Carbon::parse($dates['start']);
@@ -137,43 +167,43 @@ class AppointmentAlerts extends Command
             $bufferStart = $due->copy()->subDays($bufferDays);
             $now = Carbon::now();
 
-            // Check if dueDate before today
-            if ($due->isPast()) {
-                return [
-                    'description' => "Appointment due date is in the past",
-                    'recommendation' => "Skip appointment and schedule next"
-                ];
-            }
-
             // Check if window just started
             //TODO: Ensure that CHWs and supervisors get the warning at different times (via user_id?)
             if ($start->isToday()) {
                 return [
-                    'description' => "Appointment now due",
-                    'recommendation' => "You can now schedule the next appointment"
+                    'description' => "Appointment $appointment_motivo now due",
+                    'recommendation' => "You can now schedule appointment $appointment_motivo"
                 ];
             }
 
+
+/*            // Check if dueDate before today
+            if ($due->isPast()) {
+                return [
+                    'description' => "Appointment $appointment->motivo due date is in the past",
+                    'recommendation' => "Skip appointment $appointment->motivo and schedule next"
+                ];
+            }
 
             // Check if today is within buffer range
             if ($now->between($bufferStart, $due)) {
                 return [
-                    'description' => "Appointment nearing due date",
-                    'recommendation' => "Contact CHW to plan appointment before the due date"
+                    'description' => "Appointment $appointment->motivo nearing due date",
+                    'recommendation' => "Contact CHW to plan appointment $appointment->motivo before the due date"
                 ];
-            }
+            }*/
         }
         return null;
     }
 
     /**
      * Work around to get windows in days for the appointments: retrieve the start and end days from
-     * Entrenamiento object using motivo tag. In case of monthly meetings, choose correct one using the provided counter.
+     * Entrenamiento object using motivo tag.
      *
      * @param string $motivo
      * @return array of window start and window end in days relative to training date
      */
-    private function get_window(string $motivo, Entrenamiento $visitSchedule, int $monthlyVisitNumber ): ?array
+    private function get_window(string $motivo, Entrenamiento $visitSchedule): ?array
     {
         switch ($motivo) {
             case 'Agendar cita de entrenamiento':
@@ -182,7 +212,6 @@ class AppointmentAlerts extends Command
                 return null;
             case 'Seguimiento 2 semanas luego del entrenamiento':
                 return ['start' => $visitSchedule->seguimiento_dos_semanas_inicio, 'end'=> $visitSchedule->seguimiento_dos_semanas_fin];
-            //return [Entrenamiento::DIAS_SUMA['seguimiento_dos_semanas_inicio'], Entrenamiento::DIAS_SUMA['seguimiento_dos_semanas_fin']];
             case 'Seguimiento mensual 1':
                 return ['start' => $visitSchedule->llamada_mensual_1_inicio, 'end'=> $visitSchedule->llamada_mensual_1_fin];
             case 'Seguimiento mensual 2':
@@ -197,7 +226,6 @@ class AppointmentAlerts extends Command
                 return null;
             case 'Cita final':
                 return ['start' => $visitSchedule->agendar_cita_final_inicio, 'end' => $visitSchedule->agendar_cita_final_fin];
-                //return [Entrenamiento::DIAS_SUMA['agendar_cita_final_inicio'], Entrenamiento::DIAS_SUMA['agendar_cita_final_fin']];
             case 'Re-entrenamiento':
                 return null;
             case 'Contacto iniciado por el participante':

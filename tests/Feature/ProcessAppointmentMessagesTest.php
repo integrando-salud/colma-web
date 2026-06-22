@@ -36,8 +36,6 @@ class ProcessAppointmentMessagesTest extends TestCase
         ]);
 
         $this->paciente1 = Paciente::create([
-            'user_id' => 1,
-
             'nombre' => 'Carlos',
             'apellido' => 'Gómez',
             'fecha_nacimiento' => '1985-06-15',
@@ -54,6 +52,7 @@ class ProcessAppointmentMessagesTest extends TestCase
 
             'clave' => 'abc123',
             'test' => false,
+            'promotor_id' => $this->user1->id,
         ]);
 
         $this->paciente2 = Paciente::create([
@@ -75,37 +74,10 @@ class ProcessAppointmentMessagesTest extends TestCase
 
             'clave' => 'abc123',
             'test' => false,
+            'promotor_id' => $this->user1->id,
         ]);
 
-        // Date for patient who should have done two monthly sessions
-        $baseDate = now()->subDays(70);
-        Entrenamiento::create([
-            'paciente_id' => $this->paciente1->id,
-            'fecha' => $baseDate,
-            'seguimiento_dos_semanas_inicio' => $baseDate->copy()->addDays(14),
-            'seguimiento_dos_semanas_fin' => $baseDate->copy()->addDays(21),
 
-            'llamada_mensual_1_inicio' => $baseDate->copy()->addDays(28),
-            'llamada_mensual_1_fin' => $baseDate->copy()->addDays(42),
-
-            'llamada_mensual_2_inicio' => $baseDate->copy()->addDays(56),
-            'llamada_mensual_2_fin' => $baseDate->copy()->addDays(70),
-
-            'llamada_mensual_3_inicio' => $baseDate->copy()->addDays(84),
-            'llamada_mensual_3_fin' => $baseDate->copy()->addDays(98),
-
-            'llamada_mensual_4_inicio' => $baseDate->copy()->addDays(112),
-            'llamada_mensual_4_fin' => $baseDate->copy()->addDays(126),
-
-            'llamada_mensual_5_inicio' => $baseDate->copy()->addDays(140),
-            'llamada_mensual_5_fin' => $baseDate->copy()->addDays(154),
-
-            'agendar_cita_final_inicio' => $baseDate->copy()->addDays(168),
-            'agendar_cita_final_fin' => $baseDate->copy()->addDays(182),
-
-            'activo' => true,
-            'user_id' => $this->user1->id,
-        ]);
 
         // patient how should have done 5 monthly meetings
         $baseDate = now()->subDays(154);
@@ -144,46 +116,74 @@ class ProcessAppointmentMessagesTest extends TestCase
 
 
     /**
-     * Test that Interaccions with contactado do not result in a warning
+     * Test that Interaccions with contactado do not result in a warning if next window not yet due
      */
     public function test_contactado()
     {
 
-        $baseDate = now()->subDays(70);
+        // Date for patient who should have done two monthly sessions
+        $baseDate = now()->subDays(55);
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente1->id,
+            'fecha' => $baseDate,
+            'seguimiento_dos_semanas_inicio' => $baseDate->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDate->copy()->addDays(21),
+
+            'llamada_mensual_1_inicio' => $baseDate->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDate->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDate->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDate->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDate->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDate->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDate->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDate->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDate->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDate->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDate->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDate->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
 
         Interaccion::create([
             'paciente_id' => $this->paciente1->id,
             'user_id' => $this->user1->id,
             'contactado' => true,
-            'fecha' => $baseDate->copy()->addDays(7),
+            'fecha' => $baseDate->copy()->addDays(0),
             'hora' => now()->setTime(10, 30),
-            'fecha_cita' => $baseDate->copy()->addDays(16),
+            'fecha_cita' => $baseDate->copy()->addDays(0),
             'modalidad' => Interaccion::MODALIDADES[0],
-            'motivo' => 'Seguimiento 2 semanas',
+            'motivo' => 'Cita de entrenamiento',
             'motivo_reprogramacion' => null,
         ]);
 
-        Interaccion::create([
+        $res = Interaccion::create([
             'paciente_id' => $this->paciente1->id,
             'user_id' => $this->user1->id,
             'contactado' => true,
-            'fecha' => $baseDate->copy()->addDays(18),
-            'hora' => now()->setTime(11, 0),
-            'fecha_cita' => $baseDate->copy()->addDays(30),
+            'fecha' => $baseDate->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(19),
             'modalidad' => Interaccion::MODALIDADES[0],
-            'motivo' => 'Llamada mensual 1',
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
             'motivo_reprogramacion' => null,
         ]);
 
-        Interaccion::create([
+        $res = Interaccion::create([
             'paciente_id' => $this->paciente1->id,
             'user_id' => $this->user1->id,
             'contactado' => true,
-            'fecha' => $baseDate->copy()->addDays(31),
-            'hora' => now()->setTime(11, 0),
-            'fecha_cita' => $baseDate->copy()->addDays(62),
+            'fecha' => $baseDate->copy()->addDays(19),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(35),
             'modalidad' => Interaccion::MODALIDADES[0],
-            'motivo' => 'Llamada mensual 2',
+            'motivo' => 'Seguimiento mensual 1',
             'motivo_reprogramacion' => null,
         ]);
 
@@ -202,10 +202,37 @@ class ProcessAppointmentMessagesTest extends TestCase
     /*
      * Test that the no contactado entries result in a warning (with some contacto entries sprinkled in)
      */
-    public function test_no_contactado()
+    public function test_warn_for_monthly2()
     {
+        // Date for patient who should have done two monthly sessions
+        $baseDate = now()->subDays(53);
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente1->id,
+            'fecha' => $baseDate,
+            'seguimiento_dos_semanas_inicio' => $baseDate->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDate->copy()->addDays(21),
 
-        $baseDate = now()->subDays(22);
+            'llamada_mensual_1_inicio' => $baseDate->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDate->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDate->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDate->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDate->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDate->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDate->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDate->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDate->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDate->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDate->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDate->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
 
         Interaccion::create([
             'paciente_id' => $this->paciente1->id,
@@ -222,7 +249,7 @@ class ProcessAppointmentMessagesTest extends TestCase
         $res = Interaccion::create([
             'paciente_id' => $this->paciente1->id,
             'user_id' => $this->user1->id,
-            'contactado' => false,
+            'contactado' => true,
             'fecha' => $baseDate->copy()->addDays(0),
             'hora' => now()->setTime(10, 30),
             'fecha_cita' => $baseDate->copy()->addDays(19),
@@ -231,6 +258,72 @@ class ProcessAppointmentMessagesTest extends TestCase
             'motivo_reprogramacion' => null,
         ]);
 
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(19),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(35),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento mensual 1',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $baseDatePat2 = now()->subDays(55);
+
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente2->id,
+            'fecha' => $baseDatePat2,
+            'seguimiento_dos_semanas_inicio' => $baseDatePat2->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDatePat2->copy()->addDays(21),
+
+            'llamada_mensual_1_inicio' => $baseDatePat2->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDatePat2->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDatePat2->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDatePat2->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDatePat2->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDatePat2->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDatePat2->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDatePat2->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDatePat2->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDatePat2->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDatePat2->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDatePat2->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
+
+
+        Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(0),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Cita de entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(19),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
 
 
         $this->artisan('colma:raise_appointment_alerts', [
@@ -245,14 +338,300 @@ class ProcessAppointmentMessagesTest extends TestCase
             'paciente_id'=>1,
             'tipo'=>'supervisory',
             'entidad_tipo'=>'appointment',
-            'entidad_id' => $res->id,
-            'descripcion'=>'Appointment due date is in the past',
-            'recomendacion'=>'Skip appointment and schedule next',
+            'descripcion'=>'Appointment Seguimiento mensual 2 can now be scheduled',
+            'recomendacion'=>'You can now schedule appointment Seguimiento mensual 2',
         ]);
 
     }
 
+    /*
+     * Test that the no contactado entries do not result in warnings after the day the window has become active
+     */
+    public function test_warn_only_on_day()
+    {
+        // Date for patient who should have done two monthly sessions
+        $baseDate = now()->subDays(54);
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente1->id,
+            'fecha' => $baseDate,
+            'seguimiento_dos_semanas_inicio' => $baseDate->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDate->copy()->addDays(21),
 
+            'llamada_mensual_1_inicio' => $baseDate->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDate->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDate->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDate->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDate->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDate->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDate->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDate->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDate->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDate->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDate->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDate->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
+
+        Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(0),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Cita de entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(19),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(19),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(35),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento mensual 1',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $baseDatePat2 = now()->subDays(55);
+
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente2->id,
+            'fecha' => $baseDatePat2,
+            'seguimiento_dos_semanas_inicio' => $baseDatePat2->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDatePat2->copy()->addDays(21),
+
+            'llamada_mensual_1_inicio' => $baseDatePat2->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDatePat2->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDatePat2->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDatePat2->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDatePat2->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDatePat2->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDatePat2->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDatePat2->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDatePat2->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDatePat2->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDatePat2->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDatePat2->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
+
+
+        Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(0),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Cita de entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(19),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+
+        $this->artisan('colma:raise_appointment_alerts', [
+            '--chunk' => 500,
+            '--dry-run' => false,
+        ])->assertExitCode(0);
+
+
+        $this->assertDatabaseCount('alertas', 0);
+
+
+    }
+
+
+    /*
+     * Test that the no contactado entries result in a warning (with some contacto entries sprinkled in)
+     */
+    public function test_no_warn_for_scheduled_monthly2()
+    {
+        // Date for patient who should have done two monthly sessions
+        $baseDate = now()->subDays(53);
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente1->id,
+            'fecha' => $baseDate,
+            'seguimiento_dos_semanas_inicio' => $baseDate->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDate->copy()->addDays(21),
+
+            'llamada_mensual_1_inicio' => $baseDate->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDate->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDate->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDate->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDate->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDate->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDate->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDate->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDate->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDate->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDate->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDate->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
+
+        Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(0),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Cita de entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(19),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDate->copy()->addDays(19),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(35),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento mensual 1',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente1->id,
+            'user_id' => $this->user1->id,
+            'contactado' => false,
+            'fecha' => $baseDate->copy()->addDays(35),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDate->copy()->addDays(55),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento mensual 2',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $baseDatePat2 = now()->subDays(55);
+
+        Entrenamiento::create([
+            'paciente_id' => $this->paciente2->id,
+            'fecha' => $baseDatePat2,
+            'seguimiento_dos_semanas_inicio' => $baseDatePat2->copy()->addDays(14),
+            'seguimiento_dos_semanas_fin' => $baseDatePat2->copy()->addDays(21),
+
+            'llamada_mensual_1_inicio' => $baseDatePat2->copy()->addDays(28),
+            'llamada_mensual_1_fin' => $baseDatePat2->copy()->addDays(42),
+
+            'llamada_mensual_2_inicio' => $baseDatePat2->copy()->addDays(56),
+            'llamada_mensual_2_fin' => $baseDatePat2->copy()->addDays(70),
+
+            'llamada_mensual_3_inicio' => $baseDatePat2->copy()->addDays(84),
+            'llamada_mensual_3_fin' => $baseDatePat2->copy()->addDays(98),
+
+            'llamada_mensual_4_inicio' => $baseDatePat2->copy()->addDays(112),
+            'llamada_mensual_4_fin' => $baseDatePat2->copy()->addDays(126),
+
+            'llamada_mensual_5_inicio' => $baseDatePat2->copy()->addDays(140),
+            'llamada_mensual_5_fin' => $baseDatePat2->copy()->addDays(154),
+
+            'agendar_cita_final_inicio' => $baseDatePat2->copy()->addDays(168),
+            'agendar_cita_final_fin' => $baseDatePat2->copy()->addDays(182),
+
+            'activo' => true,
+            'user_id' => $this->user1->id,
+        ]);
+
+
+        Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(0),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Cita de entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+        $res = Interaccion::create([
+            'paciente_id' => $this->paciente2->id,
+            'user_id' => $this->user1->id,
+            'contactado' => true,
+            'fecha' => $baseDatePat2->copy()->addDays(0),
+            'hora' => now()->setTime(10, 30),
+            'fecha_cita' => $baseDatePat2->copy()->addDays(19),
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => 'Seguimiento 2 semanas luego del entrenamiento',
+            'motivo_reprogramacion' => null,
+        ]);
+
+
+        $this->artisan('colma:raise_appointment_alerts', [
+            '--chunk' => 500,
+            '--dry-run' => false,
+        ])->assertExitCode(0);
+
+
+        $this->assertDatabaseCount('alertas', 0);
+
+
+    }
 }
 
 

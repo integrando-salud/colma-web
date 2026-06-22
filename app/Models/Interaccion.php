@@ -156,4 +156,13 @@ class Interaccion extends Model
         return false;
     }
 
+    /**
+     * Return the next appointment motivo in the series
+     * @return string
+     */
+    public function nextAppointmentMotivo(): string {
+        return self::MOTIVOS_CONTACTO[array_search($this->motivo, self::MOTIVOS_CONTACTO)+1];
+
+    }
+
 }
