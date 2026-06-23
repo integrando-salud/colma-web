@@ -332,7 +332,7 @@ class DatosClinicosService
                 'sesion' => $d['sesion'],
                 'tipo_actividad' => $d['tipo_actividad'],
                 'actividad' => $d['actividad'],
-                'lugar' => $d['lugar'],
+                'lugar' => data_get($d, 'lugar'),
                 'acompaniante' => data_get($d, 'acompaniante'),
                 'meta_cumplida' => $d['meta_cumplida'],
                 'motivo_incumplimiento' => $d['motivo_incumplimiento'],
