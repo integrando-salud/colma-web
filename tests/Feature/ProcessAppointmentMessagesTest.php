@@ -336,7 +336,7 @@ class ProcessAppointmentMessagesTest extends TestCase
 
         $this->assertDatabaseHas('alertas', [
             'paciente_id'=>1,
-            'tipo'=>'supervisory',
+            'tipo'=>'operativa',
             'entidad_tipo'=>'appointment',
             'descripcion'=>'Appointment Seguimiento mensual 2 can now be scheduled',
             'recomendacion'=>'You can now schedule appointment Seguimiento mensual 2',
