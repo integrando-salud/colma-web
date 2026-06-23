@@ -134,7 +134,7 @@ class AppointmentAlerts extends Command
 
                 $start = Carbon::parse($dates['start']);
                 //TODO: Ensure that CHWs and supervisors get the warning at different times (via user_id?)
-                if ($start->copy()->startOfDay()->diffInDays(now()->copy()->startOfDay(),false)==-self::DAYS_FOR_SCHEDULE_WARNING) {
+                if ($start->copy()->startOfDay()->diffInDays(now()->copy()->startOfDay(),false)==self::DAYS_FOR_SCHEDULE_WARNING) {
                     return [
                         'description' => "Appointment $nextAppointment_motivo can now be scheduled",
                         'recommendation' => "You can now schedule appointment $nextAppointment_motivo"

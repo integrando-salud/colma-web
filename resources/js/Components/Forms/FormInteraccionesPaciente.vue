@@ -844,14 +844,13 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                             Motivo de contacto
                         </label>
                         <div class="col-12 col-sm-8 col-lg-9">
+                            <!-- Below change to :disabled statement is really dirty hack, but ensures the motivo becomes active when the alert was an alert to schedule a session -->
                             <select
                                 name="contacto_motivo"
                                 id="contacto_motivo"
                                 class="form-select"
                                 :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                 v-model="formContacto.motivo"
-                                <!-- This is really dirty hack, but below line ensures the motivo becomes active
-                                when the alert was an alert to schedule a session -->
                                 :disabled="alerta && alerta.entidad_tipo !== 'appointment'"
                             >
                                 <option value="">Seleccionar motivo</option>

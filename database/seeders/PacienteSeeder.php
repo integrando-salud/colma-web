@@ -55,7 +55,7 @@ class PacienteSeeder extends Seeder
 
         $paciente1->update(['user_id' => $user->id]);
 
-        $baseDate = now()->subDays(53);
+        $baseDate = now()->subDays(59);
         Entrenamiento::create([
             'paciente_id' => $paciente1->id,
             'fecha' => $baseDate,
