@@ -84,7 +84,7 @@ class SyncDataRequest extends FormRequest
             'metas.*.sesion' => ['required', 'numeric'],
             'metas.*.tipo_actividad' => ['required', 'string'],
             'metas.*.actividad' => ['required', 'string'],
-            'metas.*.lugar' => ['required', 'string'],
+            'metas.*.lugar' => ['nullable', 'string'],
             'metas.*.acompaniante' => ['nullable', 'string'],
             'metas.*.meta_cumplida' => ['required', 'boolean'],
             'metas.*.motivo_incumplimiento' => ['nullable', 'string'],
