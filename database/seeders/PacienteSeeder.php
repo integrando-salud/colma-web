@@ -33,6 +33,8 @@ class PacienteSeeder extends Seeder
         ]);
         $user->assign(User::ROL_PACIENTE);
 
+        $baseDate = now()->subDays(59);
+
         $paciente1 = Paciente::create([
             'user_id' => $user->id,
             'nombre' => 'Pepijn',
@@ -46,7 +48,7 @@ class PacienteSeeder extends Seeder
 
             'direccion' => 'Calle Falsa 123',
 
-            'fecha_enrolamiento' => now(),
+            'fecha_enrolamiento' => $baseDate,
             'activo' => true,
 
             'test' => false,
@@ -55,7 +57,6 @@ class PacienteSeeder extends Seeder
 
         $paciente1->update(['user_id' => $user->id]);
 
-        $baseDate = now()->subDays(59);
         Entrenamiento::create([
             'paciente_id' => $paciente1->id,
             'fecha' => $baseDate,
