@@ -8,7 +8,7 @@ use App\Models\Alerta;
 use App\Models\Paciente;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use App\Services\PacienteService;
 
 /**
  * This Command should run exactly once every day at the start of the day.
@@ -29,7 +29,7 @@ class AppointmentAlerts extends Command
 
     // Days after a window has started before the warning to schedule is sent:
     const DAYS_FOR_SCHEDULE_WARNING = 3;
-    public function handle(): int
+    public function handle(PacienteService $pService): int
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
@@ -38,14 +38,12 @@ class AppointmentAlerts extends Command
         $this->info('Checking for windows opening..');
 
         $warning_counter = 0;
-        Paciente::chunk($chunkSize, function ($patients) use ($dryRun, &$warning_counter) {
+        Paciente::chunk($chunkSize, function ($patients) use ($dryRun, &$warning_counter, $pService) {
             foreach ($patients as $p) {
                 // Get last last appointment for each patient
                 $appointment = $p->interacciones()->latest('fecha')->first();
                 if ($appointment !== null) {
-                    // TODO: the relationship in Paciente model suggests a hasmany relationship with Entrenamiento. Which one should be picked?
-                    $test = Entrenamiento::all();
-                    $visitSchedule = $p->entrenamientos()->latest('fecha')->first();
+                    $visitSchedule = $pService->getEntrenamientoActual($p);
                     $result = self::getNextAppointmentReminder($appointment, $visitSchedule);
                     if ($result !== null) {
                         $this->upsertAlerta(

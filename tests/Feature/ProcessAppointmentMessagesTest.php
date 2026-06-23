@@ -205,7 +205,7 @@ class ProcessAppointmentMessagesTest extends TestCase
     public function test_warn_for_monthly2()
     {
         // Date for patient who should have done two monthly sessions
-        $baseDate = now()->subDays(53);
+        $baseDate = now()->subDays(59);
         Entrenamiento::create([
             'paciente_id' => $this->paciente1->id,
             'fecha' => $baseDate,
@@ -489,7 +489,7 @@ class ProcessAppointmentMessagesTest extends TestCase
     public function test_no_warn_for_scheduled_monthly2()
     {
         // Date for patient who should have done two monthly sessions
-        $baseDate = now()->subDays(53);
+        $baseDate = now()->subDays(59);
         Entrenamiento::create([
             'paciente_id' => $this->paciente1->id,
             'fecha' => $baseDate,
