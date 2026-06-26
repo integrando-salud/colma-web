@@ -77,4 +77,11 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    'multimedia' => [
+        'tratamientos_dirname' => env('MULTIMEDIA_TRATAMIENTOS_DIRNAME'),
+        'tratamientos_diabetes_dirname' => env('MULTIMEDIA_TRATAMIENTOS_DIABETES_DIRNAME'),
+        'tratamientos_hipertension_dirname' => env('MULTIMEDIA_TRATAMIENTOS_HIPERTENSION_DIRNAME'),
+        'tratamientos_diabetes_hipertension_dirname' => env('MULTIMEDIA_TRATAMIENTOS_DIABETES_HIPERTENSION_DIRNAME'),
+    ],
+
 ];
