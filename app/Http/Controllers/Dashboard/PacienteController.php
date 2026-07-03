@@ -70,12 +70,18 @@ class PacienteController extends Controller
             ->where('tipo', 'operativa')
             ->get();
 
+        $alertasCalls = $paciente->alertas()
+            ->whereNull('revisado')
+            ->where('tipo', 'calls')
+            ->get();
+
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),
             'step' => 'alertas',
             'alertasPendientes' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
+                'operativas' => AlertaResource::collection($alertasOperativas),
+                'calls' => AlertaResource::collection($alertasCalls)
             ]
         ]);
     }
@@ -92,12 +98,18 @@ class PacienteController extends Controller
             ->where('tipo', 'operativa')
             ->paginate(config('app.rpp'), ['*'], 'page-operativas');
 
+        $alertasCalls = $paciente->alertas()
+            ->whereNotNull('revisado')
+            ->where('tipo', 'calls')
+            ->paginate(config('app.rpp'), ['*'], 'page-calls');
+
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),
             'step' => 'alertas-historial',
             'alertasHistoricas' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
+                'operativas' => AlertaResource::collection($alertasOperativas),
+                'calls' => AlertaResource::collection($alertasCalls)
             ]
         ]);
     }

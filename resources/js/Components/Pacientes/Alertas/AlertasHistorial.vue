@@ -79,6 +79,37 @@ const props = defineProps({
             </template>
         </Table>
     </div>
+
+    <div class="col-12">
+        <h5 class="text-primary-emphasis">Alertas Calls</h5>
+    </div>
+    <div class="col-12">
+        <div class="alert alert-secondary" v-if="alertas.calls.data.length === 0">No se encontraron alertas calls pasadas.</div>
+        <Table v-else>
+            <template #header>
+                <tr>
+                    <th>Alerta</th>
+                    <th>Fecha de alerta</th>
+                    <th>Recomendación</th>
+                </tr>
+            </template>
+
+            <tr v-for="alerta in alertas.calls.data" :key="alerta.id">
+                <td>{{ alerta.descripcion }}</td>
+                <td>{{ alerta.fecha }}</td>
+                <td>{{ alerta.recomendacion }}</td>
+            </tr>
+
+            <template #footer>
+                <tr>
+                    <td colspan="6" class="text-center small border-top">
+                        Viendo {{ alertas.calls.meta.from }} a {{ alertas.calls.meta.to }} de {{ alertas.calls.meta.total }} alertas
+                    </td>
+                </tr>
+            </template>
+        </Table>
+        <Pagination v-if="alertas.calls.meta.last_page > 1" :prev-url="alertas.calls.links.prev" :next-url="alertas.calls.links.next" />
+    </div>
 </template>
 
 <style scoped>

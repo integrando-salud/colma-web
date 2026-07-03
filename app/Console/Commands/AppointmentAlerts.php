@@ -80,7 +80,7 @@ class AppointmentAlerts extends Command
     ): void {
         $alerta = Alerta::query()
             ->where('paciente_id', $pacienteId)
-            ->where('tipo', 'operativa')
+            ->where('tipo', 'calls')
             ->where('entidad_tipo', $entidadTipo)
             ->where('entidad_id', $entidadId)
             ->first();
@@ -102,7 +102,7 @@ class AppointmentAlerts extends Command
             $fecha = now();
             Alerta::create([
                 'paciente_id' => $pacienteId,
-                'tipo' => 'operativa',
+                'tipo' => 'calls',
                 'entidad_id' => $entidadId,
                 'entidad_tipo' => $entidadTipo,
                 'descripcion' => $descripcion,

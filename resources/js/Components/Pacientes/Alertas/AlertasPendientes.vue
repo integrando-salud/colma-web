@@ -87,6 +87,41 @@ const props = defineProps({
                 </tr>
             </Table>
         </div>
+        <div class="col-12">
+            <h5 class="text-primary-emphasis">Alertas calls</h5>
+        </div>
+        <div class="col-12">
+            <div class="alert alert-secondary" v-if="alertas.calls.length === 0">No se encontraron alertas calls pendientes.</div>
+            <Table v-else>
+                <template #header>
+                    <tr>
+                        <th>Alerta</th>
+                        <th>Fecha de alerta</th>
+                        <th>Fecha máxima de contacto</th>
+                        <th>Recomendación</th>
+                        <th>Estado</th>
+                    </tr>
+                </template>
+
+                <tr v-for="alerta in alertas.calls" :key="alerta.id">
+                    <td>{{ alerta.descripcion }}</td>
+                    <td>{{ alerta.fecha }}</td>
+                    <td>{{ alerta.fecha_contacto }}</td>
+                    <td class="recomendacion">{{ alerta.recomendacion }}</td>
+                    <td>
+                        <a :href="route('dashboard.pacientes.createInteraccion', {
+                                paciente: alerta.paciente.id,
+                                alerta: alerta.id,
+                            })"
+                           class="btn btn-secondary btn-sm text-white fw-semibold shadow"
+                        >
+                            Ir al formulario
+                        </a>
+                    </td>
+                </tr>
+            </Table>
+        </div>
+
     </div>
 </template>
 
