@@ -1,5 +1,6 @@
 <script setup>
 import Table from "@/Components/Table.vue";
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
     alertas: {
@@ -7,6 +8,14 @@ const props = defineProps({
         required: true,
     }
 });
+
+
+const cancelarAlerta = (id) => {
+    router.post(route('alertas.cancelar', {
+        alerta: id,
+    }))
+}
+
 </script>
 
 <template>
@@ -117,6 +126,12 @@ const props = defineProps({
                         >
                             Ir al formulario
                         </a>
+                    </td>
+                    <td>
+                        //TODO: need to implement confirm
+                        <button type="button" class="btn btn-secondary btn-sm text-white fw-semibold shadow" @click="cancelarAlerta(alerta.id)">
+                            Cancelar
+                        </button>
                     </td>
                 </tr>
             </Table>

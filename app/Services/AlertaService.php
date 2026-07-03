@@ -67,4 +67,16 @@ class AlertaService
             'recomendacion' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa."
         ]);
     }
+
+    public function cancelAlert(Alerta $alerta) {
+        $userName = auth()->user()->nombre;
+        $dataAlerta = [
+            'revisado' => now(),
+            'user_id' => auth()->user()->id,
+            'recomendacion' => "Cancelled by {$userName}"
+        ];
+
+        Alerta::where('id', $alerta->id)->update($dataAlerta);
+
+    }
 }

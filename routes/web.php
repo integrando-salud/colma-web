@@ -6,6 +6,7 @@ use App\Http\Controllers\Dashboard\IndexController;
 use App\Http\Controllers\Dashboard\InteraccionController;
 use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
+use App\Http\Controllers\Dashboard\AlertaController;
 use App\Http\Middleware\ProhibirPromotoresPeru;
 use Illuminate\Support\Facades\Route;
 
@@ -58,12 +59,17 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.editInteraccion');
         Route::get('{paciente}/datos-clinicos', [PacienteController::class, 'datosClinicos'])
             ->name('dashboard.pacientes.datosClinicos');
+
     });
 
     Route::post('interacciones/guardar', [InteraccionController::class, 'store'])
         ->name('interacciones.store');
     Route::post('interacciones/eliminar', [InteraccionController::class, 'delete'])
         ->name('interacciones.delete');
+
+
+    Route::post('/alertas{alerta}/cancelar', [AlertaController::class, 'cancelAlerta'])
+        ->name('alertas.cancelar');
 
     Route::prefix('ajax')->group(function () {
         Route::get('centros-salud', [AjaxController::class, 'getCentrosSalud'])
