@@ -1,6 +1,9 @@
 <script setup>
 import Table from "@/Components/Table.vue";
-import { router } from '@inertiajs/vue3'
+import {router} from '@inertiajs/vue3'
+import {useTemplateRef} from "vue";
+import {ref} from 'vue';
+import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
     alertas: {
@@ -9,12 +12,26 @@ const props = defineProps({
     }
 });
 
-
-const cancelarAlerta = (id) => {
+const cancelarAlerta = () => {
+    hideModalConfirmar();
     router.post(route('alertas.cancelar', {
-        alerta: id,
+         alerta: selectedAlertId.value,
     }))
 }
+
+const modalConfirmar = useTemplateRef('modalConfirmar');
+
+
+const selectedAlertId = ref(null);
+
+const showModalConfirmar = (id) => {
+    selectedAlertId.value = id;
+    modalConfirmar.value.showModal();
+};
+
+const hideModalConfirmar = () => {
+    modalConfirmar.value.hideModal();
+};
 
 </script>
 
@@ -27,7 +44,9 @@ const cancelarAlerta = (id) => {
             <h5 class="text-primary-emphasis">Alertas clínicas</h5>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="alertas.clinicas.length === 0">No se encontraron alertas clínicas pendientes.</div>
+            <div class="alert alert-secondary" v-if="alertas.clinicas.length === 0">No se encontraron alertas clínicas
+                pendientes.
+            </div>
             <Table v-else>
                 <template #header>
                     <tr>
@@ -50,11 +69,11 @@ const cancelarAlerta = (id) => {
                     <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
                         <a v-if="alerta.paciente.activo"
-                            :href="route('dashboard.pacientes.createInteraccion', {
+                           :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
                             })"
-                            class="btn btn-secondary btn-sm text-white fw-semibold shadow"
+                           class="btn btn-secondary btn-sm text-white fw-semibold shadow"
                         >
                             Ir al formulario
                         </a>
@@ -66,7 +85,9 @@ const cancelarAlerta = (id) => {
             <h5 class="text-primary-emphasis">Alertas operativas</h5>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="alertas.operativas.length === 0">No se encontraron alertas operativas pendientes.</div>
+            <div class="alert alert-secondary" v-if="alertas.operativas.length === 0">No se encontraron alertas
+                operativas pendientes.
+            </div>
             <Table v-else>
                 <template #header>
                     <tr>
@@ -100,7 +121,9 @@ const cancelarAlerta = (id) => {
             <h5 class="text-primary-emphasis">Alertas calls</h5>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="alertas.calls.length === 0">No se encontraron alertas calls pendientes.</div>
+            <div class="alert alert-secondary" v-if="alertas.calls.length === 0">No se encontraron alertas calls
+                pendientes.
+            </div>
             <Table v-else>
                 <template #header>
                     <tr>
@@ -126,10 +149,9 @@ const cancelarAlerta = (id) => {
                         >
                             Ir al formulario
                         </a>
-                    </td>
-                    <td>
                         //TODO: need to implement confirm
-                        <button type="button" class="btn btn-secondary btn-sm text-white fw-semibold shadow" @click="cancelarAlerta(alerta.id)">
+                        <button type="button" class="btn btn-secondary btn-sm text-white fw-semibold shadow"
+                                @click="showModalConfirmar(alerta.id)">
                             Cancelar
                         </button>
                     </td>
@@ -138,6 +160,25 @@ const cancelarAlerta = (id) => {
         </div>
 
     </div>
+
+    <Modal id="modalConfirmar" ref="modalConfirmar" title="Confirmar">
+        <div class="row">
+            <div class="col-12">
+                <p>
+                    ¿Estás seguro/a que deseas guardar la información?
+                </p>
+            </div>
+        </div>
+
+        <template #footer>
+            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalConfirmar">
+                No
+            </button>
+            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="cancelarAlerta()">
+                Si
+            </button>
+        </template>
+    </Modal>
 </template>
 
 <style scoped>
