@@ -225,7 +225,7 @@ const motivosContacto = computed(() => {
             return [ 'Alerta clínica' ];
             // PvdV changed logic to allow the contact form to be used to do a session with the user in case
             // of a warning indicating that the session can / should take place
-        } else if ('appointment' !== props.alerta.entidad_tipo) {
+        } else if ('appointment' !== props.alerta.entidad_tipo && 'window_end' !== props.alerta.entidad_tipo) {
             return [
                 'No completa las sesiones',
                 'Problemas de conexión',
@@ -851,7 +851,7 @@ watch(() => formContacto.nueva_fecha_contacto, (newValue) => {
                                 class="form-select"
                                 :class="{ 'is-invalid': formContacto.errors?.motivo }"
                                 v-model="formContacto.motivo"
-                                :disabled="alerta && alerta.entidad_tipo !== 'appointment'"
+                                :disabled="alerta && alerta.entidad_tipo !== 'appointment' && alerta.entidad_tipo !== 'window_end'"
                             >
                                 <option value="">Seleccionar motivo</option>
                                 <option

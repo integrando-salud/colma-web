@@ -82,7 +82,8 @@ class PacienteController extends Controller
                 'clinicas' => AlertaResource::collection($alertasClinicas),
                 'operativas' => AlertaResource::collection($alertasOperativas),
                 'calls' => AlertaResource::collection($alertasCalls)
-            ]
+            ],
+            'userRoles' => auth()->user()->getRoles()
         ]);
     }
 

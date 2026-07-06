@@ -9,8 +9,11 @@ const props = defineProps({
     alertas: {
         type: Object,
         required: true,
-    }
+    },
+    userRoles: Array,
+
 });
+
 
 const cancelarAlerta = () => {
     hideModalConfirmar();
@@ -32,6 +35,7 @@ const showModalConfirmar = (id) => {
 const hideModalConfirmar = () => {
     modalConfirmar.value.hideModal();
 };
+
 
 </script>
 
@@ -149,8 +153,9 @@ const hideModalConfirmar = () => {
                         >
                             Ir al formulario
                         </a>
-                        //TODO: need to implement confirm
-                        <button type="button" class="btn btn-secondary btn-sm text-white fw-semibold shadow"
+                        <button
+                            v-if="userRoles.some(role => ['supervisor', 'supervisor_pais', 'superusuario'].includes(role))"
+                            type="button" class="btn btn-secondary btn-sm text-white fw-semibold shadow mt-2"
                                 @click="showModalConfirmar(alerta.id)">
                             Cancelar
                         </button>

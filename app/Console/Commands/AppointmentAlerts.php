@@ -20,15 +20,15 @@ class AppointmentAlerts extends Command
 
     protected $description = 'Raise alerts related to appointments.';
 
-    // time in days for recipient of this alert to react to it
-    const DAYS_TO_REACT = 2;
 
     // time in days until due date that triggers a warning
-    // Make sure this value is always larger than DAYS_TO_REACT
-    const DAYS_FOR_WARNING = 7;
+    const DAYS_BEFORE_WINDOW_END_WARNING = 7;
+    const DAYS_TO_REACT_TO_WINDOW_END_WARNING = 2;
 
     // Days after a window has started before the warning to schedule is sent:
     const DAYS_FOR_SCHEDULE_WARNING = 3;
+    const DAYS_TO_REACT_TO_WINDOW_OPENING = 7;
+
     public function handle(PacienteService $pService): int
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
@@ -40,7 +40,7 @@ class AppointmentAlerts extends Command
         $warning_counter = 0;
         Paciente::chunk($chunkSize, function ($patients) use ($dryRun, &$warning_counter, $pService) {
             foreach ($patients as $p) {
-                // Get last last appointment for each patient
+                // Get last appointment for each patient
                 $appointment = $p->interacciones()->latest('fecha')->first();
                 if ($appointment !== null) {
                     $visitSchedule = $pService->getEntrenamientoActual($p);
@@ -49,13 +49,39 @@ class AppointmentAlerts extends Command
                         $this->upsertAlerta(
                             $appointment->paciente_id,
                             'appointment',
-                            //TODO: Does it make sense to tie this warning to an appointment?
                             $appointment->id,
                             $result['description'],
                             $result['recommendation'],
+                            now()->copy()->addDays(self::DAYS_TO_REACT_TO_WINDOW_OPENING)->format('Y-m-d'),
                             $dryRun
                         );
                         $warning_counter++;
+                    } else {
+                        $result = self::getWindowClosingReminder($appointment, $visitSchedule);
+                        if ($result !== null) {
+                            $this->upsertAlerta(
+                                $appointment->paciente_id,
+                                'window_end',
+                                $appointment->id,
+                                $result['description'],
+                                $result['recommendation'],
+                                now()->copy()->addDays(self::DAYS_TO_REACT_TO_WINDOW_END_WARNING)->format('Y-m-d'),
+                                $dryRun
+                            );
+                            $warning_counter++;
+                            $alerta = $p->alertas()
+                                ->where('revisado', null)
+                                ->where('entidad_tipo', 'appointment')
+                                ->latest('fecha')->first();
+                            if ($alerta !== null) {
+                                if (!$dryRun) {
+                                    $alerta->update([
+                                        'revisado' => now(),
+                                        'recomendacion' => "Canceled by the system upon window end warning"
+                                    ]);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -76,6 +102,7 @@ class AppointmentAlerts extends Command
         int $entidadId,
         string $descripcion,
         string $recomendacion,
+        string $fechaContacto,
         bool $dryRun
     ): void {
         $alerta = Alerta::query()
@@ -91,7 +118,7 @@ class AppointmentAlerts extends Command
                 $alerta->update([
                     'recomendacion' => $recomendacion,
                     'descripcion' => $descripcion,
-                    'fecha_contacto' => $fechaBase->copy()->addDays(self::DAYS_TO_REACT)->format('Y-m-d'),
+                    'fecha_contacto' => $fechaContacto,
                 ]);
             }
 
@@ -108,7 +135,7 @@ class AppointmentAlerts extends Command
                 'descripcion' => $descripcion,
                 'recomendacion' => $recomendacion,
                 'fecha' => $fecha,
-                'fecha_contacto' => $fecha->copy()->addDays(self::DAYS_TO_REACT)->format('Y-m-d'),
+                'fecha_contacto' => $fechaContacto,
             ]);
         }
 
@@ -131,7 +158,6 @@ class AppointmentAlerts extends Command
             if ($dates !== null) {
 
                 $start = Carbon::parse($dates['start']);
-                //TODO: Ensure that CHWs and supervisors get the warning at different times (via user_id?)
                 if ($start->copy()->startOfDay()->diffInDays(now()->copy()->startOfDay(),false)==self::DAYS_FOR_SCHEDULE_WARNING) {
                     return [
                         'description' => "Appointment $nextAppointment_motivo can now be scheduled",
@@ -143,60 +169,38 @@ class AppointmentAlerts extends Command
         return null;
     }
 
-    //TODO: Not currently used but starting point for further warnings should these be required.
-        /***
-     * This function generates a warning when the window for the next appointment for a patient starts.
-     * Note that this function could be used for other date related checks, such as checking that the chosen due date is inside the window,
-     * or that an appointment has not been scheduled for a patient, or when the date for the latest appointment (for each patient) becomes
-     * a date in the past..
+    /**
+     * Generate a reminder that the window is closing if there is no appointment (regardless of contactado state) in the database
+     * for the motivo associated with the currently active window
      *
      * @param Interaccion $appointment
      * @param Entrenamiento $visitSchedule
-     * @param int $monthly_appointment
-     * @param int $bufferDays
      * @return string[]|null
      */
-    private function getAppointmentRecommendation(String $appointment_motivo, Entrenamiento $visitSchedule, int $bufferDays): ?array
+    private function getWindowClosingReminder(Interaccion $appointment, Entrenamiento $visitSchedule)
     {
+        $currentMotivo = $this->getCurrentMotivoBasedOnWindow($visitSchedule);
+        $lastStoredMotivo = $appointment->motivo;
+        if ($this->isMotivoGreater($currentMotivo, $lastStoredMotivo)) {
 
-        $dates = $this->get_window($appointment_motivo, $visitSchedule);
-        if ($dates !== null) {
+            $dates = $this->get_window($currentMotivo, $visitSchedule);
+            if ($dates !== null) {
 
-            $start = Carbon::parse($dates['start']);
-            $due = Carbon::parse($dates['end']);
+                $end = Carbon::parse($dates['end']);
 
-            // Calculate the buffer window start (due date minus buffer days)
-            $bufferStart = $due->copy()->subDays($bufferDays);
-            $now = Carbon::now();
-
-            // Check if window just started
-            //TODO: Ensure that CHWs and supervisors get the warning at different times (via user_id?)
-            if ($start->isToday()) {
-                return [
-                    'description' => "Appointment $appointment_motivo now due",
-                    'recommendation' => "You can now schedule appointment $appointment_motivo"
-                ];
+                if (now()->copy()->startOfDay()->diffInDays($end->copy()->startOfDay(), false) == self::DAYS_BEFORE_WINDOW_END_WARNING) {
+                    $days = self::DAYS_BEFORE_WINDOW_END_WARNING;
+                    return [
+                        'description' => "Appointment $currentMotivo reaching end of window",
+                        'recommendation' => "You should schedule $currentMotivo in the next $days days",
+                        ''
+                    ];
+                }
             }
-
-
-/*            // Check if dueDate before today
-            if ($due->isPast()) {
-                return [
-                    'description' => "Appointment $appointment->motivo due date is in the past",
-                    'recommendation' => "Skip appointment $appointment->motivo and schedule next"
-                ];
-            }
-
-            // Check if today is within buffer range
-            if ($now->between($bufferStart, $due)) {
-                return [
-                    'description' => "Appointment $appointment->motivo nearing due date",
-                    'recommendation' => "Contact CHW to plan appointment $appointment->motivo before the due date"
-                ];
-            }*/
         }
         return null;
     }
+
 
     /**
      * Work around to get windows in days for the appointments: retrieve the start and end days from
@@ -234,5 +238,32 @@ class AppointmentAlerts extends Command
                 return null;
         }
         return null;
+    }
+
+    private function getCurrentMotivoBasedOnWindow(Entrenamiento $visitSchedule) : ? string {
+        $now = now();
+        if ($now->between($visitSchedule->seguimiento_dos_semanas_inicio, $visitSchedule->seguimiento_dos_semanas_fin))
+            return "Seguimiento 2 semanas luego del entrenamiento";
+        if ($now->between($visitSchedule->llamada_mensual_1_inicio, $visitSchedule->llamada_mensual_1_fin))
+            return "Seguimiento mensual 1";
+        if ($now->between($visitSchedule->llamada_mensual_2_inicio, $visitSchedule->llamada_mensual_2_fin))
+            return "Seguimiento mensual 2";
+        if ($now->between($visitSchedule->llamada_mensual_3_inicio, $visitSchedule->llamada_mensual_3_fin))
+            return "Seguimiento mensual 3";
+        if ($now->between($visitSchedule->llamada_mensual_4_inicio, $visitSchedule->llamada_mensual_4_fin))
+            return "Seguimiento mensual 4";
+        if ($now->between($visitSchedule->llamada_mensual_5_inicio, $visitSchedule->llamada_mensual_5_fin))
+            return "Seguimiento mensual 5";
+        if ($now->between($visitSchedule->agendar_cita_final_inicio, $visitSchedule->agendar_cita_final_fin))
+            return "Cita final";
+
+        return null;
+    }
+
+    /** Check if motivo1 is greater (later session) than motivo2 */
+    private function isMotivoGreater($motivo1, $motivo2) : bool {
+        $index1 = array_search($motivo1, Interaccion::MOTIVOS_CONTACTO);
+        $index2 = array_search($motivo2, Interaccion::MOTIVOS_CONTACTO);
+        return ($index1 > $index2);
     }
 }

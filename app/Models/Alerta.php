@@ -19,7 +19,8 @@ class Alerta extends Model
         'glucosa',
         'presion_arterial',
         'estado_animo',
-        'appointment'
+        'appointment',
+        'window_end'
     ];
 
     protected $fillable = [

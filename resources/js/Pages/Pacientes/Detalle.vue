@@ -39,7 +39,12 @@ const props = defineProps({
     datosClinicos: {
         type: Object,
         default: () => [],
+    },
+    userRoles: {
+        type: Object,
+        default: () => [],
     }
+
 });
 
 const title = computed(() => {
@@ -211,7 +216,8 @@ const hideModalConfirmar = () => {
                             <DatosClinicos :datos-clinicos />
                         </template>
                         <template v-else-if="step === 'alertas'">
-                            <AlertasPendientes :alertas="alertasPendientes" />
+                            <AlertasPendientes :alertas="alertasPendientes"
+                                               :userRoles = "userRoles" />
                         </template>
                         <template v-else-if="step === 'alertas-historial'">
                             <AlertasHistorial :alertas="alertasHistoricas" />
