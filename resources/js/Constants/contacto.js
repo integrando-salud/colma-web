@@ -74,6 +74,7 @@ export const MOTIVO_CONTACTO = {
     NO_COMPLETA_SESIONES: 'No completa las sesiones',
     PROBLEMAS_CONEXION: 'Problemas de conexión',
     PEDIDO_AYUDA: 'Pedido de ayuda',
+    CALLS: 'calls',
 };
 
 export const MOTIVO_CONTACTO_ALERTA_CLINICA = [
@@ -85,6 +86,12 @@ export const MOTIVOS_CONTACTO_ALERTA_OPERATIVA = [
     MOTIVO_CONTACTO.PROBLEMAS_CONEXION,
     MOTIVO_CONTACTO.PEDIDO_AYUDA,
 ];
+
+export const MOTIVOS_CONTACTO_CALLS = [
+    MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS,
+    MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL,
+];
+
 
 export const MOTIVOS_CONTACTO_SIN_ALERTA = [
     MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO,
@@ -100,6 +107,7 @@ export const MOTIVOS_CONTACTO_SIN_ALERTA = [
 export const TIPO_ALERTA = {
     CLINICA: 'clinica',
     OPERATIVA: 'operativa',
+    CALLS: 'calls',
 }
 
 export const ALERTA_DESCRIPCION = {

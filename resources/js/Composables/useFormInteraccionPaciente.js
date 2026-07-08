@@ -6,6 +6,7 @@ import {
     MOTIVOS_CONTACTO_ALERTA_OPERATIVA,
     MOTIVO_CONTACTO_ALERTA_CLINICA,
     MOTIVOS_CONTACTO_SIN_ALERTA,
+    MOTIVOS_CONTACTO_CALLS,
     TIPO_ALERTA,
     ALERTA_DESCRIPCION,
     DIFICULTADES_NO_ADHERENCIA,
@@ -174,6 +175,10 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
         if (props.alerta?.id) {
             if (props.alerta.tipo === TIPO_ALERTA.CLINICA) {
                 return MOTIVO_CONTACTO_ALERTA_CLINICA;
+            }
+
+            if (props.alerta.tipo === TIPO_ALERTA.CALLS) {
+                return MOTIVOS_CONTACTO_CALLS;
             }
 
             return MOTIVOS_CONTACTO_ALERTA_OPERATIVA;

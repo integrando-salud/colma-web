@@ -2,6 +2,7 @@
 import { toRef } from 'vue';
 import { MODALIDAD, MOTIVO_CONTACTO } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
+import {TIPO_ALERTA} from "@/Constants/contacto.js";
 
 const props = defineProps({
     form: {
@@ -42,7 +43,7 @@ const formContacto = toRef(props, 'form');
                 class="form-select"
                 :class="{ 'is-invalid': formContacto.errors?.motivo }"
                 v-model="formContacto.motivo"
-                :disabled="alerta"
+                :disabled="alerta && alerta.tipo !== TIPO_ALERTA.CALLS"
             >
                 <option value="">Seleccionar motivo</option>
                 <option
