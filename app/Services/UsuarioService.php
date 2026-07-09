@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class UsuarioService
 {
@@ -236,7 +237,7 @@ class UsuarioService
         }
 
         $user->save();
-        $user->assign($data['rol']);
+        Bouncer::sync($user)->roles([$data['rol']]);
 
         return $user;
     }
