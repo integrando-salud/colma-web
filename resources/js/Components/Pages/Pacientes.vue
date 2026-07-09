@@ -4,7 +4,6 @@ import { router, usePage } from "@inertiajs/vue3";
 import Table from "@/Components/Table.vue";
 import Pagination from "@/Components/Pagination.vue";
 import Modal from "@/Components/Modal.vue";
-import Password from "@/Components/Form/Password.vue";
 import { useNotificationStore } from "@/Stores/notification";
 
 const props = defineProps({
@@ -474,17 +473,12 @@ onMounted(() => {
                         </div>
                         <div
                             v-if="$page.props.usuario.pais?.codigo === 'PE'"
-                            class="col-12 col-md-8 col-lg-8 text-xl-end"
+                            class="col-12 col-md-8 col-lg-8 text-xl-end d-flex justify-content-xl-end align-items-center"
                         >
                             <span class="fw-semibold">Contraseña:</span>
-                            <Password
-                                name="paciente_password"
-                                id="paciente_password"
-                                class="ms-2 d-inline-flex"
-                                v-model="pacienteSelected.clave"
-                                :w-auto="true"
-                                :readonly="true"
-                            />
+                            <div class="ms-2 bg-white border px-2 py-1 min-w-password">
+                                {{ pacienteSelected.clave }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -583,13 +577,9 @@ onMounted(() => {
                     Observaciones
                 </div>
                 <div class="col-12 col-xl-10">
-                    <textarea
-                        name="observaciones_textarea"
-                        id="observaciones_textarea"
-                        class="form-control"
-                        rows="4"
-                        readonly
-                    >{{ pacienteSelected.observaciones }}</textarea>
+                    <div class="bg-white border p-2 min-h-observaciones">
+                        {{ pacienteSelected.observaciones }}
+                    </div>
                 </div>
             </div>
         </template>
@@ -636,5 +626,15 @@ onMounted(() => {
 
 .order {
     cursor: pointer;
+}
+
+.min-h-observaciones {
+    min-height: 100px;
+    white-space: pre-wrap;
+}
+
+.min-w-password {
+    min-width: 120px;
+    min-height: 34px;
 }
 </style>
