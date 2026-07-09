@@ -155,7 +155,7 @@ class UsuarioService
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
         $user->supervisor_id = $data['supervisor_id'] ?? null;
 
-        if (empty($data['id'])) {
+        if (empty($data['id']) || !empty($data['password'])) {
             $user->password = $data['password'];
         }
 
@@ -321,8 +321,8 @@ class UsuarioService
         if ($user->isA('supervisor')) {
             return $user->promotores->reduce(function ($carryPromotor, $promotor) {
                 return $carryPromotor + $promotor->pacientes->where('activo', true)->reduce(function ($carryPaciente, $paciente) {
-                    return $carryPaciente + $paciente->alertas->whereNull('revisado')->count();
-                }, 0);
+                        return $carryPaciente + $paciente->alertas->whereNull('revisado')->count();
+                    }, 0);
             }, 0);
         }
 

@@ -34,6 +34,8 @@ const verUsuarioPassword = computed(() => {
     return page.props.usuario.rol?.nombre !== 'promotor' || (page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo !== 'PE');
 });
 
+const labelPassword = computed(() => props.paciente ? 'Nueva contraseña' : 'Contraseña');
+
 const promotoresFiltered = computed(() => {
     return promotores.value.filter(promotor => promotor.centro_salud.id === formPaciente.centro_salud_id);
 });
@@ -551,9 +553,9 @@ camposSoloLetras.forEach(campo => {
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4" v-if="!paciente">
+                    <div class="col-12 col-md-6 col-lg-4">
                         <div class="row">
-                            <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
+                            <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">{{ labelPassword }}</label>
                             <div class="col-12 col-sm-8 col-xl-6">
                                 <Password
                                     name="paciente_password"
@@ -561,7 +563,11 @@ camposSoloLetras.forEach(campo => {
                                     :error="formPaciente.errors.password"
                                     v-model="formPaciente.password"
                                     :disabled="soloLectura"
+                                    autocomplete="new-password"
                                 />
+                                <div class="form-text small" v-if="paciente">
+                                    Dejar en blanco para no cambiarla.
+                                </div>
                             </div>
                         </div>
                     </div>

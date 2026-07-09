@@ -169,14 +169,18 @@ class PacienteService
             $paciente->centro_salud_id = data_get($data, 'centro_salud_id');
             $paciente->promotor_id = data_get($data, 'promotor_id');
             $paciente->fecha_enrolamiento = implode('-', array_reverse(explode('/', $data['fecha_enrolamiento'])));
-            $paciente->clave = Crypt::encryptString($data['password']);
             $paciente->test = data_get($data, 'test', false);
 
+            $password = data_get($data, 'password');
+            if ($password) {
+                $paciente->clave = Crypt::encryptString($password);
+            }
+
             if (empty($data['id'])) {
-                $usuario = $this->createUsuario($paciente, $data['password']);
+                $usuario = $this->createUsuario($paciente, $password);
                 $paciente->user_id = $usuario->id;
             } else {
-                $this->updateUsuario($paciente);
+                $this->updateUsuario($paciente, $password);
             }
 
             $paciente->save();
@@ -198,10 +202,10 @@ class PacienteService
         return $usuarioService->storeUsuario($data);
     }
 
-    private function updateUsuario(Paciente $paciente)
+    private function updateUsuario(Paciente $paciente, ?string $password = null)
     {
         $usuarioService = new UsuarioService();
-        $data = array_merge($this->fillDataUsuario($paciente), ['id' => $paciente->usuario->id]);
+        $data = array_merge($this->fillDataUsuario($paciente, $password), ['id' => $paciente->usuario->id]);
 
         return $usuarioService->storeUsuario($data);
     }
