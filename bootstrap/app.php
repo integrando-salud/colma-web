@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Console/Commands',
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectUsersTo(fn () => route('dashboard.index'));
+
         $middleware->web(append: [
             HandleInertiaRequests::class,
         ]);

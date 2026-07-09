@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { usePage } from "@inertiajs/vue3";
+import { router, usePage } from "@inertiajs/vue3";
 import MenuItem from "@/Components/Layouts/MenuItem.vue";
 
 const page = usePage();
@@ -14,6 +14,10 @@ const showMenuUsuarios = computed(() => {
 
     return roles.find((role) => role === page.props.usuario.rol.nombre);
 });
+
+const logout = () => {
+    router.post(route('dashboard.logout'));
+};
 </script>
 
 <template>
@@ -40,10 +44,10 @@ const showMenuUsuarios = computed(() => {
                         <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
                     </li>
                 </ul>
-                <a :href="route('dashboard.logout')" class="btn btn-secondary text-white">
+                <button type="button" class="btn btn-secondary text-white" @click="logout">
                     <i class="fa fa-sign-out"></i>
                     Cerrar sesión
-                </a>
+                </button>
             </div>
         </div>
     </nav>
