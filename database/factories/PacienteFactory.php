@@ -144,7 +144,7 @@ class PacienteFactory extends Factory
                         'entidad_id' => null,
                         'entidad_tipo' => null,
                         'descripcion' => fake()->randomElement([
-                            'No se conecta',
+                            'No completa las sesiones',
                             'Problemas de conexión',
                             'Pedido de ayuda',
                         ]),

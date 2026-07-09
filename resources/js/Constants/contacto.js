@@ -104,7 +104,7 @@ export const TIPO_ALERTA = {
 
 export const ALERTA_DESCRIPCION = {
     PROBLEMAS_CONEXION: 'Problemas de conexión',
-    NO_SE_CONECTA: 'No se conecta',
+    NO_SE_CONECTA: 'No completa las sesiones',
     PEDIDO_AYUDA: 'Pedido de ayuda',
 };
 
