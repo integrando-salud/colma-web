@@ -102,6 +102,16 @@ const filterPacientes = () => {
     router.get(props.urlBase, formFiltros, { preserveState: true, replace: true });
 };
 
+const resetFiltrosPacientes = () => {
+    formFiltros.estado = '';
+    formFiltros.alertas = '';
+    formFiltros.nombre = '';
+    formFiltros.promotor = '';
+    formFiltros.orderBy = null;
+    formFiltros.orderDir = null;
+    router.get(props.urlBase, {}, { preserveState: true, replace: true });
+};
+
 const orderBy = (column) => {
     formFiltros.orderDir = (column === formFiltros.orderBy && formFiltros.orderDir === 'asc') ? 'desc' : 'asc';
     formFiltros.orderBy = column;
@@ -205,6 +215,17 @@ onMounted(() => {
                 </div>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
                     <input type="text" name="paciente" id="filtroPaciente" placeholder="Buscar paciente" class="form-control rounded-4 bg-body-secondary" v-model="formFiltros.nombre" @change="filterPacientes">
+                </div>
+                <div class="col-12 col-sm-6 col-md-auto mt-2 mt-md-0">
+                    <button
+                        type="button"
+                        class="btn btn-outline-dark"
+                        title="Borrar filtros"
+                        aria-label="Borrar filtros"
+                        @click="resetFiltrosPacientes"
+                    >
+                        <i class="fa fa-filter-circle-xmark"></i>
+                    </button>
                 </div>
             </form>
         </div>

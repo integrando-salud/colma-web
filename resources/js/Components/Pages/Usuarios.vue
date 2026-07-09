@@ -206,6 +206,15 @@ const filterUsuarios = () => {
     router.get(props.urlBase, formFiltros, { preserveState: true, replace: true });
 };
 
+const resetFiltrosUsuarios = () => {
+    formFiltros.rol = '';
+    formFiltros.pais = '';
+    formFiltros.nombre = '';
+    formFiltros.orderBy = null;
+    formFiltros.orderDir = null;
+    router.get(props.urlBase, {}, { preserveState: true, replace: true });
+};
+
 const orderBy = (column) => {
     formFiltros.orderDir = (column === formFiltros.orderBy && formFiltros.orderDir === 'asc') ? 'desc' : 'asc';
     formFiltros.orderBy = column;
@@ -317,6 +326,17 @@ watch(() => formUsuario.documento, (value) => {
                 </div>
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2">
                     <input type="text" name="nombre" id="filtroNombre" placeholder="Buscar por nombre" class="form-control rounded-4 bg-body-secondary" v-model="formFiltros.nombre">
+                </div>
+                <div class="col-12 col-sm-6 col-md-auto mt-2 mt-md-0">
+                    <button
+                        type="button"
+                        class="btn btn-outline-dark"
+                        title="Borrar filtros"
+                        aria-label="Borrar filtros"
+                        @click="resetFiltrosUsuarios"
+                    >
+                        <i class="fa fa-filter-circle-xmark"></i>
+                    </button>
                 </div>
             </form>
         </div>
