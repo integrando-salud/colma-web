@@ -40,6 +40,7 @@ class DashboardService
         $rolService = new RolService();
         $paisService = new PaisService();
         $centroSaludService = new CentroSaludService();
+        $authUser = auth()->user();
 
         if (empty($filters['orderBy'])) {
             $filters['orderBy'] = 'id';
@@ -49,18 +50,22 @@ class DashboardService
             $filters['orderDir'] = 'desc';
         }
 
+        if ($authUser->isA('supervisor') || $authUser->isA('supervisor_pais')) {
+            $filters['pais'] = $authUser->pais_id;
+        }
+
         $usuarios = $usuarioService->queryGetUsuarios($filters)
             ->paginate(config('app.rpp'))
             ->withQueryString();
 
         $rolesExcluidos = ['paciente'];
-        if (auth()->user()->isA('supervisor')) {
+        if ($authUser->isA('supervisor')) {
             $rolesExcluidos = array_merge($rolesExcluidos, [
                 'superusuario',
                 'supervisor',
                 'supervisor_pais',
             ]);
-        } elseif (auth()->user()->isA('supervisor_pais')) {
+        } elseif ($authUser->isA('supervisor_pais')) {
             $rolesExcluidos = array_merge($rolesExcluidos, [
                 'superusuario',
                 'supervisor_pais',
@@ -74,7 +79,7 @@ class DashboardService
         ])->get();
 
         $paises = $paisService->queryGetPaises([
-            'id' => auth()->user()->isA('supervisor_pais') ? auth()->user()->pais_id : null,
+            'id' => ($authUser->isA('supervisor') || $authUser->isA('supervisor_pais')) ? $authUser->pais_id : null,
             'activo' => true,
             'orderBy' => 'nombre',
             'orderDir' => 'asc',

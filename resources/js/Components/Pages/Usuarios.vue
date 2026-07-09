@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, useTemplateRef, watch } from "vue";
+import { computed, reactive, ref, useTemplateRef, watch } from "vue";
 import { router, usePage } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import Table from "@/Components/Table.vue";
@@ -58,6 +58,10 @@ const formEditarPassword = reactive({
 
 const page = usePage();
 const notification = useNotificationStore();
+const paisFilterDisabled = computed(() => {
+    return ['supervisor_pais', 'supervisor'].includes(page.props.usuario.rol.nombre);
+});
+const userPaisId = computed(() => page.props.usuario.pais?.id ?? '');
 const modalUsuario = useTemplateRef('modalUsuario');
 const titleModalUsuario = ref('Nuevo usuario');
 const modalEliminar = useTemplateRef('modalEliminar');
@@ -203,16 +207,20 @@ const saveUsuario = async () => {
 };
 
 const filterUsuarios = () => {
+    if (paisFilterDisabled.value) {
+        formFiltros.pais = userPaisId.value;
+    }
+
     router.get(props.urlBase, formFiltros, { preserveState: true, replace: true });
 };
 
 const resetFiltrosUsuarios = () => {
     formFiltros.rol = '';
-    formFiltros.pais = '';
+    formFiltros.pais = paisFilterDisabled.value ? userPaisId.value : '';
     formFiltros.nombre = '';
     formFiltros.orderBy = null;
     formFiltros.orderDir = null;
-    router.get(props.urlBase, {}, { preserveState: true, replace: true });
+    router.get(props.urlBase, paisFilterDisabled.value ? { pais: userPaisId.value } : {}, { preserveState: true, replace: true });
 };
 
 const orderBy = (column) => {
@@ -295,6 +303,12 @@ watch(() => formUsuario.documento, (value) => {
 
     formUsuario.documento = value.replace(/\D/g, '').slice(0,8);
 });
+
+watch(paisFilterDisabled, (disabled) => {
+    if (disabled) {
+        formFiltros.pais = userPaisId.value;
+    }
+}, { immediate: true });
 </script>
 
 <template>
@@ -319,7 +333,14 @@ watch(() => formUsuario.documento, (value) => {
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-md-3 col-lg-3 col-xl-2 mb-2 mb-md-0">
-                    <select name="pais" id="filtroPais" class="form-select rounded-4 bg-body-secondary" v-model="formFiltros.pais"  @change="filterUsuarios">
+                    <select
+                        name="pais"
+                        id="filtroPais"
+                        class="form-select rounded-4 bg-body-secondary"
+                        v-model="formFiltros.pais"
+                        :disabled="paisFilterDisabled"
+                        @change="filterUsuarios"
+                    >
                         <option value="">País</option>
                         <option v-for="pais in paises" :key="pais.id" :value="pais.id">{{ pais.nombre }}</option>
                     </select>

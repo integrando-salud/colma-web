@@ -11,13 +11,16 @@ class UsuarioService
 {
     public function queryGetUsuarios(array $filters = [])
     {
+        $authUser = auth()->user();
+
         $query = User::with(['pais', 'centroSalud', 'roles'])
             ->whereIsNot(['paciente']);
 
-        if (auth()->user()->isA('supervisor')) {
-            $query->where('supervisor_id', auth()->user()->id);
-        } elseif (auth()->user()->isA('supervisor_pais')) {
-            $query->where('pais_id', auth()->user()->pais_id)
+        if ($authUser->isA('supervisor')) {
+            $query->where('supervisor_id', $authUser->id)
+                ->where('pais_id', $authUser->pais_id);
+        } elseif ($authUser->isA('supervisor_pais')) {
+            $query->where('pais_id', $authUser->pais_id)
                 ->whereHas('roles', function ($query) {
                     $query->whereIn('name', [
                         'supervisor',
@@ -32,7 +35,7 @@ class UsuarioService
             });
         }
 
-        if (!empty($filters['pais'])) {
+        if (!empty($filters['pais']) && !$authUser->isA('supervisor') && !$authUser->isA('supervisor_pais')) {
             $query->where('pais_id', $filters['pais']);
         }
 
