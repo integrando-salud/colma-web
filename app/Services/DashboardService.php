@@ -91,11 +91,13 @@ class DashboardService
             'orderDir' => 'asc',
         ])->get();
 
-        $supervisores = $usuarioService->queryGetUsuarios([
-            'rol' => 'supervisor',
-            'orderBy' => 'nombre',
-            'orderDir' => 'asc',
-        ])->get();
+        $supervisores = $authUser->isA('supervisor')
+            ? collect([$authUser->loadMissing(['pais', 'centroSalud', 'roles', 'supervisor'])])
+            : $usuarioService->queryGetUsuarios([
+                'rol' => 'supervisor',
+                'orderBy' => 'nombre',
+                'orderDir' => 'asc',
+            ])->get();
 
         return [
             'usuarios' => UserResource::collection($usuarios),

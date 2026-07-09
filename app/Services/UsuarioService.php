@@ -14,7 +14,7 @@ class UsuarioService
         $authUser = auth()->user();
 
         $query = User::with(['pais', 'centroSalud', 'roles'])
-            ->whereIsNot(['paciente']);
+            ->whereIsNot('paciente');
 
         if ($authUser->isA('supervisor')) {
             $query->where('supervisor_id', $authUser->id)
