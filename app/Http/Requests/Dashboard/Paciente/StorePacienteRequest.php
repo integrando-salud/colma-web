@@ -24,6 +24,7 @@ class StorePacienteRequest extends FormRequest
     {
         return [
             'id' => ['nullable', 'exists:pacientes,id'],
+            'id_externo' => ['nullable'],
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
             'fecha_nacimiento' => ['required', 'date_format:d/m/Y'],

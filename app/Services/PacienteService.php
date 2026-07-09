@@ -154,6 +154,7 @@ class PacienteService
             DB::beginTransaction();
 
             $paciente = empty($data['id']) ? new Paciente() : Paciente::find($data['id']);
+            $paciente->id_externo = data_get($data, 'id_externo');
             $paciente->nombre = $data['nombre'];
             $paciente->apellido = $data['apellido'];
             $paciente->fecha_nacimiento = implode('-', array_reverse(explode('/', $data['fecha_nacimiento'])));

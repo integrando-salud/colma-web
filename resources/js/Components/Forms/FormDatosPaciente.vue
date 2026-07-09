@@ -128,6 +128,7 @@ const getPaquetes = async () => {
 
 const fillDataPaciente = () => {
     formPaciente.id = props.paciente.id;
+    formPaciente.id_externo = props.paciente.id_externo;
     formPaciente.nombre = props.paciente.nombre;
     formPaciente.apellido = props.paciente.apellido;
     formPaciente.fecha_nacimiento = props.paciente.fecha_nacimiento_format;
@@ -567,6 +568,33 @@ camposSoloLetras.forEach(campo => {
                 </div>
             </div>
         </template>
+        <div class="col-12 mt-3 mt-sm-0">
+            <h4 class="fs-5 text-primary-emphasis">ID sistema externo</h4>
+        </div>
+        <div class="col-12">
+            <div class="row">
+                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
+                    <div class="row">
+                        <label for="paciente_id_externo" class="col-12 col-sm-4 col-xl-4 col-form-label">ID</label>
+                        <div class="col-12 col-sm-8 col-xl-6">
+                            <input
+                                type="text"
+                                name="paciente_id_externo"
+                                id="paciente_id_externo"
+                                class="form-control"
+                                :class="{ 'is-invalid': formPaciente.errors.id_externo }"
+                                v-model="formPaciente.id_externo"
+                                :disabled="soloLectura"
+                                maxlength="8"
+                            />
+                            <div class="invalid-feedback" v-if="formPaciente.errors?.id_externo">
+                                {{ formPaciente.errors.id_externo }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 

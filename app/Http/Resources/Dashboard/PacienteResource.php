@@ -24,6 +24,7 @@ class PacienteResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'id_externo' => $this->id_externo,
             'nombre' => $this->nombre,
             'apellido' => $this->apellido,
             'fecha_nacimiento' => $this->fecha_nacimiento->format('Y-m-d'),

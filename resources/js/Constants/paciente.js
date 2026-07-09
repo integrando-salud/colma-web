@@ -1,5 +1,6 @@
 export const FORM_PACIENTE = {
     id: null,
+    id_externo: null,
     nombre: null,
     apellido: null,
     fecha_nacimiento: null,
@@ -15,6 +16,5 @@ export const FORM_PACIENTE = {
     promotor_id: '',
     fecha_enrolamiento: null,
     diagnosticos: [3],
-    // paquete_id: '',
     password: null,
 };
