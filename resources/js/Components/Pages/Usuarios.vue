@@ -417,8 +417,8 @@ watch(() => formUsuario.documento, (value) => {
                         <td>{{ usuario.numero_pacientes ? usuario.numero_pacientes : '-' }}</td>
                         <td>{{ usuario.ultimo_acceso ? usuario.ultimo_acceso : '-' }}</td>
                         <td>
-                            {{ usuario.numero_pacientes_con_alertas ? usuario.numero_pacientes_con_alertas : '-' }}
-                            <i v-if="usuario.numero_pacientes_con_alertas" class="fa fa-warning text-danger"></i>
+                            {{ usuario.numero_alertas ? usuario.numero_alertas : '-' }}
+                            <i v-if="usuario.numero_alertas" class="fa fa-warning text-danger"></i>
                         </td>
                         <td>
                             <div class="dropdown">
