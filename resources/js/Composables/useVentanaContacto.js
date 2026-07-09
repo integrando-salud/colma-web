@@ -159,12 +159,15 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
         });
     };
 
+    const esAgendaEntrenamientoContactado = () => {
+        return formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO &&
+            formContacto.contactado === 1;
+    };
+
     const setVentanasContacto = (fechaBase) => {
-        if (entrenamientoActual.value) {
-            if (!reagendaEntrenamiento.value) {
-                aplicarVentanaEntrenamientoActual();
-                return;
-            }
+        if (entrenamientoActual.value && !reagendaEntrenamiento.value && !esAgendaEntrenamientoContactado()) {
+            aplicarVentanaEntrenamientoActual();
+            return;
         }
 
         ventanaContacto.fechaEntrenamiento = fechaBase;
@@ -191,6 +194,11 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
     };
 
     const fillDataEntrenamientoActual = () => {
+        if (esAgendaEntrenamientoContactado() && isValidDate(formContacto.fecha_cita)) {
+            setVentanasContacto(formContacto.fecha_cita);
+            return;
+        }
+
         aplicarVentanaEntrenamientoActual();
     };
 

@@ -273,6 +273,13 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
         setVentanasContacto,
     }) => {
         const setFechaProximoContacto = () => {
+            if (esAgendaEntrenamientoContactado()) {
+                formContacto.nueva_fecha_contacto = formContacto.fecha_cita && isValidDate(formContacto.fecha_cita)
+                    ? getFechaMasDias(14, formContacto.fecha_cita)
+                    : null;
+                return;
+            }
+
             if (reagendaEntrenamiento.value) {
                 formContacto.nueva_fecha_contacto = getFechaMasDias(14);
                 return;
@@ -295,6 +302,30 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             }
         };
 
+        const esAgendaEntrenamientoContactado = () => {
+            return formContacto.contactado === 1 &&
+                formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO;
+        };
+
+        const actualizarVentanasContacto = () => {
+            if (esAgendaEntrenamientoContactado()) {
+                if (formContacto.fecha_cita && isValidDate(formContacto.fecha_cita)) {
+                    setVentanasContacto(formContacto.fecha_cita);
+                } else {
+                    resetVentanasContacto();
+                }
+
+                return;
+            }
+
+            if (reagendaEntrenamiento.value && isValidDate(formContacto.nueva_fecha_contacto)) {
+                setVentanasContacto(formContacto.nueva_fecha_contacto);
+                return;
+            }
+
+            setVentanasContacto(formContacto.nueva_fecha_contacto);
+        };
+
         const handleChangeResultado = () => {
             if (formContacto.contactado !== 0) {
                 formContacto.motivo_reprogramacion = '';
@@ -302,19 +333,15 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
 
             setFechaProximoContacto();
 
-            const agendaEntrenamientoContactado =
-                formContacto.contactado === 1 &&
-                formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO;
-
             const esCitaEntrenamiento = formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO;
 
             const debeActualizarVentanasContacto =
-                agendaEntrenamientoContactado ||
+                esAgendaEntrenamientoContactado() ||
                 esCitaEntrenamiento ||
                 reagendaEntrenamiento.value;
 
             if (debeActualizarVentanasContacto) {
-                setVentanasContacto(formContacto.nueva_fecha_contacto);
+                actualizarVentanasContacto();
                 return;
             }
 
@@ -373,6 +400,11 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
 
             setFechaProximoContacto();
 
+            if (esAgendaEntrenamientoContactado() || reagendaEntrenamiento.value) {
+                actualizarVentanasContacto();
+                return;
+            }
+
             if (entrenamientoActual.value && !reagendaEntrenamiento.value) {
                 resetVentanasContacto();
             }
@@ -398,6 +430,12 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             lugar_cita: () => {
                 if (formContacto.lugar_cita !== LUGAR_CITA.OTRO) {
                     formContacto.lugar_cita_otro = null;
+                }
+            },
+            fecha_cita: () => {
+                if (esAgendaEntrenamientoContactado()) {
+                    setFechaProximoContacto();
+                    actualizarVentanasContacto();
                 }
             },
             razon_contacto_participante: () => {
@@ -483,10 +521,10 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             }
 
             if (
-                formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO && formContacto.contactado && newValue && isValidDate(newValue)
+                esAgendaEntrenamientoContactado() && formContacto.fecha_cita && isValidDate(formContacto.fecha_cita)
                 || reagendaEntrenamiento.value && isValidDate(newValue)
             ) {
-                setVentanasContacto(newValue);
+                actualizarVentanasContacto();
             }
         });
     };

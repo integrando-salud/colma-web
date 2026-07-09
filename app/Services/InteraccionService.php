@@ -78,11 +78,12 @@ class InteraccionService
                 : null;
             $interaccion->save();
 
-            if (
-                $interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado
-                || $interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado
-            ) {
-                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto, data_get($data, 'id_entrenamiento'));
+            if ($interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado) {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->fecha_cita->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
+            }
+
+            if ($interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado) {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
             }
 
             if ($alertaId) {
