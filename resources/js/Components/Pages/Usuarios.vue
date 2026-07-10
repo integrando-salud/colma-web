@@ -4,6 +4,8 @@ import { router, usePage } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import Table from "@/Components/Table.vue";
 import Modal from "@/Components/Modal.vue";
+import ModalCancelar from "@/Components/ModalCancelar.vue";
+import ModalConfirmar from "@/Components/ModalConfirmar.vue";
 import Password from "@/Components/Form/Password.vue";
 import Pagination from "@/Components/Pagination.vue";
 import FormUsuario from "@/Components/Forms/FormUsuario.vue";
@@ -576,43 +578,15 @@ watch(paisFilterDisabled, (disabled) => {
         </template>
     </Modal>
 
-    <Modal id="modalCancelar" ref="modalCancelar" title="Cancelar">
-        <div class="row">
-            <div class="col-12">
-                <p>
-                    ¿Estás seguro/a que quieres cancelar?
-                </p>
-            </div>
-        </div>
+    <ModalCancelar
+        ref="modalCancelar"
+        @confirm="confirmCancelar"
+    />
 
-        <template #footer>
-            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalCancelar">
-                No, continuar
-            </button>
-            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="confirmCancelar">
-                Si, cancelar
-            </button>
-        </template>
-    </Modal>
-
-    <Modal id="modalConfirmar" ref="modalConfirmar" title="Confirmar">
-        <div class="row">
-            <div class="col-12">
-                <p>
-                    ¿Estás seguro/a que desea guardar la información?
-                </p>
-            </div>
-        </div>
-
-        <template #footer>
-            <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalConfirmar">
-                No
-            </button>
-            <button type="button" class="btn btn-secondary text-white fw-semibold shadow" @click="handleConfirmar">
-                Si
-            </button>
-        </template>
-    </Modal>
+    <ModalConfirmar
+        ref="modalConfirmar"
+        @confirm="handleConfirmar"
+    />
 </template>
 
 <style scoped>
