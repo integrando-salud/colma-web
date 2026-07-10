@@ -2,6 +2,7 @@
 import { toRef } from 'vue';
 import { MOTIVO_CONTACTO, OPCION_NO, OPCION_SI } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
+import {MOTIVO_CONTACTO_SESSIONES} from "@/Constants/contacto.js";
 
 const props = defineProps({
     form: {
@@ -14,7 +15,7 @@ const formContacto = toRef(props, 'form');
 </script>
 
 <template>
-    <template v-if="formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL">
+    <template v-if="MOTIVO_CONTACTO_SESSIONES.includes(formContacto.motivo)">
         <div class="col-12 mb-2">
             <label for="contacto_seguimiento_pregunta_a" class="form-label me-2">
                 ¿El/la participante tuvo dificultades utilizando el aplicativo desde su último contacto?

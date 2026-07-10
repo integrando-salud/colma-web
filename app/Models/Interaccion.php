@@ -151,11 +151,6 @@ class Interaccion extends Model
         return $this->belongsTo(Alerta::class);
     }
 
-    public function isMonthlyAppointment(): bool {
-        if (str_contains($this->motivo, ['Seguimiento mensual'])) return true;
-        return false;
-    }
-
     /**
      * Return the next appointment motivo in the series
      * @return string

@@ -18,6 +18,7 @@ import {
     RAZON_CONTACTO_PARTICIPANTE,
 } from '@/Constants/contacto';
 import { useNotificationStore } from '@/Stores/notification';
+import {MOTIVO_CONTACTO_SESSIONES} from "@/Constants/contacto.js";
 
 const HORA_FIELDS = [
     {
@@ -178,7 +179,7 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             }
 
             if (props.alerta.tipo === TIPO_ALERTA.CALLS) {
-                return MOTIVOS_CONTACTO_CALLS;
+                return MOTIVO_CONTACTO_SESSIONES;
             }
 
             return MOTIVOS_CONTACTO_ALERTA_OPERATIVA;
@@ -190,8 +191,7 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
     const verFilaFechaProximoContacto = computed(() => {
         return formContacto.contactado === 0
             || formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO
-            || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
-            || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL;
+            || MOTIVO_CONTACTO_SESSIONES.includes(formContacto.motivo)
     });
 
     const verFechaHoraContacto = computed(() => {
@@ -293,7 +293,7 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                 formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
             ) {
                 formContacto.nueva_fecha_contacto = getFechaMasDias(14);
-            } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
+            } else if (MOTIVO_CONTACTO_SESSIONES.includes(formContacto.motivo)) {
                 formContacto.nueva_fecha_contacto = getFechaMasDias(30);
             } else {
                 formContacto.nueva_fecha_contacto = null;
@@ -358,7 +358,7 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                     formContacto.hora_cita_final = null;
                 }
 
-                if (formContacto.motivo !== MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS && formContacto.motivo !== MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
+                if (!MOTIVO_CONTACTO_SESSIONES.includes(formContacto.motivo)) {
                     formContacto.seguimiento_pregunta_a = '';
                     formContacto.seguimiento_pregunta_b = null;
                     formContacto.seguimiento_pregunta_c = '';

@@ -95,4 +95,6 @@ Route::middleware('auth')->group(function () {
         Route::post('{paciente}/resetear-datos', [AjaxController::class, 'resetearDatosPaciente'])
             ->name('ajax.paciente.resetearDatos');
     });
+
+
 });
