@@ -28,6 +28,7 @@ export const FORM_CONTACTO = {
     seguimiento_pregunta_e: '',
     fecha_reentrenamiento: null,
     hora_reentrenamiento: null,
+    hora_reentrenamiento_display: null,
     hora_reentrenamiento_meridiano: 'AM',
     lugar_reentrenamiento: null,
     razon_contacto_participante: '',

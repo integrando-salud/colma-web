@@ -96,8 +96,16 @@ const convertirHora12a24 = (hora12, meridiano) => {
     }
 
     let horas = parseInt(horasStr, 10);
+    const minutosNumber = parseInt(minutos, 10);
 
-    if (Number.isNaN(horas)) {
+    if (
+        Number.isNaN(horas) ||
+        Number.isNaN(minutosNumber) ||
+        horas < 1 ||
+        horas > 12 ||
+        minutosNumber < 0 ||
+        minutosNumber > 59
+    ) {
         return null;
     }
 
@@ -245,14 +253,13 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
     const submit = async () => {
         HORA_FIELDS.forEach(({ value, display, meridiano }) => {
             if (!formContacto[display] || !formContacto[meridiano]) {
+                formContacto[value] = null;
                 return;
             }
 
             const hora24 = convertirHora12a24(formContacto[display], formContacto[meridiano]);
 
-            if (hora24) {
-                formContacto[value] = hora24;
-            }
+            formContacto[value] = hora24;
         });
 
         if (entrenamientoActual.value) {
