@@ -43,9 +43,12 @@ class InteraccionService
             $interaccion->seguimiento_pregunta_c = data_get($data, 'seguimiento_pregunta_c');
             $interaccion->seguimiento_pregunta_d = data_get($data, 'seguimiento_pregunta_d');
             $interaccion->seguimiento_pregunta_e = data_get($data, 'seguimiento_pregunta_e');
-            $interaccion->fecha_reentrenamiento = data_get($data, 'fecha_reentrenamiento');
+            $interaccion->fecha_reentrenamiento = !empty($data['fecha_reentrenamiento'])
+                ? implode('-', array_reverse(explode('/', $data['fecha_reentrenamiento'])))
+                : null;
             $interaccion->hora_reentrenamiento = data_get($data, 'hora_reentrenamiento');
             $interaccion->lugar_reentrenamiento = data_get($data, 'lugar_reentrenamiento');
+            $interaccion->lugar_reentrenamiento_otro = data_get($data, 'lugar_reentrenamiento_otro');
             $interaccion->razon_contacto_participante = data_get($data, 'razon_contacto_participante');
             $interaccion->razon_contacto_participante_otro = data_get($data, 'razon_contacto_participante_otro');
             $interaccion->contacto_participante_acciones = data_get($data, 'contacto_participante_acciones');

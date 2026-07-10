@@ -157,8 +157,16 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'lugar_reentrenamiento' => [
                 'nullable',
+                'in:Centro de salud,Vivienda del participante,Otro',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && $this->input('seguimiento_pregunta_e') === 'No';
+                })
+            ],
+            'lugar_reentrenamiento_otro' => [
+                'nullable',
+                'string',
+                Rule::requiredIf(function () {
+                    return $this->input('contactado') && $this->input('lugar_reentrenamiento') === 'Otro';
                 })
             ],
             'razon_contacto_participante' => [

@@ -60,6 +60,7 @@ const INTERACCION_DIRECT_FIELDS = [
     'seguimiento_pregunta_e',
     'fecha_reentrenamiento',
     'lugar_reentrenamiento',
+    'lugar_reentrenamiento_otro',
     'razon_contacto_participante',
     'razon_contacto_participante_otro',
     'contacto_participante_acciones',
@@ -395,7 +396,8 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                     formContacto.seguimiento_pregunta_e = '';
                     formContacto.fecha_reentrenamiento = null;
                     formContacto.hora_reentrenamiento = null;
-                    formContacto.lugar_reentrenamiento = null;
+                    formContacto.lugar_reentrenamiento = '';
+                    formContacto.lugar_reentrenamiento_otro = null;
                 }
 
                 if (formContacto.motivo !== MOTIVO_CONTACTO.INICIADO_POR_PACIENTE) {
@@ -431,12 +433,18 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                 if (formContacto.seguimiento_pregunta_e !== OPCION_NO) {
                     formContacto.fecha_reentrenamiento = null;
                     formContacto.hora_reentrenamiento = null;
-                    formContacto.lugar_reentrenamiento = null;
+                    formContacto.lugar_reentrenamiento = '';
+                    formContacto.lugar_reentrenamiento_otro = null;
                 }
             },
             lugar_cita: () => {
                 if (formContacto.lugar_cita !== LUGAR_CITA.OTRO) {
                     formContacto.lugar_cita_otro = null;
+                }
+            },
+            lugar_reentrenamiento: () => {
+                if (formContacto.lugar_reentrenamiento !== LUGAR_CITA.OTRO) {
+                    formContacto.lugar_reentrenamiento_otro = null;
                 }
             },
             fecha_cita: () => {
