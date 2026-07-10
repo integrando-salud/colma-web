@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Dashboard\User;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,9 +32,30 @@ class StoreUserRequest extends FormRequest
             'password' => ['nullable', 'required_without:id', 'min:6'],
             'rol' => ['required', 'exists:roles,name'],
             'pais_id' => ['required', 'exists:paises,id'],
-            'centro_salud_id' => ['nullable', 'required_if:rol,promotor', 'exists:centros_salud,id'],
+            'centro_salud_id' => [
+                'nullable',
+                'required_if:rol,promotor',
+                Rule::exists('centros_salud', 'id')->where('pais_id', $this->input('pais_id')),
+            ],
             'supervisor_id' => ['nullable', 'required_if:rol,promotor', 'exists:users,id'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('rol') !== 'promotor' || empty($this->input('supervisor_id'))) {
+            return;
+        }
+
+        $supervisor = User::find($this->input('supervisor_id'));
+
+        if (!$supervisor) {
+            return;
+        }
+
+        $this->merge([
+            'pais_id' => $supervisor->pais_id,
+        ]);
     }
 
     public function messages(): array

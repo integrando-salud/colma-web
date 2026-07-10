@@ -227,11 +227,15 @@ class UsuarioService
     public function storeUsuario(array $data): User
     {
         $user = empty($data['id']) ? new User() : User::find($data['id']);
+        $supervisor = ($data['rol'] === 'promotor' && !empty($data['supervisor_id']))
+            ? User::find($data['supervisor_id'])
+            : null;
+
         $user->nombre = $data['nombre'];
         $user->sexo = $data['sexo'];
         $user->documento = $data['documento'];
         $user->email = $data['email'];
-        $user->pais_id = $data['pais_id'];
+        $user->pais_id = $supervisor?->pais_id ?? $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
         $user->supervisor_id = $data['supervisor_id'] ?? null;
 
