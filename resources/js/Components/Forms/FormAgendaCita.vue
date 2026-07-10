@@ -117,7 +117,7 @@ const horaProgramadaCitaTitle = computed(() => {
                 </div>
                 <div
                     v-if="formContacto.lugar_cita === 'Otro'"
-                    class="col-12 col-sm-8 col-xl-7 offset-sm-4 offset-lg-3 mt-2 mt-lg-0"
+                    class="col-12 col-sm-8 col-lg-9 offset-sm-4 offset-lg-3 mt-2"
                 >
                     <input
                         type="text"

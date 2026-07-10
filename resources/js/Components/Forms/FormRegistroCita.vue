@@ -1,6 +1,6 @@
 <script setup>
 import { toRef } from 'vue';
-import { MOTIVO_CONTACTO } from '@/Constants/contacto';
+import { LUGAR_CITA, MOTIVO_CONTACTO } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
 import MeridiemSelect from '@/Components/Form/MeridiemSelect.vue';
 import Time12Input from '@/Components/Form/Time12Input.vue';
@@ -42,6 +42,52 @@ const formContacto = toRef(props, 'form');
                         <div class="invalid-feedback" v-if="formContacto.errors?.fecha_cita_final">
                             {{ formContacto.errors.fecha_cita_final }}
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mb-2">
+            <div class="row">
+                <label for="contacto_lugar_cita" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                    Lugar
+                </label>
+                <div class="col-12 col-sm-8 col-lg-9">
+                    <select
+                        name="contacto_lugar_cita"
+                        id="contacto_lugar_cita"
+                        class="form-select"
+                        :class="{ 'is-invalid': formContacto.errors?.lugar_cita }"
+                        v-model="formContacto.lugar_cita"
+                    >
+                        <option value="">Seleccionar lugar</option>
+                        <option
+                            v-for="lugar in LUGAR_CITA"
+                            :key="lugar"
+                            :value="lugar"
+                        >
+                            {{ lugar }}
+                        </option>
+                    </select>
+                    <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita">
+                        {{ formContacto.errors.lugar_cita }}
+                    </div>
+                </div>
+                <div
+                    v-if="formContacto.lugar_cita === 'Otro'"
+                    class="col-12 col-sm-8 col-lg-9 offset-sm-4 offset-lg-3 mt-2"
+                >
+                    <input
+                        type="text"
+                        name="contacto_lugar_cita_otro"
+                        id="contacto_lugar_cita_otro"
+                        class="form-control"
+                        placeholder="Escriba el lugar de la cita"
+                        :class="{ 'is-invalid': formContacto.errors?.lugar_cita_otro }"
+                        v-model="formContacto.lugar_cita_otro"
+                    />
+                    <div class="invalid-feedback" v-if="formContacto.errors?.lugar_cita_otro">
+                        {{ formContacto.errors.lugar_cita_otro }}
                     </div>
                 </div>
             </div>
