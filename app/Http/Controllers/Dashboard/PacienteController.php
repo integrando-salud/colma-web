@@ -105,7 +105,10 @@ class PacienteController extends Controller
     public function interacciones(Request $request, Paciente $paciente)
     {
         // TODO: agregar una opción para filtrar por rango de fechas de la interacción
-        $interacciones = $paciente->interacciones()->orderByDesc('fecha')->paginate(10);
+        $interacciones = $paciente->interacciones()
+            ->whereNull('alerta_id')
+            ->orderByDesc('fecha')
+            ->paginate(10);
 
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),
