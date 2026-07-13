@@ -10,60 +10,59 @@ use Throwable;
 
 class InteraccionService
 {
+    private const MOTIVOS_CITA_REALIZADA = [
+        'Cita de entrenamiento',
+        'Cita final',
+        'Re-entrenamiento',
+    ];
+
     public function storeInteraccion(array $data)
     {
         try {
             DB::beginTransaction();
 
             $alertaId = data_get($data, 'alerta_id');
+            $fechaContacto = $this->fechaContacto($data);
+            $horaContacto = $this->horaContacto($data);
 
             $interaccion = empty($data['id']) ? new Interaccion() : Interaccion::find($data['id']);
             $interaccion->paciente_id = $data['paciente_id'];
             $interaccion->user_id = auth()->user()->id;
             $interaccion->alerta_id = $alertaId;
             $interaccion->contactado = $data['contactado'];
-            $interaccion->fecha = implode('-', array_reverse(explode('/', $data['fecha'])));
-            $interaccion->hora = $data['hora'];
+            $interaccion->fecha = $fechaContacto;
+            $interaccion->hora = $horaContacto;
             $interaccion->modalidad = $data['modalidad'];
             $interaccion->motivo = $data['motivo'];
             $interaccion->observaciones = data_get($data, 'observaciones');
             $interaccion->motivo_reprogramacion = data_get($data, 'motivo_reprogramacion');
-            $interaccion->fecha_cita = !empty($data['fecha_cita'])
-                ? implode('-', array_reverse(explode('/', $data['fecha_cita'])))
-                : null;
+            $interaccion->fecha_cita = $this->fechaDatabase(data_get($data, 'fecha_cita'));
             $interaccion->hora_cita = data_get($data, 'hora_cita');
             $interaccion->lugar_cita = data_get($data, 'lugar_cita');
             $interaccion->lugar_cita_otro = data_get($data, 'lugar_cita_otro');
-            $interaccion->fecha_cita_final = !empty($data['fecha_cita_final'])
-                ? implode('-', array_reverse(explode('/', $data['fecha_cita_final'])))
-                : null;
+            $interaccion->fecha_cita_final = $this->fechaDatabase(data_get($data, 'fecha_cita_final'));
             $interaccion->hora_cita_final = data_get($data, 'hora_cita_final');
             $interaccion->seguimiento_pregunta_a = data_get($data, 'seguimiento_pregunta_a');
             $interaccion->seguimiento_pregunta_b = data_get($data, 'seguimiento_pregunta_b');
             $interaccion->seguimiento_pregunta_c = data_get($data, 'seguimiento_pregunta_c');
             $interaccion->seguimiento_pregunta_d = data_get($data, 'seguimiento_pregunta_d');
             $interaccion->seguimiento_pregunta_e = data_get($data, 'seguimiento_pregunta_e');
-            $interaccion->fecha_reentrenamiento = data_get($data, 'fecha_reentrenamiento');
+            $interaccion->fecha_reentrenamiento = $this->fechaDatabase(data_get($data, 'fecha_reentrenamiento'));
             $interaccion->hora_reentrenamiento = data_get($data, 'hora_reentrenamiento');
             $interaccion->lugar_reentrenamiento = data_get($data, 'lugar_reentrenamiento');
+            $interaccion->lugar_reentrenamiento_otro = data_get($data, 'lugar_reentrenamiento_otro');
             $interaccion->razon_contacto_participante = data_get($data, 'razon_contacto_participante');
             $interaccion->razon_contacto_participante_otro = data_get($data, 'razon_contacto_participante_otro');
             $interaccion->contacto_participante_acciones = data_get($data, 'contacto_participante_acciones');
-            $interaccion->nueva_fecha_contacto = !empty($data['nueva_fecha_contacto'])
-                ? implode('-', array_reverse(explode('/', $data['nueva_fecha_contacto'])))
-                : null;
+            $interaccion->nueva_fecha_contacto = $this->fechaDatabase(data_get($data, 'nueva_fecha_contacto'));
             $interaccion->no_adherencia_pregunta_a = data_get($data, 'no_adherencia_pregunta_a');
             $interaccion->no_adherencia_otro = data_get($data, 'no_adherencia_otro');
             $interaccion->no_adherencia_pregunta_b = data_get($data, 'no_adherencia_pregunta_b');
-            $interaccion->no_adherencia_pregunta_c = !empty($data['no_adherencia_pregunta_c'])
-                ? implode('-', array_reverse(explode('/', $data['no_adherencia_pregunta_c'])))
-                : null;
+            $interaccion->no_adherencia_pregunta_c = $this->fechaDatabase(data_get($data, 'no_adherencia_pregunta_c'));
             $interaccion->problemas_conexion_pregunta_a = data_get($data, 'problemas_conexion_pregunta_a');
             $interaccion->problemas_conexion_otro = data_get($data, 'problemas_conexion_otro');
             $interaccion->problemas_conexion_pregunta_b = data_get($data, 'problemas_conexion_pregunta_b');
-            $interaccion->problemas_conexion_pregunta_c = !empty($data['problemas_conexion_pregunta_c'])
-                ? implode('-', array_reverse(explode('/', $data['problemas_conexion_pregunta_c'])))
-                : null;
+            $interaccion->problemas_conexion_pregunta_c = $this->fechaDatabase(data_get($data, 'problemas_conexion_pregunta_c'));
             $interaccion->alerta_clinica_pregunta_a = data_get($data, 'alerta_clinica_pregunta_a');
             $interaccion->alerta_clinica_pregunta_b = data_get($data, 'alerta_clinica_pregunta_b');
             $interaccion->alerta_clinica_pregunta_c = data_get($data, 'alerta_clinica_pregunta_c');
@@ -73,16 +72,15 @@ class InteraccionService
             $interaccion->pedido_ayuda_pregunta_a = data_get($data, 'pedido_ayuda_pregunta_a');
             $interaccion->pedido_ayuda_pregunta_b = data_get($data, 'pedido_ayuda_pregunta_b');
             $interaccion->pedido_ayuda_pregunta_c = data_get($data, 'pedido_ayuda_pregunta_c');
-            $interaccion->pedido_ayuda_pregunta_d = !empty($data['pedido_ayuda_pregunta_d'])
-                ? implode('-', array_reverse(explode('/', $data['pedido_ayuda_pregunta_d'])))
-                : null;
+            $interaccion->pedido_ayuda_pregunta_d = $this->fechaDatabase(data_get($data, 'pedido_ayuda_pregunta_d'));
             $interaccion->save();
 
-            if (
-                $interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado
-                || $interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado
-            ) {
-                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto, data_get($data, 'id_entrenamiento'));
+            if ($interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado) {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->fecha_cita->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
+            }
+
+            if ($interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado) {
+                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
             }
 
             if ($alertaId) {
@@ -129,5 +127,42 @@ class InteraccionService
     private function sumarDias(string $tipo, string $fechaEntrenamiento, int $diasSuma): string
     {
         return date('Y-m-d', strtotime($fechaEntrenamiento . ' +' . $diasSuma . ' days'));
+    }
+
+    private function fechaContacto(array $data): ?string
+    {
+        $fecha = data_get($data, 'fecha');
+
+        if (! $fecha && $this->esCitaRealizada($data)) {
+            $fecha = data_get($data, 'fecha_cita_final');
+        }
+
+        return $this->fechaDatabase($fecha);
+    }
+
+    private function horaContacto(array $data): ?string
+    {
+        $hora = data_get($data, 'hora');
+
+        if (! $hora && $this->esCitaRealizada($data)) {
+            $hora = data_get($data, 'hora_cita_final');
+        }
+
+        return $hora ?: null;
+    }
+
+    private function esCitaRealizada(array $data): bool
+    {
+        return data_get($data, 'contactado')
+            && in_array(data_get($data, 'motivo'), self::MOTIVOS_CITA_REALIZADA, true);
+    }
+
+    private function fechaDatabase(?string $fecha): ?string
+    {
+        if (! $fecha) {
+            return null;
+        }
+
+        return implode('-', array_reverse(explode('/', $fecha)));
     }
 }

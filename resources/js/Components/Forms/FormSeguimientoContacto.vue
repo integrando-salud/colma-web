@@ -1,7 +1,9 @@
 <script setup>
 import { toRef } from 'vue';
-import { MOTIVO_CONTACTO, OPCION_NO, OPCION_SI } from '@/Constants/contacto';
+import { LUGAR_CITA, MOTIVO_CONTACTO, OPCION_NO, OPCION_SI } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
+import MeridiemSelect from '@/Components/Form/MeridiemSelect.vue';
+import Time12Input from '@/Components/Form/Time12Input.vue';
 
 const props = defineProps({
     form: {
@@ -159,36 +161,26 @@ const formContacto = toRef(props, 'form');
                     </label>
                     <div class="col-12 col-sm-8 col-lg-9">
                         <div class="row gx-2">
-                            <div class="col-5 col-md-4">
-                                <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }">
-                                    <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora_reentrenamiento }">
-                                        <i class="fa fa-clock"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        name="contacto_hora_reentrenamiento"
+                            <div class="col-12 d-flex">
+                                <div class="me-2">
+                                    <Time12Input
                                         id="contacto_hora_reentrenamiento"
-                                        class="form-control"
-                                        :class="{ 'is-invalid': formContacto.errors?.hora_reentrenamiento }"
+                                        name="contacto_hora_reentrenamiento"
                                         v-model="formContacto.hora_reentrenamiento_display"
-                                        v-maska="'##:##'"
-                                        data-maska-eager
-                                        placeholder="HH:MM"
+                                        :error="!!formContacto.errors?.hora_reentrenamiento"
+                                    />
+                                    <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_reentrenamiento">
+                                        {{ formContacto.errors.hora_reentrenamiento }}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <MeridiemSelect
+                                        id="contacto_hora_reentrenamiento_meridiano"
+                                        name="contacto_hora_reentrenamiento_meridiano"
+                                        v-model="formContacto.hora_reentrenamiento_meridiano"
                                     />
                                 </div>
-                                <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora_reentrenamiento">
-                                    {{ formContacto.errors.hora_reentrenamiento }}
-                                </div>
-                            </div>
-                            <div class="col-5 col-sm-4 col-md-3 col-xl-2">
-                                <select
-                                    class="form-select"
-                                    v-model="formContacto.hora_reentrenamiento_meridiano"
-                                >
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -196,19 +188,48 @@ const formContacto = toRef(props, 'form');
             </div>
 
             <div class="col-12 mb-2">
-                <label for="contacto_lugar_reentrenamiento" class="form-label me-2">
-                    Lugar re-entrenamiento
-                </label>
-                <input
-                    type="text"
-                    name="contacto_lugar_reentrenamiento"
-                    id="contacto_lugar_reentrenamiento"
-                    class="form-control"
-                    v-model="formContacto.lugar_reentrenamiento"
-                    :class="{ 'is-invalid': formContacto.errors?.lugar_reentrenamiento }"
-                >
-                <div class="invalid-feedback" v-if="formContacto.errors?.lugar_reentrenamiento">
-                    {{ formContacto.errors.lugar_reentrenamiento }}
+                <div class="row">
+                    <label for="contacto_lugar_reentrenamiento" class="col-12 col-sm-4 col-lg-3 col-form-label">
+                        Lugar re-entrenamiento
+                    </label>
+                    <div class="col-12 col-sm-8 col-lg-9">
+                        <select
+                            name="contacto_lugar_reentrenamiento"
+                            id="contacto_lugar_reentrenamiento"
+                            class="form-select"
+                            v-model="formContacto.lugar_reentrenamiento"
+                            :class="{ 'is-invalid': formContacto.errors?.lugar_reentrenamiento }"
+                        >
+                            <option value="">Seleccionar lugar</option>
+                            <option
+                                v-for="lugar in LUGAR_CITA"
+                                :key="lugar"
+                                :value="lugar"
+                            >
+                                {{ lugar }}
+                            </option>
+                        </select>
+                        <div class="invalid-feedback" v-if="formContacto.errors?.lugar_reentrenamiento">
+                            {{ formContacto.errors.lugar_reentrenamiento }}
+                        </div>
+                    </div>
+                    <div
+                        v-if="formContacto.lugar_reentrenamiento === LUGAR_CITA.OTRO"
+                        class="col-12 col-sm-8 col-lg-9 offset-sm-4 offset-lg-3 mt-2"
+                    >
+                        <input
+                            type="text"
+                            name="contacto_lugar_reentrenamiento_otro"
+                            id="contacto_lugar_reentrenamiento_otro"
+                            class="form-control"
+                            placeholder="Escriba el lugar del re-entrenamiento"
+                            :class="{ 'is-invalid': formContacto.errors?.lugar_reentrenamiento_otro }"
+                            v-model="formContacto.lugar_reentrenamiento_otro"
+                        />
+                        <div class="invalid-feedback" v-if="formContacto.errors?.lugar_reentrenamiento_otro">
+                            {{ formContacto.errors.lugar_reentrenamiento_otro }}
+                        </div>
+                    </div>
                 </div>
             </div>
         </template>

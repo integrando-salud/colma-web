@@ -5,18 +5,22 @@ namespace App\Services;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class UsuarioService
 {
     public function queryGetUsuarios(array $filters = [])
     {
-        $query = User::with(['pais', 'centroSalud', 'roles'])
-            ->whereIsNot(['paciente']);
+        $authUser = auth()->user();
 
-        if (auth()->user()->isA('supervisor')) {
-            $query->where('supervisor_id', auth()->user()->id);
-        } elseif (auth()->user()->isA('supervisor_pais')) {
-            $query->where('pais_id', auth()->user()->pais_id)
+        $query = User::with(['pais', 'centroSalud', 'roles'])
+            ->whereIsNot('paciente');
+
+        if ($authUser->isA('supervisor')) {
+            $query->where('supervisor_id', $authUser->id)
+                ->where('pais_id', $authUser->pais_id);
+        } elseif ($authUser->isA('supervisor_pais')) {
+            $query->where('pais_id', $authUser->pais_id)
                 ->whereHas('roles', function ($query) {
                     $query->whereIn('name', [
                         'supervisor',
@@ -31,7 +35,7 @@ class UsuarioService
             });
         }
 
-        if (!empty($filters['pais'])) {
+        if (!empty($filters['pais']) && !$authUser->isA('supervisor') && !$authUser->isA('supervisor_pais')) {
             $query->where('pais_id', $filters['pais']);
         }
 
@@ -135,7 +139,83 @@ class UsuarioService
                     ->orderBy('pacientes_count', $orderDir);
                 break;
             case 'alertas':
-
+                $query->select('users.*')
+                    ->selectRaw(
+                        "CASE
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM assigned_roles ar
+                                INNER JOIN roles r ON r.id = ar.role_id
+                                WHERE ar.entity_id = users.id
+                                  AND ar.entity_type = ?
+                                  AND r.name = 'superusuario'
+                            ) THEN (
+                                SELECT COUNT(*)
+                                FROM alertas a
+                                INNER JOIN pacientes p ON p.id = a.paciente_id
+                                WHERE a.revisado IS NULL
+                                  AND a.deleted_at IS NULL
+                                  AND p.deleted_at IS NULL
+                            )
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM assigned_roles ar
+                                INNER JOIN roles r ON r.id = ar.role_id
+                                WHERE ar.entity_id = users.id
+                                  AND ar.entity_type = ?
+                                  AND r.name = 'supervisor_pais'
+                            ) THEN (
+                                SELECT COUNT(*)
+                                FROM alertas a
+                                INNER JOIN pacientes p ON p.id = a.paciente_id
+                                INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id
+                                WHERE a.revisado IS NULL
+                                  AND a.deleted_at IS NULL
+                                  AND p.deleted_at IS NULL
+                                  AND cs.pais_id = users.pais_id
+                            )
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM assigned_roles ar
+                                INNER JOIN roles r ON r.id = ar.role_id
+                                WHERE ar.entity_id = users.id
+                                  AND ar.entity_type = ?
+                                  AND r.name = 'supervisor'
+                            ) THEN (
+                                SELECT COUNT(*)
+                                FROM alertas a
+                                INNER JOIN pacientes p ON p.id = a.paciente_id
+                                WHERE a.revisado IS NULL
+                                  AND a.deleted_at IS NULL
+                                  AND p.deleted_at IS NULL
+                                  AND p.promotor_id IN (
+                                      SELECT up.id
+                                      FROM users up
+                                      WHERE up.supervisor_id = users.id
+                                        AND up.deleted_at IS NULL
+                                  )
+                            )
+                            WHEN EXISTS (
+                                SELECT 1
+                                FROM assigned_roles ar
+                                INNER JOIN roles r ON r.id = ar.role_id
+                                WHERE ar.entity_id = users.id
+                                  AND ar.entity_type = ?
+                                  AND r.name = 'promotor'
+                            ) THEN (
+                                SELECT COUNT(*)
+                                FROM alertas a
+                                INNER JOIN pacientes p ON p.id = a.paciente_id
+                                WHERE a.revisado IS NULL
+                                  AND a.deleted_at IS NULL
+                                  AND p.deleted_at IS NULL
+                                  AND p.promotor_id = users.id
+                            )
+                            ELSE 0
+                        END AS alertas_count",
+                        [User::class, User::class, User::class, User::class]
+                    )
+                    ->orderBy('alertas_count', $orderDir);
                 break;
             default:
                 $query->orderBy($orderBy, $orderDir);
@@ -147,20 +227,24 @@ class UsuarioService
     public function storeUsuario(array $data): User
     {
         $user = empty($data['id']) ? new User() : User::find($data['id']);
+        $supervisor = ($data['rol'] === 'promotor' && !empty($data['supervisor_id']))
+            ? User::find($data['supervisor_id'])
+            : null;
+
         $user->nombre = $data['nombre'];
         $user->sexo = $data['sexo'];
         $user->documento = $data['documento'];
         $user->email = $data['email'];
-        $user->pais_id = $data['pais_id'];
+        $user->pais_id = $supervisor?->pais_id ?? $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
         $user->supervisor_id = $data['supervisor_id'] ?? null;
 
-        if (empty($data['id'])) {
+        if (empty($data['id']) || !empty($data['password'])) {
             $user->password = $data['password'];
         }
 
         $user->save();
-        $user->assign($data['rol']);
+        Bouncer::sync($user)->roles([$data['rol']]);
 
         return $user;
     }
@@ -313,36 +397,27 @@ class UsuarioService
         $user = User::withTrashed()->find($userId);
 
         if ($user->isA('promotor')) {
-            return $user->pacientes->where('activo', true)->reduce(function ($carry, $paciente) {
-                return $carry + $paciente->alertas->whereNull('revisado')->count();
-            }, 0);
+            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
+                $query->where('pacientes.promotor_id', $user->id);
+            });
         }
 
         if ($user->isA('supervisor')) {
-            return $user->promotores->reduce(function ($carryPromotor, $promotor) {
-                return $carryPromotor + $promotor->pacientes->where('activo', true)->reduce(function ($carryPaciente, $paciente) {
-                    return $carryPaciente + $paciente->alertas->whereNull('revisado')->count();
-                }, 0);
-            }, 0);
+            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
+                $query->whereIn('pacientes.promotor_id', $user->promotores->pluck('id'));
+            });
         }
 
         if ($user->isA('supervisor_pais')) {
-            return Paciente::where('activo', true)
-                ->whereHas('centroSalud', function ($query) use ($user) {
+            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
+                $query->whereHas('centroSalud', function ($query) use ($user) {
                     $query->where('pais_id', $user->pais_id);
-                })
-                ->get()
-                ->reduce(function ($carry, $paciente) {
-                    return $carry + $paciente->alertas->whereNull('revisado')->count();
-                }, 0);
+                });
+            });
         }
 
         if ($user->isA('superusuario')) {
-            return Paciente::where('activo', true)
-                ->get()
-                ->reduce(function ($carry, $paciente) {
-                    return $carry + $paciente->alertas->whereNull('revisado')->count();
-                }, 0);
+            return $this->countAlertasPacientes();
         }
 
         return 0;
@@ -424,5 +499,19 @@ class UsuarioService
                 });
             });
         });
+    }
+
+    private function countAlertasPacientes(?callable $callback = null): int
+    {
+        $query = Paciente::query()
+            ->join('alertas', 'alertas.paciente_id', '=', 'pacientes.id')
+            ->whereNull('alertas.revisado')
+            ->whereNull('alertas.deleted_at');
+
+        if ($callback) {
+            $callback($query);
+        }
+
+        return $query->count('alertas.id');
     }
 }
