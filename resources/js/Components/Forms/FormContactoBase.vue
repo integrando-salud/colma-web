@@ -2,6 +2,8 @@
 import { toRef } from 'vue';
 import { MODALIDAD, MOTIVO_CONTACTO } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
+import MeridiemSelect from '@/Components/Form/MeridiemSelect.vue';
+import Time12Input from '@/Components/Form/Time12Input.vue';
 
 const props = defineProps({
     form: {
@@ -121,36 +123,26 @@ const formContacto = toRef(props, 'form');
             </label>
             <div class="col-12 col-sm-8 col-lg-9">
                 <div class="row gx-2">
-                    <div class="col-5 col-md-4">
-                        <div class="input-group" :class="{ 'is-invalid': formContacto.errors?.hora }">
-                            <span class="input-group-text" :class="{ 'border-danger': formContacto.errors?.hora }">
-                                <i class="fa fa-clock"></i>
-                            </span>
-                            <input
-                                type="text"
-                                inputmode="numeric"
-                                name="contacto_hora"
+                    <div class="col-12 d-flex">
+                        <div class="me-2">
+                            <Time12Input
                                 id="contacto_hora"
-                                class="form-control"
-                                :class="{ 'is-invalid': formContacto.errors?.hora }"
+                                name="contacto_hora"
                                 v-model="formContacto.hora_display"
-                                v-maska="'##:##'"
-                                data-maska-eager
-                                placeholder="HH:MM"
+                                :error="!!formContacto.errors?.hora"
+                            />
+                            <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
+                                {{ formContacto.errors.hora }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <MeridiemSelect
+                                id="contacto_hora_meridiano"
+                                name="contacto_hora_meridiano"
+                                v-model="formContacto.hora_meridiano"
                             />
                         </div>
-                        <div class="invalid-feedback d-block" v-if="formContacto.errors?.hora">
-                            {{ formContacto.errors.hora }}
-                        </div>
-                    </div>
-                    <div class="col-5 col-sm-4 col-md-3 col-xl-2">
-                        <select
-                            class="form-select"
-                            v-model="formContacto.hora_meridiano"
-                        >
-                            <option value="AM">AM</option>
-                            <option value="PM">PM</option>
-                        </select>
                     </div>
                 </div>
             </div>

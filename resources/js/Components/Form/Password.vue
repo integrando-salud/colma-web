@@ -13,6 +13,14 @@ defineProps({
         type: Boolean,
         default: false
     },
+    autocomplete: {
+        type: String,
+        default: 'current-password'
+    },
+    placeholder: {
+        type: String,
+        default: ''
+    },
     wAuto: {
         type: Boolean,
         default: false
@@ -29,8 +37,8 @@ const toggle = () => {
 
 <template>
     <div class="input-group" :class="{ 'has-validation': error, 'w-auto': wAuto }">
-        <input :type :id :name class="form-control" :class="{ 'is-invalid': error, 'w-auto': wAuto }" v-model="model" :readonly :disabled />
-        <button type="button" class="btn" @click="toggle">
+        <input :type :id :name class="form-control" :class="{ 'is-invalid': error, 'w-auto': wAuto }" v-model="model" :readonly :disabled :autocomplete :placeholder />
+        <button type="button" class="btn" @click="toggle" :disabled>
             <i class="fa" :class="{
                 'fa-eye': type === 'password',
                 'fa-eye-slash': type === 'text'

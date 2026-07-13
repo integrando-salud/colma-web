@@ -28,8 +28,10 @@ export const FORM_CONTACTO = {
     seguimiento_pregunta_e: '',
     fecha_reentrenamiento: null,
     hora_reentrenamiento: null,
+    hora_reentrenamiento_display: null,
     hora_reentrenamiento_meridiano: 'AM',
-    lugar_reentrenamiento: null,
+    lugar_reentrenamiento: '',
+    lugar_reentrenamiento_otro: null,
     razon_contacto_participante: '',
     razon_contacto_participante_otro: null,
     contacto_participante_acciones: null,
@@ -104,7 +106,7 @@ export const TIPO_ALERTA = {
 
 export const ALERTA_DESCRIPCION = {
     PROBLEMAS_CONEXION: 'Problemas de conexión',
-    NO_SE_CONECTA: 'No se conecta',
+    NO_SE_CONECTA: 'No completa las sesiones',
     PEDIDO_AYUDA: 'Pedido de ayuda',
 };
 

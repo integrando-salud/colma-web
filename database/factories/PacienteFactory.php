@@ -10,6 +10,7 @@ use App\Models\PresionArterial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Silber\Bouncer\BouncerFacade as Bouncer;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Paciente>
@@ -59,7 +60,7 @@ class PacienteFactory extends Factory
                 'documento' => $paciente->documento,
                 'email' => $paciente->email,
             ]);
-            $user->assign(User::ROL_PACIENTE);
+            Bouncer::sync($user)->roles([User::ROL_PACIENTE]);
 
             $paciente->update(['user_id' => $user->id]);
 
@@ -144,7 +145,7 @@ class PacienteFactory extends Factory
                         'entidad_id' => null,
                         'entidad_tipo' => null,
                         'descripcion' => fake()->randomElement([
-                            'No se conecta',
+                            'No completa las sesiones',
                             'Problemas de conexión',
                             'Pedido de ayuda',
                         ]),

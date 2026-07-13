@@ -9,13 +9,15 @@ use App\Http\Controllers\Dashboard\UsuarioController;
 use App\Http\Middleware\ProhibirPromotoresPeru;
 use Illuminate\Support\Facades\Route;
 
-Route::get('ingresar', [LoginController::class, 'index'])
-    ->name('dashboard.login');
-Route::post('ingresar', [LoginController::class, 'login']);
-Route::get('salir', [LoginController::class, 'logout'])
-    ->name('dashboard.logout');
-
+Route::middleware('guest')->group(function () {
+    Route::get('ingresar', [LoginController::class, 'index'])
+        ->name('dashboard.login');
+    Route::post('ingresar', [LoginController::class, 'login']);
+});
 Route::middleware('auth')->group(function () {
+    Route::post('salir', [LoginController::class, 'logout'])
+        ->name('dashboard.logout');
+
     Route::get('/', [IndexController::class, 'showIndex'])
         ->name('dashboard.index');
 
