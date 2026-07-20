@@ -17,7 +17,7 @@ class PacienteResource extends JsonResource
     public function toArray(Request $request): array
     {
         $pacienteService = new PacienteService();
-        $registros = $pacienteService->getDatosClinicos($this->id, 2);
+        $registros = $pacienteService->getDatosClinicos($this->id, 2)->items();
         $fechaProximoContacto = $pacienteService->getFechaProximoContacto($this->resource);
         $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
         $diasPostFechaProximoContacto = (int) $fechaProximoContacto?->diffInDays(now()) ?? 0;

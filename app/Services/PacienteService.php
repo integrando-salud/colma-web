@@ -7,6 +7,7 @@ use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -240,87 +241,39 @@ class PacienteService
             $paciente = Paciente::find($paciente);
         }
 
-        if (!$fechaDesde) {
-            $fechaDesde = $paciente->fecha_enrolamiento;
-        }
+        $fechaDesde = $fechaDesde
+            ? Carbon::createFromFormat('d/m/Y', $fechaDesde)->startOfDay()
+            : $paciente->fecha_enrolamiento->copy()->startOfDay();
+        $fechaHasta = $fechaHasta
+            ? Carbon::createFromFormat('d/m/Y', $fechaHasta)->endOfDay()
+            : now();
 
-        if (!$fechaHasta) {
-            $fechaHasta = now();
-        }
+        $glucosa = DB::table('glucosa')
+            ->selectRaw("id, fecha_registro, valor_mgdl AS glucosa_valor, ayuno AS glucosa_ayuno,
+                NULL AS presion_sistolica, NULL AS presion_diastolica, 'glucosa' AS tipo")
+            ->where('paciente_id', $paciente->id)
+            ->whereBetween('fecha_registro', [$fechaDesde, $fechaHasta]);
 
-        $cantidad = (int) $cantidad;
+        $presion = DB::table('presion_arterial')
+            ->selectRaw("id, fecha_registro, NULL AS glucosa_valor, NULL AS glucosa_ayuno,
+                presion_sistolica, presion_diastolica, 'presion' AS tipo")
+            ->where('paciente_id', $paciente->id)
+            ->whereBetween('fecha_registro', [$fechaDesde, $fechaHasta]);
 
-        return DB::select("
-            WITH fecha_base AS (
-                SELECT DATE(fecha_registro) AS fecha
-                FROM glucosa
-                WHERE paciente_id = :paciente_id_fechas_glucosa
-                    AND fecha_registro BETWEEN :fecha_inicio_fechas_glucosa AND :fecha_fin_fechas_glucosa
+        $registros = DB::query()
+            ->fromSub($glucosa->unionAll($presion), 'registros')
+            ->selectRaw("DATE_FORMAT(fecha_registro, '%d/%m/%Y %H:%i') AS fecha,
+                glucosa_valor, glucosa_ayuno, presion_sistolica, presion_diastolica")
+            ->orderByDesc('fecha_registro')
+            ->orderByDesc('tipo')
+            ->orderByDesc('id')
+            ->paginate((int) $cantidad);
 
-                UNION
+        $registros->setCollection(
+            $registros->getCollection()->map(fn (object $registro) => (array) $registro)
+        );
 
-                SELECT DATE(fecha_registro) AS fecha
-                FROM presion_arterial
-                WHERE paciente_id = :paciente_id_fechas_presion
-                    AND fecha_registro BETWEEN :fecha_inicio_fechas_presion AND :fecha_fin_fechas_presion
-            ),
-            fechas AS (
-                SELECT fecha
-                FROM fecha_base
-                GROUP BY fecha
-                ORDER BY fecha DESC
-                LIMIT $cantidad
-            ),
-            ult_glucosa AS (
-                SELECT * FROM (
-                    SELECT
-                        id, paciente_id, valor_mgdl, ayuno,
-                        DATE(fecha_registro) AS fecha,
-                        fecha_registro,
-                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
-                    FROM glucosa
-                    WHERE paciente_id = :paciente_id_ultima_glucosa
-                        AND fecha_registro BETWEEN :fecha_inicio_ultima_glucosa AND :fecha_fin_ultima_glucosa
-                ) t
-                WHERE rn = 1
-            ),
-            ult_presion AS (
-                SELECT * FROM (
-                    SELECT
-                        id, paciente_id, presion_sistolica, presion_diastolica,
-                        DATE(fecha_registro) AS fecha,
-                        fecha_registro,
-                        ROW_NUMBER() OVER (PARTITION BY DATE(fecha_registro) ORDER BY fecha_registro DESC) AS rn
-                    FROM presion_arterial
-                    WHERE paciente_id = :paciente_id_ultima_presion
-                      AND fecha_registro BETWEEN :fecha_inicio_ultima_presion AND :fecha_fin_ultima_presion
-                ) t
-                WHERE rn = 1
-            )
-            SELECT
-                DATE_FORMAT(f.fecha, '%d/%m/%Y') AS fecha,
-                g.valor_mgdl AS glucosa_valor,
-                g.ayuno AS glucosa_ayuno,
-                p.presion_sistolica,
-                p.presion_diastolica
-            FROM fechas f
-            LEFT JOIN ult_glucosa g ON g.fecha = f.fecha
-            LEFT JOIN ult_presion p ON p.fecha = f.fecha
-            ORDER BY f.fecha ASC
-        ", [
-            'paciente_id_fechas_glucosa' => $paciente->id,
-            'fecha_inicio_fechas_glucosa' => $fechaDesde,
-            'fecha_fin_fechas_glucosa' => $fechaHasta,
-            'paciente_id_fechas_presion' => $paciente->id,
-            'fecha_inicio_fechas_presion' => $fechaDesde,
-            'fecha_fin_fechas_presion' => $fechaHasta,
-            'paciente_id_ultima_glucosa' => $paciente->id,
-            'fecha_inicio_ultima_glucosa' => $fechaDesde,
-            'fecha_fin_ultima_glucosa' => $fechaHasta,
-            'paciente_id_ultima_presion' => $paciente->id,
-            'fecha_inicio_ultima_presion' => $fechaDesde,
-            'fecha_fin_ultima_presion' => $fechaHasta,
-        ]);
+        return $registros;
     }
 
     public function cambiarEstado(Paciente $paciente): bool
