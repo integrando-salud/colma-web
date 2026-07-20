@@ -27,7 +27,6 @@ class Paciente extends Model
         'centro_salud_id',
         'promotor_id',
         'fecha_enrolamiento',
-        'paquete_id',
         'activo',
         'fecha_ultima_sincronizacion',
         'fecha_primer_login_app',
@@ -57,11 +56,6 @@ class Paciente extends Model
     public function promotor()
     {
         return $this->belongsTo(User::class, 'promotor_id');
-    }
-
-    public function paquete()
-    {
-        return $this->belongsTo(Paquete::class);
     }
 
     public function diagnosticos()

@@ -74,8 +74,6 @@ Route::middleware('auth')->group(function () {
             ->name('ajax.usuarios.get');
         Route::get('diagnosticos', [AjaxController::class, 'getDiagnosticos'])
             ->name('ajax.diagnosticos.get');
-        Route::get('paquetes', [AjaxController::class, 'getPaquetes'])
-            ->name('ajax.paquetes.get');
 
         Route::get('{usuario}/contar-pacientes-activos', [AjaxController::class, 'contarPacientesActivos'])
             ->name('ajax.usuario.contarPacientesActivos');
