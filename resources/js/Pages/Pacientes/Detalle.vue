@@ -40,6 +40,10 @@ const props = defineProps({
     datosClinicos: {
         type: Object,
         default: () => [],
+    },
+    filtrosDatosClinicos: {
+        type: Object,
+        default: () => ({}),
     }
 });
 
@@ -209,7 +213,7 @@ const hideModalConfirmar = () => {
                             <FormDatosPaciente ref="formPaciente" :paciente />
                         </template>
                         <template v-else-if="step === 'datos-clinicos'">
-                            <DatosClinicos :datos-clinicos />
+                            <DatosClinicos :datos-clinicos :id-paciente="paciente.id" :filtros="filtrosDatosClinicos" />
                         </template>
                         <template v-else-if="step === 'alertas'">
                             <AlertasPendientes :alertas="alertasPendientes" />
