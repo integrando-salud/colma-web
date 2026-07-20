@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\DatosClinicos\FilterDatosClinicosRequest;
 use App\Http\Requests\Dashboard\Paciente\FilterPacienteRequest;
 use App\Http\Requests\Dashboard\Paciente\StorePacienteRequest;
 use App\Http\Resources\Dashboard\AlertaResource;
@@ -14,6 +15,7 @@ use App\Models\Paciente;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Throwable;
@@ -160,14 +162,19 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function datosClinicos(Request $request, Paciente $paciente, PacienteService $pacienteService)
+    public function datosClinicos(FilterDatosClinicosRequest $request, Paciente $paciente, PacienteService $pacienteService)
     {
-        $registros = $pacienteService->getDatosClinicos($paciente, 10, $request->desde ?? null, $request->hasta ?? null);
+        $filtros = $request->validated();
+
+        $registros = $pacienteService
+            ->getDatosClinicos($paciente, 10, $filtros['desde'] ?? null, $filtros['hasta'] ?? null)
+            ->withQueryString();
 
         return Inertia::render('Pacientes/Detalle', [
             'paciente' => new PacienteResource($paciente),
             'step' => 'datos-clinicos',
-            'datosClinicos' => $registros
+            'datosClinicos' => JsonResource::collection($registros),
+            'filtrosDatosClinicos' => $filtros,
         ]);
     }
 }
