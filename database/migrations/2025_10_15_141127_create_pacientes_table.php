@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\CentroSalud;
-use App\Models\Paquete;
 use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -41,11 +40,6 @@ return new class extends Migration {
                 ->onUpdate('cascade')
                 ->onDelete('set null');
             $table->date('fecha_enrolamiento');
-            $table->foreignIdFor(Paquete::class, 'paquete_id')
-                ->nullable()
-                ->constrained()
-                ->onUpdate('cascade')
-                ->onDelete('set null');
             $table->boolean('activo')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -61,7 +55,6 @@ return new class extends Migration {
             $table->dropForeign(['user_id']);
             $table->dropForeign(['centro_salud_id']);
             $table->dropForeign(['promotor_id']);
-            $table->dropForeign(['paquete_id']);
         });
 
         Schema::dropIfExists('pacientes');

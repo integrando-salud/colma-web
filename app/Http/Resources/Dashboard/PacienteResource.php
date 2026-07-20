@@ -47,7 +47,6 @@ class PacienteResource extends JsonResource
             'fecha_enrolamiento' => $this->fecha_enrolamiento->format('Y-m-d'),
             'fecha_enrolamiento_format' => $this->fecha_enrolamiento->format('d/m/Y'),
             'diagnosticos' => DiagnosticoResource::collection($this->diagnosticos),
-            'paquete' => new PaqueteResource($this->paquete),
             'usuario' => new UserResource($this->usuario),
             'sesiones' => [
                 'total' => 5,

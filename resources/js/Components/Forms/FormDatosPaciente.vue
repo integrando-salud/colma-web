@@ -19,11 +19,9 @@ const formPaciente = useForm(structuredClone(FORM_PACIENTE));
 const centrosSalud = ref([]);
 const promotores = ref([]);
 const diagnosticos = ref([]);
-const paquetes = ref([]);
 const cargandoCentrosSalud = ref(false);
 const cargandoPromotores = ref(false);
 const cargandoDiagnosticos = ref(false);
-const cargandoPaquetes = ref(false);
 const blockSelectPromotor = ref(false);
 
 const soloLectura = computed(() => {
@@ -108,26 +106,6 @@ const getDiagnosticos = async () => {
     }
 };
 
-const getPaquetes = async () => {
-    cargandoPaquetes.value = true;
-
-    try {
-        const response = await axios.get(route('ajax.paquetes.get'), {
-            params: {
-                activo: 1,
-                orderBy: 'nombre',
-                orderDir: 'asc',
-            }
-        });
-
-        paquetes.value = response.data;
-    } catch (error) {
-        notification.errorNotification('Error al obtener los paquetes.');
-    } finally {
-        cargandoPaquetes.value = false;
-    }
-};
-
 const fillDataPaciente = () => {
     formPaciente.id = props.paciente.id;
     formPaciente.id_externo = props.paciente.id_externo;
@@ -146,7 +124,6 @@ const fillDataPaciente = () => {
     formPaciente.promotor_id = props.paciente.promotor.id;
     formPaciente.fecha_enrolamiento = props.paciente.fecha_enrolamiento_format;
     formPaciente.diagnosticos = props.paciente.diagnosticos.map(diagnostico => diagnostico.id);
-    // formPaciente.paquete_id = formPaciente.paquete?.id;
 };
 
 defineExpose({ submit });
@@ -155,7 +132,6 @@ onMounted(async () => {
     await getCentrosSalud();
     await getPromotores();
     await getDiagnosticos();
-    await getPaquetes();
 
     if (props.paciente) {
         fillDataPaciente();
@@ -501,29 +477,6 @@ camposSoloLetras.forEach(campo => {
                         </div>
                     </div>
                 </div>
-<!--                <div class="col-12 col-md-6 col-lg-4 mb-sm-3">-->
-<!--                    <div class="row">-->
-<!--                        <label for="paciente_paquete" class="col-12 col-sm-4 col-xl-4 col-form-label">Paquete asignado</label>-->
-<!--                        <div class="col-12 col-sm-8 col-xl-6">-->
-<!--                            <select-->
-<!--                                name="paciente_paquete"-->
-<!--                                id="paciente_paquete"-->
-<!--                                class="form-select"-->
-<!--                                :class="{ 'is-invalid': formPaciente.errors.paquete_id }"-->
-<!--                                v-model="formPaciente.paquete_id"-->
-<!--                                :disabled="cargandoPaquetes || soloLectura"-->
-<!--                            >-->
-<!--                                <option value="">Seleccionar</option>-->
-<!--                                <option v-for="paquete in paquetes" :key="paquete.id" :value="paquete.id">-->
-<!--                                    {{ paquete.nombre }}-->
-<!--                                </option>-->
-<!--                            </select>-->
-<!--                            <div class="invalid-feedback" v-if="formPaciente.errors?.paquete_id">-->
-<!--                                {{ formPaciente.errors.paquete_id }}-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
             </div>
         </div>
         <template v-if="verUsuarioPassword">
