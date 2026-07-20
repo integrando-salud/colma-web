@@ -12,9 +12,24 @@ class UsuarioService
     public function queryGetUsuarios(array $filters = [])
     {
         $authUser = auth()->user();
+        $forSelector = (bool) data_get($filters, 'forSelector', false);
+        $withoutPais = (bool) data_get($filters, 'withoutPais', false);
+        $relations = $forSelector
+            ? ['pais', 'centroSalud']
+            : ['pais', 'centroSalud', 'roles', 'supervisor'];
 
-        $query = User::with(['pais', 'centroSalud', 'roles'])
+        if ($withoutPais) {
+            $relations = array_values(array_diff($relations, ['pais']));
+        }
+
+        $query = User::query()
+            ->select('users.*')
+            ->with($relations)
             ->whereIsNot('paciente');
+
+        if (!$forSelector) {
+            $this->addDashboardCounts($query);
+        }
 
         if ($authUser->isA('supervisor')) {
             $query->where('supervisor_id', $authUser->id)
@@ -48,8 +63,7 @@ class UsuarioService
 
         switch ($orderBy) {
             case 'tipo':
-                $query->select('users.*')
-                    ->leftJoin('assigned_roles', function ($join) {
+                $query->leftJoin('assigned_roles', function ($join) {
                         $join->on('users.id', '=', 'assigned_roles.entity_id')
                             ->where('assigned_roles.entity_type', '=', User::class);
                     })
@@ -57,171 +71,46 @@ class UsuarioService
                     ->orderBy('roles.title', $orderDir);
                 break;
             case 'pais':
-                $query->select('users.*')
-                    ->leftJoin('paises', 'paises.id', '=', 'users.pais_id')
+                $query->leftJoin('paises', 'paises.id', '=', 'users.pais_id')
                     ->orderBy('paises.nombre', $orderDir);
                 break;
             case 'centro_salud':
-                $query->select('users.*')
-                    ->leftJoin('centros_salud', 'centros_salud.id', '=', 'users.centro_salud_id')
+                $query->leftJoin('centros_salud', 'centros_salud.id', '=', 'users.centro_salud_id')
                     ->orderBy('centros_salud.nombre', $orderDir);
                 break;
             case 'supervisor':
-                $query->select('users.*')
-                    ->leftJoin('users as supervisors', 'supervisors.id', '=', 'users.supervisor_id')
+                $query->leftJoin('users as supervisors', 'supervisors.id', '=', 'users.supervisor_id')
                     ->orderBy('supervisors.nombre', $orderDir);
                 break;
             case 'pacientes':
-                $query->select('users.*')
-                    ->selectRaw(
-                        "CASE
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'superusuario'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM pacientes p
-                                WHERE p.deleted_at IS NULL
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'supervisor_pais'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM pacientes p
-                                INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id
-                                WHERE p.deleted_at IS NULL
-                                  AND cs.pais_id = users.pais_id
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'supervisor'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM pacientes p
-                                WHERE p.deleted_at IS NULL
-                                  AND p.promotor_id IN (
-                                      SELECT up.id
-                                      FROM users up
-                                      WHERE up.supervisor_id = users.id
-                                        AND up.deleted_at IS NULL
-                                  )
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'promotor'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM pacientes p
-                                WHERE p.deleted_at IS NULL
-                                  AND p.promotor_id = users.id
-                            )
-                            ELSE 0
-                        END AS pacientes_count",
-                        [User::class, User::class, User::class, User::class]
-                    )
-                    ->orderBy('pacientes_count', $orderDir);
+                $query->orderBy('pacientes_count', $orderDir);
                 break;
             case 'alertas':
-                $query->select('users.*')
-                    ->selectRaw(
-                        "CASE
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'superusuario'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM alertas a
-                                INNER JOIN pacientes p ON p.id = a.paciente_id
-                                WHERE a.revisado IS NULL
-                                  AND a.deleted_at IS NULL
-                                  AND p.deleted_at IS NULL
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'supervisor_pais'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM alertas a
-                                INNER JOIN pacientes p ON p.id = a.paciente_id
-                                INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id
-                                WHERE a.revisado IS NULL
-                                  AND a.deleted_at IS NULL
-                                  AND p.deleted_at IS NULL
-                                  AND cs.pais_id = users.pais_id
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'supervisor'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM alertas a
-                                INNER JOIN pacientes p ON p.id = a.paciente_id
-                                WHERE a.revisado IS NULL
-                                  AND a.deleted_at IS NULL
-                                  AND p.deleted_at IS NULL
-                                  AND p.promotor_id IN (
-                                      SELECT up.id
-                                      FROM users up
-                                      WHERE up.supervisor_id = users.id
-                                        AND up.deleted_at IS NULL
-                                  )
-                            )
-                            WHEN EXISTS (
-                                SELECT 1
-                                FROM assigned_roles ar
-                                INNER JOIN roles r ON r.id = ar.role_id
-                                WHERE ar.entity_id = users.id
-                                  AND ar.entity_type = ?
-                                  AND r.name = 'promotor'
-                            ) THEN (
-                                SELECT COUNT(*)
-                                FROM alertas a
-                                INNER JOIN pacientes p ON p.id = a.paciente_id
-                                WHERE a.revisado IS NULL
-                                  AND a.deleted_at IS NULL
-                                  AND p.deleted_at IS NULL
-                                  AND p.promotor_id = users.id
-                            )
-                            ELSE 0
-                        END AS alertas_count",
-                        [User::class, User::class, User::class, User::class]
-                    )
-                    ->orderBy('alertas_count', $orderDir);
+                $query->orderBy('alertas_count', $orderDir);
                 break;
             default:
                 $query->orderBy($orderBy, $orderDir);
         }
 
         return $query;
+    }
+
+    private function addDashboardCounts(Builder $query): void
+    {
+        $roles = [User::class, User::class, User::class, User::class];
+
+        $query->selectRaw("CASE
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM pacientes p INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE p.deleted_at IS NULL AND cs.pais_id = users.pais_id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.promotor_id = users.id)
+            ELSE 0 END AS pacientes_count", $roles)
+            ->selectRaw("CASE
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND cs.pais_id = users.pais_id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.promotor_id = users.id)
+            ELSE 0 END AS alertas_count", $roles);
     }
 
     public function storeUsuario(array $data): User
