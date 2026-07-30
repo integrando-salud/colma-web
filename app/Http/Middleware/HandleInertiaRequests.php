@@ -41,7 +41,14 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'success' => session('success'),
             'error' => session('error'),
-            'usuario' => auth()->check() ? new UserResource(auth()->user()) : null,
+            'usuario' => fn () => auth()->check()
+                ? new UserResource(auth()->user()->loadMissing([
+                    'pais',
+                    'centroSalud',
+                    'roles',
+                    'supervisor',
+                ]))
+                : null,
             'app' => [
                 'nombre' => config('app.name'),
                 'logo' => asset(Storage::url('logo.webp')),
