@@ -21,6 +21,7 @@ class MultimediaRead extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
         'fecha_registro' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
     ];

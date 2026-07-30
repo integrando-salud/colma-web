@@ -23,6 +23,9 @@ class PresionArterial extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
+        'presion_sistolica' => 'integer',
+        'presion_diastolica' => 'integer',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',

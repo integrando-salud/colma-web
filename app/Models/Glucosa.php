@@ -23,6 +23,8 @@ class Glucosa extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
+        'valor_mgdl' => 'integer',
         'ayuno' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',

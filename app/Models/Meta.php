@@ -25,6 +25,7 @@ class Meta extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
         'meta_cumplida' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',

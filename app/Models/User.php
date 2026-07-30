@@ -60,6 +60,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'accesos' => 'integer',
             'password' => 'hashed',
             'ultimo_acceso' => 'datetime',
         ];
