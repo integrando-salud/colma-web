@@ -5,6 +5,7 @@ import { useNotificationStore } from "@/Stores/notification";
 
 const page = usePage();
 const pacientesActivos = ref(0);
+const pacientes = ref(0);
 const pacientesConAlertas = ref(0);
 const contactosPendientes = ref(0);
 const notification = useNotificationStore();
@@ -18,6 +19,18 @@ const countPacientesActivos = async () => {
         pacientesActivos.value = data.pacientes_activos;
     } catch (error) {
         notification.errorNotification('Error al contar los pacientes activos');
+    }
+};
+
+const countPacientes = async () => {
+    try {
+        const { data } = await axios.get(route('ajax.usuario.contarPacientes', {
+            usuario: page.props.usuario.id
+        }));
+
+        pacientes.value = data.pacientes;
+    } catch (error) {
+        notification.errorNotification('Error al contar los pacientes');
     }
 };
 
@@ -46,6 +59,7 @@ const countContactosPendientes = async () => {
 };
 
 onMounted(async () => {
+    await countPacientes();
     await countPacientesActivos();
     await countPacientesConAlertas();
     await countContactosPendientes();
@@ -60,7 +74,7 @@ onMounted(async () => {
                 <div class="row">
                     <div class="col-12 col-sm-4 col-md-4 mb-3 mb-md-0 text-center">
                         <div class="fs-1 fw-semibold">
-                            {{ pacientesActivos }}/{{ $page.props.usuario.numero_pacientes }}
+                            {{ pacientesActivos }}/{{ pacientes }}
                         </div>
                         <div>pacientes activos</div>
                     </div>

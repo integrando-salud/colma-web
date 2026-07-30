@@ -21,6 +21,9 @@ class CuestionarioPregunta extends Model
     ];
 
     protected $casts = [
+        'pregunta_index' => 'integer',
+        'respuesta_usuario' => 'integer',
+        'respuesta_correcta' => 'integer',
         'es_correcta' => 'boolean',
         'respuestas_posibles' => 'array',
     ];

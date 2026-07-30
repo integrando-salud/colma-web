@@ -77,6 +77,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('{usuario}/contar-pacientes-activos', [AjaxController::class, 'contarPacientesActivos'])
             ->name('ajax.usuario.contarPacientesActivos');
+        Route::get('{usuario}/contar-pacientes', [AjaxController::class, 'contarPacientes'])
+            ->name('ajax.usuario.contarPacientes');
         Route::get('{usuario}/contar-pacientes-con-alertas-pendientes', [AjaxController::class, 'contarPacientesConAlertasPendientes'])
             ->name('ajax.usuario.contarPacientesConAlertasPendientes');
         Route::get('{usuario}/contar-contactos-pendientes', [AjaxController::class, 'contarContactosPendientes'])

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Dashboard\Interacciones;
 
+use App\Enums\MotivoInteraccion;
+use App\Enums\MotivoReprogramacion;
 use App\Models\Interaccion;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,14 +34,14 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'date_format:d/m/Y',
                 Rule::requiredIf(function () {
-                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
             ],
             'hora' => [
                 'nullable',
                 'date_format:H:i',
                 Rule::requiredIf(function () {
-                    return !$this->input('contactado') || !in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                    return !$this->input('contactado') || !in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
             ],
             'modalidad' => [
@@ -48,7 +50,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'motivo' => [
                 'required',
-                'in:' . implode(',', array_merge(Interaccion::MOTIVOS_CONTACTO, Interaccion::MOTIVOS_CONTACTO_ALERTA))
+                Rule::enum(MotivoInteraccion::class),
             ],
             'observaciones' => [
                 'nullable',
@@ -56,7 +58,7 @@ class StoreInteraccionRequest extends FormRequest
             ],
             'motivo_reprogramacion' => [
                 'nullable',
-                'in:' . implode(',', Interaccion::MOTIVOS_REPROGRAMACION),
+                Rule::enum(MotivoReprogramacion::class),
                 'required_if:contactado,0'
             ],
             'nueva_fecha_contacto' => [
@@ -68,14 +70,14 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'date_format:d/m/Y',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value, MotivoInteraccion::AGENDAR_CITA_FINAL->value]);
                 })
             ],
             'lugar_cita' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value, MotivoInteraccion::AGENDAR_CITA_FINAL->value]);
                 })
             ],
             'lugar_cita_otro' => [
@@ -89,28 +91,28 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'date_format:H:i',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Agendar cita de entrenamiento', 'Agendar cita final']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value, MotivoInteraccion::AGENDAR_CITA_FINAL->value]);
                 })
             ],
             'fecha_cita_final' => [
                 'nullable',
                 'date_format:d/m/Y',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
             ],
             'hora_cita_final' => [
                 'nullable',
                 'date_format:H:i',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Cita de entrenamiento', 'Cita final', 'Re-entrenamiento']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
             ],
             'seguimiento_pregunta_a' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && in_array($this->input('motivo'), ['Seguimiento 2 semanas luego del entrenamiento', 'Seguimiento mensual']);
+                    return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS->value, MotivoInteraccion::SEGUIMIENTO_MENSUAL->value]);
                 })
             ],
             'seguimiento_pregunta_b' => [
@@ -173,7 +175,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Contacto iniciado por el participante';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::CONTACTO_INICIADO_POR_PARTICIPANTE->value;
                 })
             ],
             'razon_contacto_participante_otro' => [
@@ -187,14 +189,14 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Contacto iniciado por el participante';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::CONTACTO_INICIADO_POR_PARTICIPANTE->value;
                 })
             ],
             'no_adherencia_pregunta_a' => [
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'No completa las sesiones';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::NO_COMPLETA_SESIONES->value;
                 })
             ],
             'no_adherencia_otro' => [
@@ -208,7 +210,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'No completa las sesiones' && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::NO_COMPLETA_SESIONES->value && !in_array('Ya no quiere participar en el proyecto', $this->input('no_adherencia_pregunta_a', []));
                 })
             ],
             'no_adherencia_pregunta_c' => [
@@ -222,7 +224,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Problemas de conexión';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::PROBLEMAS_CONEXION->value;
                 })
             ],
             'problemas_conexion_otro' => [
@@ -236,7 +238,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Problemas de conexión';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::PROBLEMAS_CONEXION->value;
                 })
             ],
             'problemas_conexion_pregunta_c' => [
@@ -250,7 +252,7 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Alerta clínica';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::ALERTA_CLINICA->value;
                 })
             ],
             'alerta_clinica_pregunta_b' => [
@@ -292,21 +294,21 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 'array',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda';
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::PEDIDO_AYUDA->value;
                 })
             ],
             'pedido_ayuda_pregunta_b' => [
                 'nullable',
                 'string',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::PEDIDO_AYUDA->value && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_c' => [
                 'nullable',
                 'in:Si,No',
                 Rule::requiredIf(function () {
-                    return $this->input('contactado') && $this->input('motivo') === 'Pedido de ayuda' && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
+                    return $this->input('contactado') && $this->input('motivo') === MotivoInteraccion::PEDIDO_AYUDA->value && !in_array('Ya no quiere participar en el proyecto', $this->input('pedido_ayuda_pregunta_a', []));
                 })
             ],
             'pedido_ayuda_pregunta_d' => [

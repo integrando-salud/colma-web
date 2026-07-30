@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\MotivoInteraccion;
+use App\Enums\MotivoReprogramacion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -12,47 +14,6 @@ class Interaccion extends Model
     public const MODALIDADES = [
         'Llamada por teléfono / WhatsApp',
         'Encuentro presencial / en persona',
-    ];
-
-    public const MOTIVOS_REPROGRAMACION = [
-        'No responde',
-        'Teléfono apagado',
-        'Número equivocado / cambió de número',
-        'Pidió que se le llame en otro momento',
-        'No hay nadie en el domicilio',
-        'No se encuentra en el domicilio',
-        'Se mudó',
-        'Domicilio equivocado / dirección no existe',
-        'No acudió a la cita',
-        'Pidió que se le llame / visite en otro momento',
-    ];
-
-    public const MOTIVOS_CONTACTO = [
-        'Agendar cita de entrenamiento',
-        'Cita de entrenamiento',
-        'Seguimiento 2 semanas luego del entrenamiento',
-        'Seguimiento mensual',
-        'Agendar cita final',
-        'Cita final',
-        'Re-entrenamiento',
-        'Contacto iniciado por el participante',
-    ];
-
-    public const MOTIVOS_CONTACTO_CORTOS = [
-        'Agendar cita de entrenamiento' => 'Entrenamiento',
-        'Cita de entrenamiento' => 'Entrenamiento',
-        'Seguimiento 2 semanas luego del entrenamiento' => 'Seguimiento 2 semanas',
-        'Seguimiento mensual' => 'Seguimiento mensual',
-        'Agendar cita final' => 'Agendar cita final',
-        'Cita final' => 'Cita final',
-        'Re-entrenamiento' => 'Re-entrenamiento',
-    ];
-
-    public const MOTIVOS_CONTACTO_ALERTA = [
-        'No completa las sesiones',
-        'Problemas de conexión',
-        'Alerta clínica',
-        'Pedido de ayuda',
     ];
 
     public const DESCRIPCION_CONTACTO = [
@@ -114,6 +75,8 @@ class Interaccion extends Model
 
     protected $casts = [
         'contactado' => 'boolean',
+        'motivo' => MotivoInteraccion::class,
+        'motivo_reprogramacion' => MotivoReprogramacion::class,
         'fecha' => 'datetime',
         'hora' => 'datetime',
         'fecha_cita' => 'datetime',
@@ -138,7 +101,7 @@ class Interaccion extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function alerta()

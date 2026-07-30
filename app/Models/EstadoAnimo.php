@@ -27,6 +27,17 @@ class EstadoAnimo extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
+        'pregunta_1' => 'integer',
+        'pregunta_2' => 'integer',
+        'pregunta_3' => 'integer',
+        'pregunta_4' => 'integer',
+        'pregunta_5' => 'integer',
+        'pregunta_6' => 'integer',
+        'pregunta_7' => 'integer',
+        'pregunta_8' => 'integer',
+        'pregunta_9' => 'integer',
+        'valor' => 'integer',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',

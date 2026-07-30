@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\API\Paciente;
 
+use App\Enums\AdvertenciaClinica;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SyncDataRequest extends FormRequest
 {
@@ -33,7 +35,7 @@ class SyncDataRequest extends FormRequest
             'glucosa.*.fecha_registro' => ['required', 'date_format:Y-m-d H:i:s'],
             'glucosa.*.fecha_usuario' => ['required', 'date_format:Y-m-d H:i:s'],
             'glucosa.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
-            'glucosa.*.advertencia' => ['required', 'in:Normal,Baja,Alta'],
+            'glucosa.*.advertencia' => ['required', Rule::enum(AdvertenciaClinica::class)],
 
             'presion' => ['nullable', 'array'],
             'presion.*.id_presion' => ['required', 'numeric'],
@@ -43,7 +45,7 @@ class SyncDataRequest extends FormRequest
             'presion.*.fecha_registro' => ['required', 'date_format:Y-m-d H:i:s'],
             'presion.*.fecha_usuario' => ['required', 'date_format:Y-m-d H:i:s'],
             'presion.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
-            'presion.*.advertencia' => ['required', 'in:Normal,Baja,Alta'],
+            'presion.*.advertencia' => ['required', Rule::enum(AdvertenciaClinica::class)],
 
             'estado_animo' => ['nullable', 'array'],
             'estado_animo.*.id_estado_animo' => ['required', 'numeric'],

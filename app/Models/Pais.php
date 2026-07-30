@@ -19,4 +19,9 @@ class Pais extends Model
     protected $casts = [
         'activo' => 'boolean',
     ];
+
+    public function centrosSalud()
+    {
+        return $this->hasMany(CentroSalud::class);
+    }
 }

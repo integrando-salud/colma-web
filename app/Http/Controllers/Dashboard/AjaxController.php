@@ -85,6 +85,23 @@ class AjaxController extends Controller
         }
     }
 
+    public function contarPacientes(User $usuario, UsuarioService $usuarioService)
+    {
+        try {
+            $pacientes = $usuarioService->countPacientes($usuario->id);
+
+            return response()->json(['pacientes' => $pacientes]);
+        } catch (Throwable $th) {
+            Log::error('Error al contar los pacientes: ' . $th->getMessage(), [
+                'stack' => $th->getTraceAsString(),
+            ]);
+
+            session()->flash('error', 'Se produjo un error al contar los pacientes.');
+
+            return response()->json([], 500);
+        }
+    }
+
     public function cambiarEstadoPaciente(Paciente $paciente, PacienteService $pacienteService, UsuarioService $usuarioService)
     {
         try {

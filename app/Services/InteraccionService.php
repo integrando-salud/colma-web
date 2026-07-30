@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\Alerta;
 use App\Models\Entrenamiento;
 use App\Models\Interaccion;
@@ -11,12 +12,6 @@ use Throwable;
 
 class InteraccionService
 {
-    private const MOTIVOS_CITA_REALIZADA = [
-        'Cita de entrenamiento',
-        'Cita final',
-        'Re-entrenamiento',
-    ];
-
     public function __construct(private TratamientoService $tratamientoService)
     {
     }
@@ -80,11 +75,11 @@ class InteraccionService
             $interaccion->pedido_ayuda_pregunta_d = $this->fechaDatabase(data_get($data, 'pedido_ayuda_pregunta_d'));
             $interaccion->save();
 
-            if ($interaccion->motivo === 'Agendar cita de entrenamiento' && $interaccion->contactado) {
+            if ($interaccion->motivo === MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO && $interaccion->contactado) {
                 $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->fecha_cita->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
             }
 
-            if ($interaccion->motivo === 'Cita de entrenamiento' && !$interaccion->contactado) {
+            if ($interaccion->motivo === MotivoInteraccion::CITA_ENTRENAMIENTO && !$interaccion->contactado) {
                 $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto->format('Y-m-d'), data_get($data, 'id_entrenamiento'));
             }
 
@@ -165,7 +160,7 @@ class InteraccionService
     private function esCitaRealizada(array $data): bool
     {
         return data_get($data, 'contactado')
-            && in_array(data_get($data, 'motivo'), self::MOTIVOS_CITA_REALIZADA, true);
+            && MotivoInteraccion::tryFrom(data_get($data, 'motivo'))?->esCitaRealizada() === true;
     }
 
     private function fechaDatabase(?string $fecha): ?string

@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Http\Resources\Dashboard\CentroSaludResource;
-use App\Http\Resources\Dashboard\PacienteResource;
+use App\Http\Resources\Dashboard\PacienteListResource;
 use App\Http\Resources\Dashboard\PaisResource;
 use App\Http\Resources\Dashboard\RolResource;
 use App\Http\Resources\Dashboard\SupervisorResource;
@@ -156,15 +156,39 @@ class DashboardService
         }
 
         $pacientes = $pacienteService->queryGetPacientes($filters)
-            ->with(['entrenamientos' => fn ($query) => $query
-                ->where('activo', true)
-                ->latest()
+            ->with([
+                'centroSalud',
+                'promotor',
+                'usuario',
+                'diagnosticos',
+                'entrenamientos' => fn ($query) => $query
+                    ->where('activo', true)
+                    ->latest(),
+                'proximosContactosProgramados' => fn ($query) => $query
+                    ->whereNotNull('nueva_fecha_contacto')
+                    ->whereNotExists(function ($query) {
+                        $query->selectRaw('1')
+                            ->from('interacciones AS subquery')
+                            ->whereRaw('interacciones.nueva_fecha_contacto < subquery.fecha')
+                            ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id');
+                    })
+                    ->orderBy('nueva_fecha_contacto')
+                    ->selectRaw('id, paciente_id, motivo, nueva_fecha_contacto AS fecha'),
+                'proximosContactosAlertas' => fn ($query) => $query
+                    ->whereNotNull('fecha_contacto')
+                    ->whereNull('revisado')
+                    ->orderBy('fecha_contacto')
+                    ->selectRaw("id, paciente_id, fecha_contacto AS fecha, CASE
+                        WHEN tipo = 'operativa' THEN 'Alerta operativa'
+                        WHEN tipo = 'clinica' THEN 'Alerta clínica'
+                        ELSE ''
+                    END AS motivo"),
             ])
             ->paginate(config('app.rpp'))
             ->withQueryString();
 
         return [
-            'pacientes' => PacienteResource::collection($pacientes),
+            'pacientes' => PacienteListResource::collection($pacientes),
             'promotores' => auth()->user()->isA('supervisor')
                 ? UserResource::collection(auth()->user()->promotores()->orderBy('nombre')->get())
                 : null,

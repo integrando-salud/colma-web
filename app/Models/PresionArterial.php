@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AdvertenciaClinica;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,6 +24,10 @@ class PresionArterial extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
+        'presion_sistolica' => 'integer',
+        'presion_diastolica' => 'integer',
+        'advertencia' => AdvertenciaClinica::class,
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
