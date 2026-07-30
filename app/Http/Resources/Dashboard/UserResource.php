@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Dashboard;
 
-use App\Services\UsuarioService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -15,8 +14,6 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $usuarioService = new UsuarioService();
-
         return [
             'id' => $this->id,
             'nombre' => $this->nombre,
@@ -27,12 +24,12 @@ class UserResource extends JsonResource
             },
             'documento' => $this->documento,
             'email' => $this->email,
-            'rol' => $this->roles ? new RolResource($this->roles->first()) : null,
-            'pais' => $this->pais ? new PaisResource($this->pais) : null,
-            'centro_salud' => $this->centroSalud ? new CentroSaludResource($this->centroSalud) : null,
-            'supervisor' => $this->supervisor ? new UserResource($this->supervisor) : null,
-            'numero_pacientes' => $usuarioService->countPacientes($this->id),
-            'numero_alertas' => $usuarioService->countAlertas($this->id),
+            'rol' => $this->whenLoaded('roles', fn () => new RolResource($this->roles->first())),
+            'pais' => $this->whenLoaded('pais', fn () => new PaisResource($this->pais)),
+            'centro_salud' => $this->whenLoaded('centroSalud', fn () => new CentroSaludResource($this->centroSalud)),
+            'supervisor' => $this->whenLoaded('supervisor', fn () => new SupervisorResource($this->supervisor)),
+            'numero_pacientes' => $this->when(isset($this->pacientes_count), (int) $this->pacientes_count),
+            'numero_alertas' => $this->when(isset($this->alertas_count), (int) $this->alertas_count),
             'numero_accesos' => $this->accesos,
             'ultimo_acceso' => $this->ultimo_acceso?->format('d/m/Y H:i'),
         ];

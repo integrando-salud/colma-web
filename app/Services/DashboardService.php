@@ -6,8 +6,10 @@ use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\PacienteResource;
 use App\Http\Resources\Dashboard\PaisResource;
 use App\Http\Resources\Dashboard\RolResource;
+use App\Http\Resources\Dashboard\SupervisorResource;
 use App\Http\Resources\Dashboard\UserResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class DashboardService
 {
@@ -54,9 +56,14 @@ class DashboardService
             $filters['pais'] = $authUser->pais_id;
         }
 
-        $usuarios = $usuarioService->queryGetUsuarios($filters)
+        $usuarios = $usuarioService->queryGetUsuarios([...$filters, 'withoutPais' => true])
             ->paginate(config('app.rpp'))
             ->withQueryString();
+
+        $usuarioAutenticadoEnPagina = $usuarios->getCollection()->firstWhere('id', $authUser->id);
+        if ($usuarioAutenticadoEnPagina?->relationLoaded('roles')) {
+            $authUser->setRelation('roles', $usuarioAutenticadoEnPagina->roles);
+        }
 
         $rolesExcluidos = ['paciente'];
         if ($authUser->isA('supervisor')) {
@@ -79,8 +86,6 @@ class DashboardService
         ])->get();
 
         $paises = $paisService->queryGetPaises([
-            'id' => ($authUser->isA('supervisor') || $authUser->isA('supervisor_pais')) ? $authUser->pais_id : null,
-            'activo' => true,
             'orderBy' => 'nombre',
             'orderDir' => 'asc',
         ])->get();
@@ -92,21 +97,50 @@ class DashboardService
         ])->get();
 
         $supervisores = $authUser->isA('supervisor')
-            ? collect([$authUser->loadMissing(['pais', 'centroSalud', 'roles', 'supervisor'])])
+            ? collect([$authUser->loadMissing('centroSalud')])
             : $usuarioService->queryGetUsuarios([
                 'rol' => 'supervisor',
                 'orderBy' => 'nombre',
                 'orderDir' => 'asc',
+                'forSelector' => true,
+                'withoutPais' => true,
             ])->get();
+
+        $paisesPorId = $paises->keyBy('id');
+        $this->attachPaises($usuarios->getCollection(), $paisesPorId);
+        $this->attachPaises($supervisores, $paisesPorId);
+        $this->attachPaises($centrosSalud, $paisesPorId);
+        $this->attachPaises(collect([$authUser]), $paisesPorId);
+
+        $paisesDisponibles = $paises
+            ->where('activo', true)
+            ->when(
+                $authUser->isA('supervisor') || $authUser->isA('supervisor_pais'),
+                fn (Collection $items) => $items->where('id', $authUser->pais_id)
+            );
 
         return [
             'usuarios' => UserResource::collection($usuarios),
             'roles' => RolResource::collection($roles),
-            'paises' => PaisResource::collection($paises),
+            'paises' => PaisResource::collection($paisesDisponibles),
             'centrosSalud' => CentroSaludResource::collection($centrosSalud),
-            'supervisores' => UserResource::collection($supervisores),
+            'supervisores' => SupervisorResource::collection($supervisores),
             'filtros' => $filters,
         ];
+    }
+
+    private function attachPaises(Collection $models, Collection $paisesPorId): void
+    {
+        $models->each(function ($model) use ($paisesPorId) {
+            $model->setRelation('pais', $paisesPorId->get($model->pais_id));
+
+            if ($model->relationLoaded('centroSalud') && $model->centroSalud) {
+                $model->centroSalud->setRelation(
+                    'pais',
+                    $paisesPorId->get($model->centroSalud->pais_id)
+                );
+            }
+        });
     }
 
     public function getDataForPacientesPage(array $filters = [])
