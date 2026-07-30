@@ -83,7 +83,26 @@ class Paciente extends Model
         return $this->hasMany(Interaccion::class);
     }
 
+    /**
+     * Relación destinada al listado de pacientes. Las condiciones se aplican
+     * al precargarla desde DashboardService para evitar reutilizar una relación
+     * de interacciones que podría contener un conjunto distinto de registros.
+     */
+    public function proximosContactosProgramados()
+    {
+        return $this->hasMany(Interaccion::class);
+    }
+
     public function alertas()
+    {
+        return $this->hasMany(Alerta::class);
+    }
+
+    /**
+     * Relación destinada al listado de pacientes; se precarga con las alertas
+     * pendientes que tienen fecha de contacto.
+     */
+    public function proximosContactosAlertas()
     {
         return $this->hasMany(Alerta::class);
     }

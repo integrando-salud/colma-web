@@ -292,8 +292,12 @@ class PacienteService
      */
     public function getFechasProximosContactos(Paciente $paciente, int $cantidad = 3): array
     {
-        $fechasContactoInteracciones = $this->getFechasProximosContactosProgramados($paciente);
-        $fechasContactoAlertas = $this->getFechasProximosContactosAlertas($paciente);
+        $fechasContactoInteracciones = $paciente->relationLoaded('proximosContactosProgramados')
+            ? $paciente->proximosContactosProgramados
+            : $this->getFechasProximosContactosProgramados($paciente);
+        $fechasContactoAlertas = $paciente->relationLoaded('proximosContactosAlertas')
+            ? $paciente->proximosContactosAlertas
+            : $this->getFechasProximosContactosAlertas($paciente);
         $fechas = collect()
             ->merge($fechasContactoInteracciones->toArray())
             ->merge($fechasContactoAlertas->toArray())

@@ -92,6 +92,11 @@ class DatosClinicosService
                     : 'Glucosa elevada / alta';
 
                 $recomendacion = $this->getRecomendacionGlucosa($registroGlucosa->valor_mgdl);
+
+                if ($recomendacion === null) {
+                    continue;
+                }
+
                 $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
 
                 $this->saveAlerta(
