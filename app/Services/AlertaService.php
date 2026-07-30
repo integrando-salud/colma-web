@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\Alerta;
 
 class AlertaService
@@ -61,7 +62,7 @@ class AlertaService
         return Alerta::create([
             'paciente_id' => $idPaciente,
             'tipo' => 'operativa',
-            'descripcion' => 'Pedido de ayuda',
+            'descripcion' => MotivoInteraccion::PEDIDO_AYUDA->value,
             'fecha' => now()->format('Y-m-d'),
             'fecha_contacto' => now()->addDays(3)->format('Y-m-d'),
             'recomendacion' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa."

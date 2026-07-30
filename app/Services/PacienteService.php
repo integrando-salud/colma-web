@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\Diagnostico;
-use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use Exception;
@@ -292,8 +292,12 @@ class PacienteService
      */
     public function getFechasProximosContactos(Paciente $paciente, int $cantidad = 3): array
     {
-        $fechasContactoInteracciones = $this->getFechasProximosContactosProgramados($paciente);
-        $fechasContactoAlertas = $this->getFechasProximosContactosAlertas($paciente);
+        $fechasContactoInteracciones = $paciente->relationLoaded('proximosContactosProgramados')
+            ? $paciente->proximosContactosProgramados
+            : $this->getFechasProximosContactosProgramados($paciente);
+        $fechasContactoAlertas = $paciente->relationLoaded('proximosContactosAlertas')
+            ? $paciente->proximosContactosAlertas
+            : $this->getFechasProximosContactosAlertas($paciente);
         $fechas = collect()
             ->merge($fechasContactoInteracciones->toArray())
             ->merge($fechasContactoAlertas->toArray())
@@ -302,7 +306,7 @@ class PacienteService
             ->map(function ($fecha) {
                 return [
                     'fecha' => date('d/m/Y', strtotime($fecha['fecha'])),
-                    'motivo' => data_get(Interaccion::MOTIVOS_CONTACTO_CORTOS, $fecha['motivo'], $fecha['motivo'] ?? ''),
+                    'motivo' => MotivoInteraccion::tryFrom($fecha['motivo'] ?? '')?->etiquetaCorta() ?? ($fecha['motivo'] ?? ''),
                 ];
             })
             ->take($cantidad);

@@ -72,7 +72,7 @@ class Entrenamiento extends Model
         return $this->belongsTo(Paciente::class);
     }
 
-    public function usuario()
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

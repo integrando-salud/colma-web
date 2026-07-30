@@ -55,7 +55,7 @@ class Paciente extends Model
 
     public function promotor()
     {
-        return $this->belongsTo(User::class, 'promotor_id');
+        return $this->belongsTo(User::class, 'promotor_id')->withTrashed();
     }
 
     public function diagnosticos()
@@ -78,12 +78,46 @@ class Paciente extends Model
         return $this->hasMany(EstadoAnimo::class);
     }
 
+    public function cuestionarios()
+    {
+        return $this->hasMany(Cuestionario::class);
+    }
+
+    public function metas()
+    {
+        return $this->hasMany(Meta::class);
+    }
+
+    public function multimediaReads()
+    {
+        return $this->hasMany(MultimediaRead::class);
+    }
+
     public function interacciones()
     {
         return $this->hasMany(Interaccion::class);
     }
 
+    /**
+     * Relación destinada al listado de pacientes. Las condiciones se aplican
+     * al precargarla desde DashboardService para evitar reutilizar una relación
+     * de interacciones que podría contener un conjunto distinto de registros.
+     */
+    public function proximosContactosProgramados()
+    {
+        return $this->hasMany(Interaccion::class);
+    }
+
     public function alertas()
+    {
+        return $this->hasMany(Alerta::class);
+    }
+
+    /**
+     * Relación destinada al listado de pacientes; se precarga con las alertas
+     * pendientes que tienen fecha de contacto.
+     */
+    public function proximosContactosAlertas()
     {
         return $this->hasMany(Alerta::class);
     }

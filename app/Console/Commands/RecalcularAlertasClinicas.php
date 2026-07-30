@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\Alerta;
 use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
@@ -140,9 +141,9 @@ class RecalcularAlertasClinicas extends Command
     private function actualizarAlertasOperativas(bool $dryRun): int
     {
         $recomendaciones = [
-            'No completa las sesiones' => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
-            'Problemas de conexión' => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
-            'Pedido de ayuda' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
+            MotivoInteraccion::NO_COMPLETA_SESIONES->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
+            MotivoInteraccion::PROBLEMAS_CONEXION->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
+            MotivoInteraccion::PEDIDO_AYUDA->value => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
         ];
 
         $query = Alerta::query()

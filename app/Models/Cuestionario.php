@@ -16,6 +16,7 @@ class Cuestionario extends Model
     ];
 
     protected $casts = [
+        'id_app' => 'integer',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',

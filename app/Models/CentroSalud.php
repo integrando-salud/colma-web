@@ -23,4 +23,14 @@ class CentroSalud extends Model
     {
         return $this->belongsTo(Pais::class, 'pais_id');
     }
+
+    public function pacientes()
+    {
+        return $this->hasMany(Paciente::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }
