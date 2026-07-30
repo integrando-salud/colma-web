@@ -64,49 +64,24 @@ class PacienteController extends Controller
 
     public function alertas(Paciente $paciente, AlertaService $alertaService)
     {
-        $alertasClinicas = $paciente->alertas()
-            ->with(['paciente', 'user'])
-            ->whereNull('revisado')
-            ->where('tipo', 'clinica')
-            ->get();
-        $alertasOperativas = $paciente->alertas()
-            ->with(['paciente', 'user'])
-            ->whereNull('revisado')
-            ->where('tipo', 'operativa')
-            ->get();
-
-        $alertaService->cargarEntidades($alertasClinicas->merge($alertasOperativas));
+        $alertas = $alertaService->getAlertasPaciente($paciente, true);
 
         return $this->renderDetalle($paciente, 'alertas', [
             'alertasPendientes' => [
-                'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas),
+                'clinicas' => AlertaResource::collection($alertas['clinicas']),
+                'operativas' => AlertaResource::collection($alertas['operativas']),
             ],
         ]);
     }
 
     public function alertasHistorial(Paciente $paciente, AlertaService $alertaService)
     {
-        $alertasClinicas = $paciente->alertas()
-            ->with(['paciente', 'user'])
-            ->whereNotNull('revisado')
-            ->where('tipo', 'clinica')
-            ->paginate(config('app.rpp'), ['*'], 'page-clinicas');
-
-        $alertasOperativas = $paciente->alertas()
-            ->with(['paciente', 'user'])
-            ->whereNotNull('revisado')
-            ->where('tipo', 'operativa')
-            ->paginate(config('app.rpp'), ['*'], 'page-operativas');
-
-        $alertaService->cargarEntidades(
-            $alertasClinicas->getCollection()->merge($alertasOperativas->getCollection())
-        );
+        $alertas = $alertaService->getAlertasPaciente($paciente, false);
 
         return $this->renderDetalle($paciente, 'alertas-historial', [
             'alertasHistoricas' => [
-                'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas),
+                'clinicas' => AlertaResource::collection($alertas['clinicas']),
+                'operativas' => AlertaResource::collection($alertas['operativas']),
             ],
         ]);
     }

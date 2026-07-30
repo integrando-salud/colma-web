@@ -6,44 +6,90 @@ use App\Enums\MotivoInteraccion;
 use App\Models\Alerta;
 use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
+use App\Models\Paciente;
 use App\Models\PresionArterial;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class AlertaService
 {
-    public function queryGetAlertas(array $filters = [])
+    public const DIAS_HASTA_CONTACTO_ALERTA_OPERATIVA = 3;
+
+    public function recomendacionesOperativas(): array
     {
-        $query = Alerta::query();
-
-        if (! empty($filters['tipo'])) {
-            $query->where('tipo', $filters['tipo']);
-        }
-
-        if (! empty($filters['paciente_id'])) {
-            $query->where('paciente_id', $filters['paciente_id']);
-        }
-
-        if (isset($filters['revisado'])) {
-            if ($filters['revisado']) {
-                $query->whereNotNull('revisado');
-            } else {
-                $query->whereNull('revisado');
-            }
-        }
-
-        $orderBy = data_get($filters, 'orderBy', 'id');
-        $orderDir = data_get($filters, 'orderDir', 'desc');
-
-        return $query->orderBy($orderBy, $orderDir);
+        return [
+            MotivoInteraccion::NO_COMPLETA_SESIONES->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
+            MotivoInteraccion::PROBLEMAS_CONEXION->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
+            MotivoInteraccion::PEDIDO_AYUDA->value => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
+        ];
     }
 
-    public function countAlertasPendientes(int $idPaciente)
+    public function fechaContactoOperativa(CarbonInterface $fechaBase): CarbonInterface
     {
-        return $this->queryGetAlertas([
-            'paciente_id' => $idPaciente,
-            'revisado' => false,
-        ])->count();
+        return $fechaBase->copy()->addDays(self::DIAS_HASTA_CONTACTO_ALERTA_OPERATIVA);
+    }
+
+    /**
+     * Obtiene las alertas de un paciente, agrupadas por tipo y con sus entidades precargadas.
+     *
+     * @return array{clinicas: LengthAwarePaginator, operativas: LengthAwarePaginator}
+     */
+    public function getAlertasPaciente(Paciente $paciente, bool $pendientes): array
+    {
+        $sufijoPagina = $pendientes ? '-pendientes' : '';
+
+        $alertasClinicas = $this->getAlertasPacientePorTipo(
+            $paciente,
+            'clinica',
+            $pendientes,
+            "page-clinicas{$sufijoPagina}"
+        );
+        $alertasOperativas = $this->getAlertasPacientePorTipo(
+            $paciente,
+            'operativa',
+            $pendientes,
+            "page-operativas{$sufijoPagina}"
+        );
+
+        $this->cargarEntidades(
+            $alertasClinicas->getCollection()->merge($alertasOperativas->getCollection())
+        );
+
+        return [
+            'clinicas' => $alertasClinicas,
+            'operativas' => $alertasOperativas,
+        ];
+    }
+
+    private function getAlertasPacientePorTipo(
+        Paciente $paciente,
+        string $tipo,
+        bool $pendientes,
+        string $pageName,
+    ): LengthAwarePaginator
+    {
+        $query = $paciente->alertas()
+            ->with(['paciente', 'user'])
+            ->where('tipo', $tipo)
+            ->when(
+                $pendientes,
+                fn ($query) => $query->whereNull('revisado'),
+                fn ($query) => $query->whereNotNull('revisado')
+            );
+
+        if ($pendientes) {
+            $query->orderByDesc('fecha')->orderByDesc('id');
+        }
+
+        $alertas = $query->paginate(config('app.rpp'), ['*'], $pageName);
+
+        if ($pendientes) {
+            $alertas->withQueryString();
+        }
+
+        return $alertas;
     }
 
     /**
@@ -105,13 +151,16 @@ class AlertaService
 
     public function savePedidoAyuda(int $idPaciente)
     {
+        $fecha = now();
+        $recomendaciones = $this->recomendacionesOperativas();
+
         return Alerta::create([
             'paciente_id' => $idPaciente,
             'tipo' => 'operativa',
             'descripcion' => MotivoInteraccion::PEDIDO_AYUDA->value,
-            'fecha' => now()->format('Y-m-d'),
-            'fecha_contacto' => now()->addDays(3)->format('Y-m-d'),
-            'recomendacion' => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
+            'fecha' => $fecha,
+            'fecha_contacto' => $this->fechaContactoOperativa($fecha),
+            'recomendacion' => $recomendaciones[MotivoInteraccion::PEDIDO_AYUDA->value],
         ]);
     }
 }
