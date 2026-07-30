@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Alerta;
 use App\Models\Entrenamiento;
 use App\Models\Interaccion;
+use App\Models\Paciente;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -15,6 +16,10 @@ class InteraccionService
         'Cita final',
         'Re-entrenamiento',
     ];
+
+    public function __construct(private TratamientoService $tratamientoService)
+    {
+    }
 
     public function storeInteraccion(array $data)
     {
@@ -113,9 +118,15 @@ class InteraccionService
     public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento, ?int $idEntrenamiento = null)
     {
         $entrenamiento = $idEntrenamiento ? Entrenamiento::find($idEntrenamiento) : new Entrenamiento();
+        $esNuevo = ! $entrenamiento->exists;
         $entrenamiento->paciente_id = $idPaciente;
         $entrenamiento->user_id = auth()->user()->id;
         $entrenamiento->fecha = $fechaEntrenamiento;
+        $entrenamiento->sesiones = $this->tratamientoService->getCantidadSesionesPaciente(Paciente::findOrFail($idPaciente));
+
+        if ($esNuevo) {
+            $entrenamiento->sesiones_completadas = 0;
+        }
 
         foreach (Entrenamiento::DIAS_SUMA as $tipo => $diasSuma) {
             $entrenamiento->$tipo = $this->sumarDias($tipo, $fechaEntrenamiento, $diasSuma);
