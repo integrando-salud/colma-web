@@ -122,6 +122,10 @@ class DashboardService
         }
 
         $pacientes = $pacienteService->queryGetPacientes($filters)
+            ->with(['entrenamientos' => fn ($query) => $query
+                ->where('activo', true)
+                ->latest()
+            ])
             ->paginate(config('app.rpp'))
             ->withQueryString();
 
