@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\AdvertenciaClinica;
 use App\Models\Paciente;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -28,9 +29,7 @@ class PresionArterialFactory extends Factory
             'fecha_registro' => $fechaRegistro,
             'fecha_usuario' => $fechaRegistro,
             'fecha_sincronizacion' => now(),
-            'advertencia' => fake()->randomElement([
-                'Baja', 'Normal', 'Alta',
-            ])
+            'advertencia' => fake()->randomElement(AdvertenciaClinica::cases())
         ];
     }
 }

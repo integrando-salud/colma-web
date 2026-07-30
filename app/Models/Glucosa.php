@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AdvertenciaClinica;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,6 +26,7 @@ class Glucosa extends Model
     protected $casts = [
         'id_app' => 'integer',
         'valor_mgdl' => 'integer',
+        'advertencia' => AdvertenciaClinica::class,
         'ayuno' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',

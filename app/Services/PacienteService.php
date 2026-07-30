@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\Diagnostico;
-use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use Exception;
@@ -306,7 +306,7 @@ class PacienteService
             ->map(function ($fecha) {
                 return [
                     'fecha' => date('d/m/Y', strtotime($fecha['fecha'])),
-                    'motivo' => data_get(Interaccion::MOTIVOS_CONTACTO_CORTOS, $fecha['motivo'], $fecha['motivo'] ?? ''),
+                    'motivo' => MotivoInteraccion::tryFrom($fecha['motivo'] ?? '')?->etiquetaCorta() ?? ($fecha['motivo'] ?? ''),
                 ];
             })
             ->take($cantidad);

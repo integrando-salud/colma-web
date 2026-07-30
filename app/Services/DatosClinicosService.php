@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AdvertenciaClinica;
 use App\Models\Alerta;
 use App\Models\Cuestionario;
 use App\Models\EstadoAnimo;
@@ -86,8 +87,8 @@ class DatosClinicosService
                 'advertencia' => $d['advertencia'],
             ]);
 
-            if ($registroGlucosa->wasRecentlyCreated && $registroGlucosa->advertencia !== 'Normal') {
-                $descripcion = $registroGlucosa->advertencia === 'Baja'
+            if ($registroGlucosa->wasRecentlyCreated && $registroGlucosa->advertencia !== AdvertenciaClinica::NORMAL) {
+                $descripcion = $registroGlucosa->advertencia === AdvertenciaClinica::BAJA
                     ? 'Glucosa baja'
                     : 'Glucosa elevada / alta';
 
@@ -138,8 +139,8 @@ class DatosClinicosService
                 'advertencia' => $d['advertencia'],
             ]);
 
-            if ($registroPresion->wasRecentlyCreated && $registroPresion->advertencia !== 'Normal') {
-                $descripcion = $registroPresion->advertencia === 'Baja'
+            if ($registroPresion->wasRecentlyCreated && $registroPresion->advertencia !== AdvertenciaClinica::NORMAL) {
+                $descripcion = $registroPresion->advertencia === AdvertenciaClinica::BAJA
                     ? 'Presión arterial baja'
                     : 'Presión arterial elevada / alta';
 
