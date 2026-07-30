@@ -55,7 +55,7 @@ class Paciente extends Model
 
     public function promotor()
     {
-        return $this->belongsTo(User::class, 'promotor_id');
+        return $this->belongsTo(User::class, 'promotor_id')->withTrashed();
     }
 
     public function diagnosticos()
