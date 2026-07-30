@@ -15,8 +15,13 @@ use Illuminate\Support\Collection;
 
 class AlertaService
 {
-    public const DIAS_HASTA_CONTACTO_ALERTA_OPERATIVA = 3;
+    public const int DIAS_HASTA_CONTACTO_ALERTA_OPERATIVA = 3;
 
+    /**
+     * Devuelve las recomendaciones de seguimiento para cada motivo de alerta operativa.
+     *
+     * @return array<string, string> Recomendaciones indexadas por motivo de interacción.
+     */
     public function recomendacionesOperativas(): array
     {
         return [
@@ -26,6 +31,11 @@ class AlertaService
         ];
     }
 
+    /**
+     * Calcula la fecha límite sugerida para contactar a un paciente por una alerta operativa.
+     *
+     * @param  CarbonInterface  $fechaBase  Fecha en la que se generó la alerta.
+     */
     public function fechaContactoOperativa(CarbonInterface $fechaBase): CarbonInterface
     {
         return $fechaBase->copy()->addDays(self::DIAS_HASTA_CONTACTO_ALERTA_OPERATIVA);
@@ -44,13 +54,13 @@ class AlertaService
             $paciente,
             'clinica',
             $pendientes,
-            "page-clinicas{$sufijoPagina}"
+            "page-clinicas$sufijoPagina"
         );
         $alertasOperativas = $this->getAlertasPacientePorTipo(
             $paciente,
             'operativa',
             $pendientes,
-            "page-operativas{$sufijoPagina}"
+            "page-operativas$sufijoPagina"
         );
 
         $this->cargarEntidades(
@@ -63,6 +73,13 @@ class AlertaService
         ];
     }
 
+    /**
+     * Obtiene y pagina las alertas de un paciente para un tipo y estado de revisión específicos.
+     *
+     * @param  string  $tipo  Tipo de alerta a consultar: clínica u operativa.
+     * @param  bool  $pendientes  Indica si se deben obtener alertas pendientes o ya revisadas.
+     * @param  string  $pageName  Nombre del parámetro de paginación para esta consulta.
+     */
     private function getAlertasPacientePorTipo(
         Paciente $paciente,
         string $tipo,
@@ -132,6 +149,12 @@ class AlertaService
         }
     }
 
+    /**
+     * Obtiene la entidad clínica asociada a una alerta.
+     *
+     * Reutiliza la relación ya cargada cuando está disponible y valida que la entidad pertenezca
+     * al mismo paciente de la alerta.
+     */
     public function getEntidad(Alerta $alerta): ?Model
     {
         if ($alerta->relationLoaded('entidad')) {
@@ -149,6 +172,11 @@ class AlertaService
             ->find($alerta->entidad_id);
     }
 
+    /**
+     * Registra una alerta operativa cuando un paciente solicita ayuda.
+     *
+     * Asigna la recomendación correspondiente y la fecha sugerida de contacto.
+     */
     public function savePedidoAyuda(int $idPaciente)
     {
         $fecha = now();
