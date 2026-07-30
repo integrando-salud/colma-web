@@ -12,6 +12,7 @@ use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
 use App\Models\Interaccion;
 use App\Models\Paciente;
+use App\Services\AlertaService;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class PacienteController extends Controller
                     ->with('success', 'Se guardó con éxito.');
             }
         } catch (Throwable $th) {
-            Log::error('Error al guardar paciente: ' . $th->getMessage(), [
+            Log::error('Error al guardar paciente: '.$th->getMessage(), [
                 'stack' => $th->getTraceAsString(),
             ]);
 
@@ -61,42 +62,52 @@ class PacienteController extends Controller
         return $this->renderDetalle($paciente);
     }
 
-    public function alertas(Paciente $paciente)
+    public function alertas(Paciente $paciente, AlertaService $alertaService)
     {
         $alertasClinicas = $paciente->alertas()
+            ->with(['paciente', 'user'])
             ->whereNull('revisado')
             ->where('tipo', 'clinica')
             ->get();
         $alertasOperativas = $paciente->alertas()
+            ->with(['paciente', 'user'])
             ->whereNull('revisado')
             ->where('tipo', 'operativa')
             ->get();
 
+        $alertaService->cargarEntidades($alertasClinicas->merge($alertasOperativas));
+
         return $this->renderDetalle($paciente, 'alertas', [
             'alertasPendientes' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
-            ]
+                'operativas' => AlertaResource::collection($alertasOperativas),
+            ],
         ]);
     }
 
-    public function alertasHistorial(Paciente $paciente)
+    public function alertasHistorial(Paciente $paciente, AlertaService $alertaService)
     {
         $alertasClinicas = $paciente->alertas()
+            ->with(['paciente', 'user'])
             ->whereNotNull('revisado')
             ->where('tipo', 'clinica')
             ->paginate(config('app.rpp'), ['*'], 'page-clinicas');
 
         $alertasOperativas = $paciente->alertas()
+            ->with(['paciente', 'user'])
             ->whereNotNull('revisado')
             ->where('tipo', 'operativa')
             ->paginate(config('app.rpp'), ['*'], 'page-operativas');
 
+        $alertaService->cargarEntidades(
+            $alertasClinicas->getCollection()->merge($alertasOperativas->getCollection())
+        );
+
         return $this->renderDetalle($paciente, 'alertas-historial', [
             'alertasHistoricas' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
-            ]
+                'operativas' => AlertaResource::collection($alertasOperativas),
+            ],
         ]);
     }
 
@@ -114,20 +125,22 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function createInteraccion(Request $request, Paciente $paciente)
+    public function createInteraccion(Request $request, Paciente $paciente, AlertaService $alertaService)
     {
-        if (!$paciente->activo) {
+        if (! $paciente->activo) {
             return back()->with('error', 'No se pueden agregar interacciones a un paciente inactivo.');
         }
 
         $viewData = [];
 
         if ($request->filled('alerta')) {
-            $alerta = Alerta::find($request->alerta);
+            $alerta = Alerta::with(['paciente', 'user'])->find($request->alerta);
 
-            if (!$alerta) {
+            if (! $alerta) {
                 return back()->with('error', 'No se encontró la alerta.');
             }
+
+            $alertaService->cargarEntidades(collect([$alerta]));
 
             $viewData['alerta'] = new AlertaResource($alerta);
         }
@@ -135,7 +148,7 @@ class PacienteController extends Controller
         return $this->renderDetalle($paciente, 'nueva-interaccion', $viewData);
     }
 
-    public function editInteraccion(Paciente $paciente, Interaccion $interaccion)
+    public function editInteraccion(Paciente $paciente, Interaccion $interaccion, AlertaService $alertaService)
     {
         if (auth()->user()->isNotA('superusuario', 'supervisor_pais')) {
             return back()->with('error', 'No tienes permiso para realizar esta acción.');
@@ -143,6 +156,11 @@ class PacienteController extends Controller
 
         if ($interaccion->paciente_id !== $paciente->id) {
             return back()->with('error', 'La interacción no pertenece a este paciente.');
+        }
+
+        $interaccion->load(['paciente', 'user', 'alerta.paciente', 'alerta.user']);
+        if ($interaccion->alerta) {
+            $alertaService->cargarEntidades(collect([$interaccion->alerta]));
         }
 
         return $this->renderDetalle($paciente, 'nueva-interaccion', [
