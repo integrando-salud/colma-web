@@ -74,9 +74,10 @@ class DatosClinicosService
     protected function saveDatosGlucosa(int $idPaciente, array $data)
     {
         foreach ($data as $d) {
-            $registroGlucosa = Glucosa::create([
-                'id_app' => $d['id_glucosa'],
+            $registroGlucosa = Glucosa::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_glucosa'],
+            ], [
                 'valor_mgdl' => $d['valor_mgdl'],
                 'ayuno' => $d['ayuno'],
                 'fecha_registro' => $d['fecha_registro'],
@@ -85,7 +86,7 @@ class DatosClinicosService
                 'advertencia' => $d['advertencia'],
             ]);
 
-            if ($registroGlucosa->advertencia !== 'Normal') {
+            if ($registroGlucosa->wasRecentlyCreated && $registroGlucosa->advertencia !== 'Normal') {
                 $descripcion = $registroGlucosa->advertencia === 'Baja'
                     ? 'Glucosa baja'
                     : 'Glucosa elevada / alta';
@@ -120,9 +121,10 @@ class DatosClinicosService
     protected function saveDatosPresionArterial(int $idPaciente, array $data)
     {
         foreach ($data as $d) {
-            $registroPresion = PresionArterial::create([
-                'id_app' => $d['id_presion'],
+            $registroPresion = PresionArterial::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_presion'],
+            ], [
                 'presion_sistolica' => $d['sistolica'],
                 'presion_diastolica' => $d['diastolica'],
                 'fecha_registro' => $d['fecha_registro'],
@@ -131,7 +133,7 @@ class DatosClinicosService
                 'advertencia' => $d['advertencia'],
             ]);
 
-            if ($registroPresion->advertencia !== 'Normal') {
+            if ($registroPresion->wasRecentlyCreated && $registroPresion->advertencia !== 'Normal') {
                 $descripcion = $registroPresion->advertencia === 'Baja'
                     ? 'Presión arterial baja'
                     : 'Presión arterial elevada / alta';
@@ -247,9 +249,10 @@ class DatosClinicosService
                 $valor += (int) $d['pregunta_' . $i];
             }
 
-            $registroEstadoAnimo = EstadoAnimo::create([
-                'id_app' => $d['id_estado_animo'],
+            $registroEstadoAnimo = EstadoAnimo::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_estado_animo'],
+            ], [
                 'pregunta_1' => $d['pregunta_1'],
                 'pregunta_2' => $d['pregunta_2'],
                 'pregunta_3' => $d['pregunta_3'],
@@ -266,7 +269,7 @@ class DatosClinicosService
             ]);
 
             $recomendacion = $this->getRecomendacionEstadoAnimo($valor);
-            if ($recomendacion !== null) {
+            if ($registroEstadoAnimo->wasRecentlyCreated && $recomendacion !== null) {
                 $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
 
                 $this->saveAlerta(
@@ -307,9 +310,10 @@ class DatosClinicosService
     protected function saveDatosCuestionario(int $idPaciente, array $data)
     {
         foreach ($data as $d) {
-            $cuestionario = Cuestionario::create([
-                'id_app' => $d['id_quiz'],
+            $cuestionario = Cuestionario::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_quiz'],
+            ], [
                 'quiz_type' => $d['quiz_type'],
                 'fecha_registro' => $d['fecha_registro'],
                 'fecha_usuario' => $d['fecha_usuario'],
@@ -317,8 +321,9 @@ class DatosClinicosService
             ]);
 
             foreach ($d['preguntas'] as $p) {
-                $cuestionario->preguntas()->create([
+                $cuestionario->preguntas()->updateOrCreate([
                     'pregunta_index' => $p['pregunta_index'],
+                ], [
                     'pregunta_texto' => $p['pregunta_texto'],
                     'respuesta_usuario' => $p['respuesta_usuario'],
                     'respuesta_usuario_texto' => $p['respuesta_usuario_texto'],
@@ -334,9 +339,10 @@ class DatosClinicosService
     protected function saveDatosMetas(int $idPaciente, array $data)
     {
         foreach ($data as $d) {
-            Meta::create([
-                'id_app' => $d['id_meta'],
+            Meta::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_meta'],
+            ], [
                 'semana' => $d['semana'],
                 'sesion' => $d['sesion'],
                 'tipo_actividad' => $d['tipo_actividad'],
@@ -357,9 +363,10 @@ class DatosClinicosService
     protected function saveDatosMultimediaRead(int $idPaciente, array $data)
     {
         foreach ($data as $d) {
-            MultimediaRead::create([
-                'id_app' => $d['id_multimedia_read'],
+            MultimediaRead::updateOrCreate([
                 'paciente_id' => $idPaciente,
+                'id_app' => $d['id_multimedia_read'],
+            ], [
                 'tratamiento' => $d['treatment_id'],
                 'semana' => $d['week_id'],
                 'sesion' => $d['session_id'],
