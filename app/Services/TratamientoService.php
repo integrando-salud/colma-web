@@ -11,6 +11,37 @@ class TratamientoService
 {
     public function getTratamientoPaciente(Paciente $paciente)
     {
+        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+
+        if (! $tratamiento) {
+            return null;
+        }
+
+        return $this->getTratamiento(...$tratamiento);
+    }
+
+    public function getCantidadSesionesPaciente(Paciente $paciente): int
+    {
+        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+
+        if (! $tratamiento) {
+            return 0;
+        }
+
+        [$pais, $diagnosticoDirname] = $tratamiento;
+        $tratamientosDirname = config('filesystems.multimedia.tratamientos_dirname');
+        $path = storage_path("app/private/$tratamientosDirname/$pais/$diagnosticoDirname");
+
+        if (! File::isDirectory($path)) {
+            return 0;
+        }
+
+        return collect($this->getDirectoriosConNombre($path, 'semana-'))
+            ->sum(fn (string $semanaPath) => count($this->getDirectoriosConNombre($semanaPath, 'sesion-')));
+    }
+
+    private function getConfiguracionTratamientoPaciente(Paciente $paciente): ?array
+    {
         $diagnosticosIds = $paciente->diagnosticos->pluck('id');
         $tieneDiabetes = $diagnosticosIds->contains(Diagnostico::DIABETES);
         $tieneHipertensionArterial = $diagnosticosIds->contains(Diagnostico::HIPERTENSION_ARTERIAL);
@@ -23,46 +54,18 @@ class TratamientoService
         }
 
         if ($tieneAmbos) {
-            return $this->getTratamientoDiabetesHipertensionArterial($pais);
+            return [$pais, config('filesystems.multimedia.tratamientos_diabetes_hipertension_dirname'), 'DBT_HTA', 'Diabetes e hipertensión arterial'];
         }
 
         if ($tieneDiabetes) {
-            return $this->getTratamientoDiabetes($pais);
+            return [$pais, config('filesystems.multimedia.tratamientos_diabetes_dirname'), 'DIABETES', 'Diabetes'];
         }
 
         if ($tieneHipertensionArterial) {
-            return $this->getTratamientoHipertensionArterial($pais);
+            return [$pais, config('filesystems.multimedia.tratamientos_hipertension_dirname'), 'HTA', 'Hipertensión arterial'];
         }
-    }
 
-    private function getTratamientoDiabetes(string $pais)
-    {
-        return $this->getTratamiento(
-            $pais,
-            config('filesystems.multimedia.tratamientos_diabetes_dirname'),
-            'DIABETES',
-            'Diabetes'
-        );
-    }
-
-    private function getTratamientoHipertensionArterial(string $pais)
-    {
-        return $this->getTratamiento(
-            $pais,
-            config('filesystems.multimedia.tratamientos_hipertension_dirname'),
-            'HTA',
-            'Hipertensión arterial'
-        );
-    }
-
-    private function getTratamientoDiabetesHipertensionArterial(string $pais)
-    {
-        return $this->getTratamiento(
-            $pais,
-            config('filesystems.multimedia.tratamientos_diabetes_hipertension_dirname'),
-            'DBT_HTA',
-            'Diabetes e hipertensión arterial'
-        );
+        return null;
     }
 
     private function getTratamiento(string $pais, ?string $diagnosticoDirname, string $tipo, string $nombre): array
@@ -97,6 +100,14 @@ class TratamientoService
         usort($semanas, fn (array $a, array $b) => $a['id'] <=> $b['id']);
 
         return $semanas;
+    }
+
+    private function getDirectoriosConNombre(string $path, string $prefijo): array
+    {
+        return array_values(array_filter(
+            File::directories($path),
+            fn (string $directory) => preg_match('/^'.preg_quote($prefijo, '/').'\\d+$/', basename($directory)) === 1
+        ));
     }
 
     private function getSesiones(string $path): array
