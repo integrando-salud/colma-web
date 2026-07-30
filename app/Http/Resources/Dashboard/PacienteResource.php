@@ -17,6 +17,9 @@ class PacienteResource extends JsonResource
     public function toArray(Request $request): array
     {
         $pacienteService = new PacienteService();
+        $entrenamientoActual = $this->resource->relationLoaded('entrenamientos')
+            ? $this->entrenamientos->first()
+            : $this->entrenamientos()->where('activo', true)->latest()->first();
         $registros = $pacienteService->getDatosClinicos($this->id, 2)->items();
         $fechaProximoContacto = $pacienteService->getFechaProximoContacto($this->resource);
         $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
@@ -48,10 +51,10 @@ class PacienteResource extends JsonResource
             'fecha_enrolamiento_format' => $this->fecha_enrolamiento->format('d/m/Y'),
             'diagnosticos' => DiagnosticoResource::collection($this->diagnosticos),
             'usuario' => new UserResource($this->usuario),
-            'sesiones' => [
-                'total' => 5,
-                'completadas' => 4,
-            ],
+            'sesiones' => $entrenamientoActual ? [
+                'total' => $entrenamientoActual->sesiones,
+                'completadas' => $entrenamientoActual->sesiones_completadas,
+            ] : null,
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
             'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',

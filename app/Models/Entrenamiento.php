@@ -9,6 +9,8 @@ class Entrenamiento extends Model
     protected $fillable = [
         'paciente_id',
         'fecha',
+        'sesiones',
+        'sesiones_completadas',
         'seguimiento_dos_semanas_inicio',
         'seguimiento_dos_semanas_fin',
         'llamada_mensual_1_inicio',
@@ -29,6 +31,8 @@ class Entrenamiento extends Model
 
     protected $casts = [
         'activo' => 'boolean',
+        'sesiones' => 'integer',
+        'sesiones_completadas' => 'integer',
         'fecha' => 'date',
         'seguimiento_dos_semanas_inicio' => 'date',
         'seguimiento_dos_semanas_fin' => 'date',

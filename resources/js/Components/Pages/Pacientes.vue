@@ -310,7 +310,7 @@ onMounted(() => {
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
                             <td v-if="$page.props.usuario.rol?.nombre !== 'promotor'">{{ paciente.promotor?.nombre }}</td>
-                            <td>{{ paciente.sesiones.completadas }}/{{ paciente.sesiones.total }}</td>
+                            <td>{{ paciente.sesiones?.completadas != null && paciente.sesiones?.total != null ? `${paciente.sesiones.completadas}/${paciente.sesiones.total}` : '-/-' }}</td>
                             <td>
                                 {{ paciente.alertas_pendientes ? paciente.alertas_pendientes : '-' }}
                                 <i class="fa fa-warning text-danger" v-if="paciente.alertas_pendientes"></i>
