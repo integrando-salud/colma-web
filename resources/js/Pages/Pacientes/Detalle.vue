@@ -1,6 +1,6 @@
 <script setup>
 import { ref, useTemplateRef, computed } from "vue";
-import { Head, router } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
 import FormDatosPaciente from "@/Components/Forms/FormDatosPaciente.vue";
 import FormInteraccionesPaciente from "@/Components/Forms/FormInteraccionesPaciente.vue";
@@ -13,7 +13,7 @@ import ModalConfirmar from "@/Components/ModalConfirmar.vue";
 
 const props = defineProps({
     paciente: Object,
-    step: {
+    tab: {
         type: String,
         default: 'datos_paciente',
     },
@@ -72,7 +72,7 @@ const modalConfirmar = useTemplateRef('modalConfirmar');
 const guardar = () => {
     hideModalConfirmar();
 
-    switch (props.step) {
+    switch (props.tab) {
         case 'datos_paciente':
             saveDatosPaciente();
             break;
@@ -99,7 +99,7 @@ const mostrarGuardar = computed(() => {
         return false;
     }
 
-    return props.step === 'datos_paciente' || props.step === 'nueva-interaccion';
+    return props.tab === 'datos_paciente' || props.tab === 'nueva-interaccion';
 });
 
 const showModalCancelar = () => {
@@ -138,93 +138,102 @@ const hideModalConfirmar = () => {
                 <div class="border rounded-2">
                     <ul class="nav nav-tabs bg-white rounded-top-2 border-bottom border-dark-subtle">
                         <li class="nav-item">
-                            <a
-                                :href="paciente ? route('dashboard.pacientes.edit', paciente.id) : '#'"
+                            <Link
+                                v-if="paciente"
+                                :href="route('dashboard.pacientes.edit', paciente.id)"
                                 class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body rounded-start-2"
                                 :class="{
-                                    active: step === 'datos_paciente',
-                                    'fw-bold': step === 'datos_paciente',
-                                    disabled: !paciente
+                                    active: tab === 'datos_paciente',
+                                    'fw-bold': tab === 'datos_paciente',
                                 }"
                             >
                                 Datos del paciente
-                            </a>
+                            </Link>
+                            <span v-else class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body rounded-start-2 disabled">
+                                Datos del paciente
+                            </span>
                         </li>
                         <li class="nav-item">
-                            <a
-                                :href="paciente ? route('dashboard.pacientes.datosClinicos', paciente.id) : '#'"
+                            <Link
+                                v-if="paciente"
+                                :href="route('dashboard.pacientes.datosClinicos', paciente.id)"
                                 class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
-                                    active: step === 'datos-clinicos',
-                                    'fw-bold': step === 'datos-clinicos',
-                                    disabled: !paciente,
-                                    'opacity-25': !paciente,
+                                    active: tab === 'datos-clinicos',
+                                    'fw-bold': tab === 'datos-clinicos',
                                 }"
                             >
                                 Datos clínicos
-                            </a>
+                            </Link>
+                            <span v-else class="nav-link border-0 py-3 border-bottom border-dark-subtle text-body disabled opacity-25">
+                                Datos clínicos
+                            </span>
                         </li>
                         <li class="nav-item">
-                            <a
-                                href="#"
+                            <button
+                                v-if="paciente"
+                                type="button"
                                 class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
-                                    active: step === 'alertas' || step === 'alertas-historial',
-                                    'fw-bold': step === 'alertas' || step === 'alertas-historial',
-                                    disabled: !paciente,
-                                    'opacity-25': !paciente,
+                                    active: tab === 'alertas' || tab === 'alertas-historial',
+                                    'fw-bold': tab === 'alertas' || tab === 'alertas-historial',
                                 }"
                                 data-bs-toggle="dropdown"
                             >
                                 Alertas
-                                <span class="badge bg-secondary ms-1" v-if="paciente && paciente.alertas_pendientes">{{ paciente.alertas_pendientes }}</span>
-                            </a>
-                            <ul class="dropdown-menu">
+                                <span class="badge bg-secondary ms-1" v-if="paciente.alertas_pendientes">{{ paciente.alertas_pendientes }}</span>
+                            </button>
+                            <span v-else class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body disabled opacity-25">
+                                Alertas
+                            </span>
+                            <ul v-if="paciente" class="dropdown-menu">
                                 <li>
-                                    <a :href="paciente ? route('dashboard.pacientes.alertas', paciente.id) : '#'" class="dropdown-item">Pendientes de revisión</a>
-                                    <a :href="paciente ? route('dashboard.pacientes.alertas.historial', paciente.id) : '#'" class="dropdown-item">Historial de alertas</a>
+                                    <Link :href="route('dashboard.pacientes.alertas', paciente.id)" class="dropdown-item">Pendientes de revisión</Link>
+                                    <Link :href="route('dashboard.pacientes.alertas.historial', paciente.id)" class="dropdown-item">Historial de alertas</Link>
                                 </li>
                             </ul>
                         </li>
                         <li class="nav-item dropdown">
-                            <a
-                                href="#"
+                            <button
+                                v-if="paciente"
+                                type="button"
                                 class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body"
                                 :class="{
-                                    active: step === 'nueva-interaccion' || step === 'historial-interacciones',
-                                    'fw-bold': step === 'nueva-interaccion' || step === 'historial-interacciones',
-                                    disabled: !paciente,
-                                    'opacity-25': !paciente,
+                                    active: tab === 'nueva-interaccion' || tab === 'historial-interacciones',
+                                    'fw-bold': tab === 'nueva-interaccion' || tab === 'historial-interacciones',
                                 }"
                                 data-bs-toggle="dropdown"
                             >
                                 Contactos
-                            </a>
-                            <ul class="dropdown-menu">
+                            </button>
+                            <span v-else class="nav-link dropdown-toggle border-0 py-3 border-bottom border-dark-subtle text-body disabled opacity-25">
+                                Contactos
+                            </span>
+                            <ul v-if="paciente" class="dropdown-menu">
                                 <li>
-                                    <a v-if="paciente?.activo" :href="paciente ? route('dashboard.pacientes.createInteraccion', paciente.id) : '#'" class="dropdown-item">Nuevo contacto</a>
-                                    <a :href="paciente ? route('dashboard.pacientes.interacciones', paciente.id) : '#'" class="dropdown-item">Historial de contactos</a>
+                                    <Link v-if="paciente.activo" :href="route('dashboard.pacientes.createInteraccion', paciente.id)" class="dropdown-item">Nuevo contacto</Link>
+                                    <Link :href="route('dashboard.pacientes.interacciones', paciente.id)" class="dropdown-item">Historial de contactos</Link>
                                 </li>
                             </ul>
                         </li>
                     </ul>
                     <div class="p-3">
-                        <template v-if="step === 'datos_paciente'">
+                        <template v-if="tab === 'datos_paciente'">
                             <FormDatosPaciente ref="formPaciente" :paciente />
                         </template>
-                        <template v-else-if="step === 'datos-clinicos'">
+                        <template v-else-if="tab === 'datos-clinicos'">
                             <DatosClinicos :datos-clinicos :id-paciente="paciente.id" :filtros="filtrosDatosClinicos" />
                         </template>
-                        <template v-else-if="step === 'alertas'">
+                        <template v-else-if="tab === 'alertas'">
                             <AlertasPendientes :alertas="alertasPendientes" />
                         </template>
-                        <template v-else-if="step === 'alertas-historial'">
+                        <template v-else-if="tab === 'alertas-historial'">
                             <AlertasHistorial :alertas="alertasHistoricas" />
                         </template>
-                        <template v-else-if="step === 'nueva-interaccion'">
+                        <template v-else-if="tab === 'nueva-interaccion'">
                             <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta :interaccion />
                         </template>
-                        <template v-else-if="step === 'historial-interacciones'">
+                        <template v-else-if="tab === 'historial-interacciones'">
                             <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones :interaccion />
                         </template>
                     </div>

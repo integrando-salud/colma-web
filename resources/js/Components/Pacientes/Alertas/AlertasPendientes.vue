@@ -1,5 +1,6 @@
 <script setup>
 import Table from "@/Components/Table.vue";
+import { Link } from "@inertiajs/vue3";
 
 const props = defineProps({
     alertas: {
@@ -40,7 +41,7 @@ const props = defineProps({
                     <td>{{ alerta.fecha_contacto }}</td>
                     <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
-                        <a v-if="alerta.paciente.activo"
+                        <Link v-if="alerta.paciente.activo"
                             :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
@@ -48,7 +49,7 @@ const props = defineProps({
                             class="btn btn-secondary btn-sm text-white fw-semibold shadow"
                         >
                             Ir al formulario
-                        </a>
+                        </Link>
                     </td>
                 </tr>
             </Table>
@@ -75,14 +76,14 @@ const props = defineProps({
                     <td>{{ alerta.fecha_contacto }}</td>
                     <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
-                        <a :href="route('dashboard.pacientes.createInteraccion', {
+                        <Link :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
                             })"
                            class="btn btn-secondary btn-sm text-white fw-semibold shadow"
                         >
                             Ir al formulario
-                        </a>
+                        </Link>
                     </td>
                 </tr>
             </Table>

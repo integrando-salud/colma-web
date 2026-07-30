@@ -22,6 +22,8 @@ use Throwable;
 
 class PacienteController extends Controller
 {
+    private const DETALLE_COMPONENT = 'Pacientes/Detalle';
+
     public function index(FilterPacienteRequest $request, DashboardService $dashboardService)
     {
         $viewData = $dashboardService->getDataForPacientesPage($request->validated());
@@ -31,7 +33,7 @@ class PacienteController extends Controller
 
     public function create()
     {
-        return Inertia::render('Pacientes/Detalle');
+        return $this->renderDetalle();
     }
 
     public function store(StorePacienteRequest $request, PacienteService $pacienteService)
@@ -56,9 +58,7 @@ class PacienteController extends Controller
 
     public function edit(Paciente $paciente)
     {
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente)
-        ]);
+        return $this->renderDetalle($paciente);
     }
 
     public function alertas(Paciente $paciente)
@@ -72,9 +72,7 @@ class PacienteController extends Controller
             ->where('tipo', 'operativa')
             ->get();
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'alertas',
+        return $this->renderDetalle($paciente, 'alertas', [
             'alertasPendientes' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
                 'operativas' => AlertaResource::collection($alertasOperativas)
@@ -94,9 +92,7 @@ class PacienteController extends Controller
             ->where('tipo', 'operativa')
             ->paginate(config('app.rpp'), ['*'], 'page-operativas');
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'alertas-historial',
+        return $this->renderDetalle($paciente, 'alertas-historial', [
             'alertasHistoricas' => [
                 'clinicas' => AlertaResource::collection($alertasClinicas),
                 'operativas' => AlertaResource::collection($alertasOperativas)
@@ -112,9 +108,7 @@ class PacienteController extends Controller
             ->orderByDesc('fecha')
             ->paginate(10);
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'historial-interacciones',
+        return $this->renderDetalle($paciente, 'historial-interacciones', [
             'interacciones' => InteraccionResource::collection($interacciones),
             'interaccion' => $request->contacto ?? null,
         ]);
@@ -126,10 +120,7 @@ class PacienteController extends Controller
             return back()->with('error', 'No se pueden agregar interacciones a un paciente inactivo.');
         }
 
-        $viewData = [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'nueva-interaccion',
-        ];
+        $viewData = [];
 
         if ($request->filled('alerta')) {
             $alerta = Alerta::find($request->alerta);
@@ -141,7 +132,7 @@ class PacienteController extends Controller
             $viewData['alerta'] = new AlertaResource($alerta);
         }
 
-        return Inertia::render('Pacientes/Detalle', $viewData);
+        return $this->renderDetalle($paciente, 'nueva-interaccion', $viewData);
     }
 
     public function editInteraccion(Paciente $paciente, Interaccion $interaccion)
@@ -154,9 +145,7 @@ class PacienteController extends Controller
             return back()->with('error', 'La interacción no pertenece a este paciente.');
         }
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'nueva-interaccion',
+        return $this->renderDetalle($paciente, 'nueva-interaccion', [
             'interaccion' => new InteraccionResource($interaccion),
             'alerta' => $interaccion->alerta ? new AlertaResource($interaccion->alerta) : null,
         ]);
@@ -170,11 +159,17 @@ class PacienteController extends Controller
             ->getDatosClinicos($paciente, 10, $filtros['desde'] ?? null, $filtros['hasta'] ?? null)
             ->withQueryString();
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'datos-clinicos',
+        return $this->renderDetalle($paciente, 'datos-clinicos', [
             'datosClinicos' => JsonResource::collection($registros),
             'filtrosDatosClinicos' => $filtros,
         ]);
+    }
+
+    private function renderDetalle(?Paciente $paciente = null, string $tab = 'datos_paciente', array $props = [])
+    {
+        return Inertia::render(self::DETALLE_COMPONENT, array_merge($props, [
+            'paciente' => $paciente ? new PacienteResource($paciente) : null,
+            'tab' => $tab,
+        ]));
     }
 }

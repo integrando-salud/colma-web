@@ -10,8 +10,6 @@ use Illuminate\Support\Carbon;
 
 class PacienteResource extends JsonResource
 {
-    protected bool $includeDatosClinicos = true;
-
     /**
      * Transform the resource into an array.
      *
@@ -23,12 +21,9 @@ class PacienteResource extends JsonResource
         $entrenamientoActual = $this->resource->relationLoaded('entrenamientos')
             ? $this->entrenamientos->first()
             : $this->entrenamientos()->where('activo', true)->latest()->first();
-        $registros = $this->includeDatosClinicos
-            ? $pacienteService->getDatosClinicos($this->id, 2)->items()
-            : null;
-        $fechaProximoContacto = $this->includeDatosClinicos
-            ? $pacienteService->getFechaProximoContacto($this->resource)
-            : ($this->nueva_fecha_contacto ? Carbon::parse($this->nueva_fecha_contacto) : null);
+        $fechaProximoContacto = $this->nueva_fecha_contacto
+            ? Carbon::parse($this->nueva_fecha_contacto)
+            : $pacienteService->getFechaProximoContacto($this->resource);
         $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
         $diasPostFechaProximoContacto = (int) $fechaProximoContacto?->diffInDays(now()) ?? 0;
 
@@ -67,7 +62,6 @@ class PacienteResource extends JsonResource
             'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',
             'alertas_pendientes' => $this->numero_alertas ?? $this->alertas()->whereNull('revisado')->count(),
             'proximos_contactos' => $proximosContactos,
-            'datos_clinicos' => $this->when($this->includeDatosClinicos, $registros),
             'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),
             'fecha_proximo_contacto_dias' => $diasPostFechaProximoContacto,
             'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
