@@ -78,6 +78,21 @@ class Paciente extends Model
         return $this->hasMany(EstadoAnimo::class);
     }
 
+    public function cuestionarios()
+    {
+        return $this->hasMany(Cuestionario::class);
+    }
+
+    public function metas()
+    {
+        return $this->hasMany(Meta::class);
+    }
+
+    public function multimediaReads()
+    {
+        return $this->hasMany(MultimediaRead::class);
+    }
+
     public function interacciones()
     {
         return $this->hasMany(Interaccion::class);
