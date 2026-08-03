@@ -8,6 +8,7 @@ use App\Http\Resources\Dashboard\PaisResource;
 use App\Http\Resources\Dashboard\RolResource;
 use App\Http\Resources\Dashboard\SupervisorResource;
 use App\Http\Resources\Dashboard\UserResource;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use UnexpectedValueException;
@@ -91,8 +92,10 @@ class DashboardService
             ->paginate(config('app.rpp'))
             ->withQueryString();
 
-        $usuarioAutenticadoEnPagina = $usuarios->getCollection()->firstWhere('id', $authUser->id);
-        if ($usuarioAutenticadoEnPagina?->relationLoaded('roles')) {
+        $usuarioAutenticadoEnPagina = $usuarios->getCollection()->first(
+            fn (User $usuario): bool => $usuario->is($authUser)
+        );
+        if ($usuarioAutenticadoEnPagina instanceof User && $usuarioAutenticadoEnPagina->relationLoaded('roles')) {
             $authUser->setRelation('roles', $usuarioAutenticadoEnPagina->roles);
         }
 

@@ -8,15 +8,18 @@ use App\Models\Entrenamiento;
 use App\Models\Interaccion;
 use App\Models\Paciente;
 use Carbon\CarbonImmutable;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Throwable;
 
 class InteraccionService
 {
     /**
      * Crea el servicio con la dependencia que determina las sesiones del tratamiento.
      */
-    public function __construct(private TratamientoService $tratamientoService)
+    public function __construct(private readonly TratamientoService $tratamientoService)
     {
     }
 
@@ -27,6 +30,8 @@ class InteraccionService
      * realizan en una misma transacción para no dejar una interacción guardada parcialmente.
      *
      * @param  array<string, mixed>  $data
+     *
+     * @throws Throwable Cuando falla la transacción, la persistencia o una operación dependiente.
      */
     public function storeInteraccion(array $data): bool
     {
@@ -127,6 +132,10 @@ class InteraccionService
      * Conserva las sesiones completadas al actualizar un entrenamiento existente y las inicia en
      * cero cuando se crea uno nuevo. Un entrenamiento existente no puede reasignarse a otro
      * paciente.
+     *
+     * @throws Exception Cuando no se puede determinar el país del paciente.
+     * @throws InvalidArgumentException Cuando el entrenamiento pertenece a otro paciente.
+     * @throws ModelNotFoundException Cuando no existe el paciente o entrenamiento.
      */
     public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento, ?int $idEntrenamiento = null): bool
     {
@@ -203,7 +212,7 @@ class InteraccionService
      */
     private function esCitaRealizada(array $data): bool
     {
-        return (bool) data_get($data, 'contactado')
+        return data_get($data, 'contactado')
             && MotivoInteraccion::tryFrom(data_get($data, 'motivo'))?->esCitaRealizada() === true;
     }
 

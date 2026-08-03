@@ -12,8 +12,10 @@ use App\Models\MultimediaRead;
 use App\Models\PresionArterial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class DatosClinicosService
 {
@@ -23,6 +25,8 @@ class DatosClinicosService
      * La operación es atómica: ante cualquier error no persiste datos parciales.
      *
      * @param array<string, mixed> $data Datos validados por SyncDataRequest.
+     * @throws ModelNotFoundException Cuando no existe el usuario o el paciente.
+     * @throws Throwable Cuando la transacción o la persistencia de los datos falla.
      */
     public function syncDatosApp(array $data): bool
     {
@@ -236,7 +240,7 @@ class DatosClinicosService
     {
         return PresionArterial::query()
             ->where('paciente_id', $idPaciente)
-            ->orderBy('fecha_registro', 'desc')
+            ->latest('fecha_registro')
             ->limit($cantidadRegistros)
             ->get();
     }

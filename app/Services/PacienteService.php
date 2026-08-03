@@ -142,6 +142,7 @@ class PacienteService
      * manera atómica. Las fechas de entrada deben estar en formato d/m/Y.
      *
      * @param  array<string, mixed>  $data
+     * @throws Throwable
      */
     public function storePaciente(array $data): Paciente
     {
@@ -193,12 +194,12 @@ class PacienteService
     }
 
     /** Actualiza los datos del usuario asociado sin reemplazar su contraseña vacía. */
-    private function updateUsuario(Paciente $paciente, ?string $password = null): User
+    private function updateUsuario(Paciente $paciente, ?string $password = null): void
     {
         $usuarioService = new UsuarioService;
         $data = array_merge($this->fillDataUsuario($paciente, $password), ['id' => $paciente->usuario->id]);
 
-        return $usuarioService->storeUsuario($data);
+        $usuarioService->storeUsuario($data);
     }
 
     /** Prepara los atributos del usuario a partir de los datos del paciente. */
