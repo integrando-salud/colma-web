@@ -12,7 +12,7 @@ class DiagnosticoService
      *
      * Esta lista evita incorporar nombres de columna arbitrarios en la consulta.
      */
-    private const ORDERABLE_COLUMNS = ['id', 'nombre', 'activo'];
+    private const array ORDERABLE_COLUMNS = ['id', 'nombre', 'activo'];
 
     /**
      * Construye una consulta de diagnósticos aplicando los filtros solicitados.

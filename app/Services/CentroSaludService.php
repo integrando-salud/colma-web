@@ -12,7 +12,7 @@ class CentroSaludService
      *
      * Esta lista evita incorporar nombres de columna arbitrarios en la consulta.
      */
-    private const ORDERABLE_COLUMNS = ['id', 'nombre', 'pais_id', 'activo'];
+    private const array ORDERABLE_COLUMNS = ['id', 'nombre', 'pais_id', 'activo'];
 
     /**
      * Construye una consulta de centros de salud aplicando los filtros solicitados.
