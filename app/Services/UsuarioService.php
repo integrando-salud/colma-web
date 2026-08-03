@@ -9,7 +9,27 @@ use Silber\Bouncer\BouncerFacade as Bouncer;
 
 class UsuarioService
 {
-    public function queryGetUsuarios(array $filters = [])
+    /**
+     * Campos expuestos por la grilla de usuarios que admiten ordenamiento.
+     *
+     * La lista evita interpolar nombres de columna arbitrarios en la consulta.
+     */
+    private const array ORDERABLE_COLUMNS = [
+        'id', 'nombre', 'email', 'documento', 'tipo', 'pais', 'centro_salud',
+        'supervisor', 'pacientes', 'alertas',
+    ];
+
+    /**
+     * Construye la consulta del listado de usuarios según los permisos y filtros recibidos.
+     *
+     * La consulta no se ejecuta para permitir que el consumidor la pagine o agregue condiciones.
+     * Los supervisores solo acceden a los promotores de su país y los supervisores de país solo
+     * a promotores y supervisores de su país.
+     *
+     * @param  array{forSelector?: bool, withoutPais?: bool, rol?: string, pais?: int|string, nombre?: string, orderBy?: string, orderDir?: string}  $filters
+     * @return Builder<User>
+     */
+    public function queryGetUsuarios(array $filters = []): Builder
     {
         $authUser = auth()->user();
         $forSelector = (bool) data_get($filters, 'forSelector', false);
@@ -59,7 +79,9 @@ class UsuarioService
         }
 
         $orderBy = data_get($filters, 'orderBy', 'id');
+        $orderBy = in_array($orderBy, self::ORDERABLE_COLUMNS, true) ? $orderBy : 'id';
         $orderDir = data_get($filters, 'orderDir', 'desc');
+        $orderDir = in_array($orderDir, ['asc', 'desc'], true) ? $orderDir : 'desc';
 
         switch ($orderBy) {
             case 'tipo':
@@ -95,6 +117,13 @@ class UsuarioService
         return $query;
     }
 
+    /**
+     * Añade a la consulta los contadores de pacientes y alertas pendientes visibles por rol.
+     *
+     * Se calculan como subconsultas SQL para evitar cargar pacientes y alertas de cada usuario.
+     *
+     * @param  Builder<User>  $query
+     */
     private function addDashboardCounts(Builder $query): void
     {
         $roles = [User::class, User::class, User::class, User::class];
@@ -113,9 +142,17 @@ class UsuarioService
             ELSE 0 END AS alertas_count", $roles);
     }
 
+    /**
+     * Crea o actualiza un usuario y sincroniza su único rol de panel.
+     *
+     * Al crear o recibir una contraseña no vacía, el cast `hashed` del modelo la almacena cifrada.
+     * Para promotores, el país se toma siempre del supervisor seleccionado.
+     *
+     * @param  array{id?: int, nombre: string, sexo: string, documento: string, email: string, password?: string, pais_id: int, centro_salud_id?: int|null, supervisor_id?: int|null, rol: string}  $data
+     */
     public function storeUsuario(array $data): User
     {
-        $user = empty($data['id']) ? new User() : User::find($data['id']);
+        $user = empty($data['id']) ? new User() : User::findOrFail($data['id']);
         $supervisor = ($data['rol'] === 'promotor' && !empty($data['supervisor_id']))
             ? User::find($data['supervisor_id'])
             : null;
@@ -126,7 +163,9 @@ class UsuarioService
         $user->email = $data['email'];
         $user->pais_id = $supervisor?->pais_id ?? $data['pais_id'];
         $user->centro_salud_id = $data['centro_salud_id'] ?? null;
-        $user->supervisor_id = $data['supervisor_id'] ?? null;
+        $user->supervisor_id = $data['rol'] === User::ROL_PROMOTOR
+            ? ($data['supervisor_id'] ?? null)
+            : null;
 
         if (empty($data['id']) || !empty($data['password'])) {
             $user->password = $data['password'];
@@ -134,20 +173,32 @@ class UsuarioService
 
         $user->save();
         Bouncer::sync($user)->roles([$data['rol']]);
+        Bouncer::refreshFor($user);
 
         return $user;
     }
 
+    /**
+     * Elimina lógicamente un usuario.
+     */
     public function deleteUsuario(User $user): bool
     {
         return $user->delete();
     }
 
+    /**
+     * Restaura un usuario eliminado lógicamente.
+     */
     public function reactivateUsuario(User $user): bool
     {
         return $user->restore();
     }
 
+    /**
+     * Actualiza la contraseña de un usuario.
+     *
+     * El cast `hashed` del modelo garantiza que nunca se persista en texto plano.
+     */
     public function updatePassword(User $user, string $password): bool
     {
         $user->password = $password;
@@ -155,10 +206,9 @@ class UsuarioService
     }
 
     /**
-     * Obtiene el número de pacientes de un usuario
-     * Si el usuario es un Promotor, devuelve el número de pacientes que tiene asociados
-     * Si el usuario es un Supervisor, devuelve la suma del número de pacientes que tiene asociado cada uno de sus promotores a cargo
-     * Si el usuario es un Supervisor País, devuelve el número de pacientes vinculado a un centro de salud del mismo país que el usuario
+     * Cuenta los pacientes visibles para un usuario, incluidos los inactivos.
+     *
+     * Devuelve cero para IDs inexistentes o roles sin alcance sobre pacientes.
      *
      * @param int $userId
      * @return int
@@ -167,31 +217,13 @@ class UsuarioService
     {
         $user = User::withTrashed()->find($userId);
 
-        if ($user->isA('promotor')) {
-            return $user->pacientes->count();
-        }
-
-        if ($user->isA('supervisor')) {
-            return $user->promotores->reduce(function ($carry, $promotor) {
-                return $carry + $promotor->pacientes->count();
-            }, 0);
-        }
-
-        if ($user->isA('supervisor_pais')) {
-            return Paciente::whereHas('centroSalud', function ($query) use ($user) {
-                $query->where('pais_id', $user->pais_id);
-            })->count();
-        }
-
-        if ($user->isA('superusuario')) {
-            return Paciente::count();
-        }
-
-        return 0;
+        return $user ? $this->queryPacientesByUsuario($user)->count() : 0;
     }
 
     /**
-     * Igual que countPacientes(), pero solo contabiliza los pacientes activos
+     * Cuenta únicamente los pacientes activos visibles para un usuario.
+     *
+     * Devuelve cero para IDs inexistentes o roles sin alcance sobre pacientes.
      *
      * @param int $userId
      * @return int
@@ -200,31 +232,13 @@ class UsuarioService
     {
         $user = User::withTrashed()->find($userId);
 
-        if ($user->isA('promotor')) {
-            return $user->pacientes->where('activo', true)->count();
-        }
-
-        if ($user->isA('supervisor')) {
-            return $user->promotores->reduce(function ($carry, $promotor) {
-                return $carry + $promotor->pacientes->where('activo', true)->count();
-            }, 0);
-        }
-
-        if ($user->isA('supervisor_pais')) {
-            return Paciente::where('activo', true)->whereHas('centroSalud', function ($query) use ($user) {
-                $query->where('pais_id', $user->pais_id);
-            })->count();
-        }
-
-        if ($user->isA('superusuario')) {
-            return Paciente::where('activo', true)->count();
-        }
-
-        return 0;
+        return $user ? $this->queryPacientesActivosByUsuario($user)?->count() ?? 0 : 0;
     }
 
     /**
-     * Obtiene el número total de pacientes con alertas pendientes
+     * Cuenta pacientes activos con al menos una alerta pendiente en el alcance del usuario.
+     *
+     * Cada paciente se cuenta una sola vez, aunque tenga varias alertas pendientes.
      *
      * @param int $userId
      * @return int
@@ -232,51 +246,17 @@ class UsuarioService
     public function countPacientesConAlertas(int $userId): int
     {
         $user = User::withTrashed()->find($userId);
+        $query = $user ? $this->queryPacientesActivosByUsuario($user) : null;
 
-        if ($user->isA('promotor')) {
-            return Paciente::where('activo', true)
-                ->where('promotor_id', $user->id)
-                ->whereHas('alertas', function ($query) {
-                    $query->whereNull('revisado');
-                })
-                ->count();
-        }
-
-        if ($user->isA('supervisor')) {
-            return Paciente::where('activo', true)
-                ->whereIn('promotor_id', $user->promotores->pluck('id'))
-                ->whereHas('alertas', function ($query) {
-                    $query->whereNull('revisado');
-                })
-                ->count();
-        }
-
-        if ($user->isA('supervisor_pais')) {
-            return Paciente::where('activo', true)
-                ->whereHas('centroSalud', function ($query) use ($user) {
-                    $query->where('pais_id', $user->pais_id);
-                })
-                ->whereHas('alertas', function ($query) {
-                    $query->whereNull('revisado');
-                })
-                ->count();
-        }
-
-        if ($user->isA('superusuario')) {
-            return Paciente::where('activo', true)
-                ->whereHas('alertas', function ($query) {
-                    $query->whereNull('revisado');
-                })
-                ->count();
-        }
-
-        return 0;
+        return $query
+            ? $query->whereHas('alertas', fn (Builder $query) => $query->whereNull('revisado'))->count()
+            : 0;
     }
 
     /**
-     * Obtiene el número de alertas de los pacientes asignados a un usuario
-     * Si el usuario es un Promotor, devuelve la suma del número de alertas de los pacientes que tiene asociados
-     * Si el usuario es un Supervisor, devuelve la suma del número de alertas de todos los pacientes de todos los promotores que tiene asociados
+     * Cuenta las alertas pendientes de los pacientes visibles para un usuario.
+     *
+     * A diferencia de {@see countPacientesConAlertas()}, aquí se contabiliza cada alerta.
      *
      * @param int $userId
      * @return int
@@ -285,33 +265,12 @@ class UsuarioService
     {
         $user = User::withTrashed()->find($userId);
 
-        if ($user->isA('promotor')) {
-            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
-                $query->where('pacientes.promotor_id', $user->id);
-            });
-        }
-
-        if ($user->isA('supervisor')) {
-            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
-                $query->whereIn('pacientes.promotor_id', $user->promotores->pluck('id'));
-            });
-        }
-
-        if ($user->isA('supervisor_pais')) {
-            return $this->countAlertasPacientes(function (Builder $query) use ($user) {
-                $query->whereHas('centroSalud', function ($query) use ($user) {
-                    $query->where('pais_id', $user->pais_id);
-                });
-            });
-        }
-
-        if ($user->isA('superusuario')) {
-            return $this->countAlertasPacientes();
-        }
-
-        return 0;
+        return $user ? $this->countAlertasPacientes($user) : 0;
     }
 
+    /**
+     * Cuenta pacientes activos con alertas pendientes o contactos programados aún no realizados.
+     */
     public function countPacientesConContactosPendientes(int $userId): int
     {
         $user = User::withTrashed()->find($userId);
@@ -329,6 +288,11 @@ class UsuarioService
         return $this->applyFiltroContactosPendientes($query)->count();
     }
 
+    /**
+     * Construye la consulta de pacientes activos que un usuario puede gestionar.
+     *
+     * @return Builder<Paciente>|null Null cuando el rol no tiene alcance sobre pacientes.
+     */
     private function queryPacientesActivosByUsuario(User $user): ?Builder
     {
         if ($user->isA('promotor')) {
@@ -358,6 +322,36 @@ class UsuarioService
         return null;
     }
 
+    /**
+     * Construye la consulta de pacientes visibles para un usuario, activos o no.
+     *
+     * @return Builder<Paciente>
+     */
+    private function queryPacientesByUsuario(User $user): Builder
+    {
+        if ($user->isA('promotor')) {
+            return Paciente::query()->where('promotor_id', $user->id);
+        }
+
+        if ($user->isA('supervisor')) {
+            return Paciente::query()->whereIn('promotor_id', $user->promotores()->select('id'));
+        }
+
+        if ($user->isA('supervisor_pais')) {
+            return Paciente::query()->whereHas('centroSalud', fn (Builder $query) => $query->where('pais_id', $user->pais_id));
+        }
+
+        return $user->isA('superusuario') ? Paciente::query() : Paciente::query()->whereRaw('1 = 0');
+    }
+
+    /**
+     * Restringe una consulta a pacientes que requieren contacto.
+     *
+     * Se considera pendiente una alerta no revisada o una fecha programada sin contacto posterior.
+     *
+     * @param  Builder<Paciente>  $query
+     * @return Builder<Paciente>
+     */
     private function applyFiltroContactosPendientes(Builder $query): Builder
     {
         return $query->where(function (Builder $query) {
@@ -390,17 +384,15 @@ class UsuarioService
         });
     }
 
-    private function countAlertasPacientes(?callable $callback = null): int
+    /**
+     * Cuenta alertas pendientes de los pacientes dentro del alcance de un usuario.
+     */
+    private function countAlertasPacientes(User $user): int
     {
-        $query = Paciente::query()
+        return $this->queryPacientesByUsuario($user)
             ->join('alertas', 'alertas.paciente_id', '=', 'pacientes.id')
             ->whereNull('alertas.revisado')
-            ->whereNull('alertas.deleted_at');
-
-        if ($callback) {
-            $callback($query);
-        }
-
-        return $query->count('alertas.id');
+            ->whereNull('alertas.deleted_at')
+            ->count('alertas.id');
     }
 }
