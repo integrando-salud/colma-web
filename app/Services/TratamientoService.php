@@ -52,6 +52,33 @@ class TratamientoService
     }
 
     /**
+     * Determina si una ruta multimedia pertenece al tratamiento del paciente.
+     *
+     * La comprobación limita el acceso al país y a la variante de tratamiento
+     * que resultan de los diagnósticos del paciente. La validación completa de
+     * la ruta y de la existencia del archivo corresponde a MultimediaService.
+     *
+     * @param  Paciente  $paciente  Paciente que solicita el archivo.
+     * @param  string  $path  Ruta relativa recibida en la URL.
+     * @return bool `true` si la ruta está dentro del material autorizado.
+     */
+    public function puedeAccederAMultimedia(Paciente $paciente, string $path): bool
+    {
+        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+
+        if (! $tratamiento) {
+            return false;
+        }
+
+        [$pais, $diagnosticoDirname] = $tratamiento;
+        $tratamientosDirname = trim((string) config('filesystems.multimedia.tratamientos_dirname'), '/');
+        $path = ltrim(str_replace('\\', '/', $path), '/');
+        $directorioAutorizado = "$tratamientosDirname/$pais/$diagnosticoDirname/";
+
+        return str_starts_with($path, $directorioAutorizado);
+    }
+
+    /**
      * Determina la ubicación y los metadatos del tratamiento según los
      * diagnósticos del paciente.
      *

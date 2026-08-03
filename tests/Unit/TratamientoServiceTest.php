@@ -101,6 +101,25 @@ class TratamientoServiceTest extends TestCase
         $this->assertSame(0, $service->getCantidadSesionesPaciente($paciente));
     }
 
+    public function test_solo_autoriza_multimedia_del_tratamiento_asignado_al_paciente(): void
+    {
+        $service = app(TratamientoService::class);
+        $paciente = $this->pacienteConDiagnosticos([Diagnostico::DIABETES]);
+
+        $this->assertTrue($service->puedeAccederAMultimedia(
+            $paciente,
+            "$this->tratamientosDirname/AR/DBT/semana-1/sesion-1/video.mp4",
+        ));
+        $this->assertFalse($service->puedeAccederAMultimedia(
+            $paciente,
+            "$this->tratamientosDirname/AR/HTA/semana-1/sesion-1/video.mp4",
+        ));
+        $this->assertFalse($service->puedeAccederAMultimedia(
+            $paciente,
+            "$this->tratamientosDirname/BO/DBT/semana-1/sesion-1/video.mp4",
+        ));
+    }
+
     public function test_cuenta_solo_las_sesiones_dentro_de_las_semanas_del_tratamiento(): void
     {
         $basePath = storage_path("app/private/$this->tratamientosDirname/AR/DBT");
