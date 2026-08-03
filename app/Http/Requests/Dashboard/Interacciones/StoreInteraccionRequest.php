@@ -28,7 +28,7 @@ class StoreInteraccionRequest extends FormRequest
         return [
             'id' => ['nullable', 'exists:interacciones,id'],
             'paciente_id' => ['required', 'exists:pacientes,id'],
-            'alerta_id' => ['nullable', 'integer'],
+            'alerta_id' => ['nullable', 'integer', 'exists:alertas,id'],
             'contactado' => ['required', 'boolean'],
             'fecha' => [
                 'nullable',
@@ -318,7 +318,7 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
                 })
             ],
-            'id_entrenamiento' => ['nullable'],
+            'id_entrenamiento' => ['nullable', 'integer', 'exists:entrenamientos,id'],
         ];
     }
 
