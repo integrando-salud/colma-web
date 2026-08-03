@@ -50,7 +50,7 @@ class Entrenamiento extends Model
         'agendar_cita_final_fin' => 'date',
     ];
 
-    const DIAS_SUMA = [
+    const array DIAS_SUMA = [
         'seguimiento_dos_semanas_inicio' => 14,
         'seguimiento_dos_semanas_fin' => 21,
         'llamada_mensual_1_inicio' => 28,

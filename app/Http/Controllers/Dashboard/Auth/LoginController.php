@@ -16,9 +16,9 @@ use Inertia\Response;
 
 class LoginController extends Controller
 {
-    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const int MAX_LOGIN_ATTEMPTS = 5;
 
-    private const LOGIN_DECAY_SECONDS = 60;
+    private const int LOGIN_DECAY_SECONDS = 60;
 
     /**
      * Muestra el formulario de acceso al panel administrativo.

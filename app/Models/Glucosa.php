@@ -35,7 +35,7 @@ class Glucosa extends Model
 
     public $timestamps = false;
 
-    public const RANGO_NORMAL = '70 - 99';
+    public const string RANGO_NORMAL = '70 - 99';
 
     public function paciente()
     {

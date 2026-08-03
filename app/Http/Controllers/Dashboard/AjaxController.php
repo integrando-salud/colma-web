@@ -29,6 +29,8 @@ class AjaxController extends Controller
     /**
      * Obtiene los centros de salud que cumplen los filtros validados.
      *
+     * @param GetCentroSaludRequest $request Solicitud con los filtros ya validados.
+     * @param CentroSaludService    $centroSaludService Servicio de consulta de centros de salud.
      * @return AnonymousResourceCollection|JsonResponse
      */
     public function getCentrosSalud(GetCentroSaludRequest $request, CentroSaludService $centroSaludService): AnonymousResourceCollection|JsonResponse
@@ -45,6 +47,8 @@ class AjaxController extends Controller
     /**
      * Obtiene los usuarios accesibles para el usuario autenticado según los filtros recibidos.
      *
+     * @param GetUserRequest  $request Solicitud con los filtros ya validados.
+     * @param UsuarioService  $usuarioService Servicio de consulta de usuarios.
      * @return AnonymousResourceCollection|JsonResponse
      */
     public function getUsuarios(GetUserRequest $request, UsuarioService $usuarioService): AnonymousResourceCollection|JsonResponse
@@ -67,6 +71,8 @@ class AjaxController extends Controller
     /**
      * Obtiene los diagnósticos que cumplen los filtros validados.
      *
+     * @param GetDiagnosticoRequest $request Solicitud con los filtros ya validados.
+     * @param DiagnosticoService     $diagnosticoService Servicio de consulta de diagnósticos.
      * @return AnonymousResourceCollection|JsonResponse
      */
     public function getDiagnosticos(GetDiagnosticoRequest $request, DiagnosticoService $diagnosticoService): AnonymousResourceCollection|JsonResponse

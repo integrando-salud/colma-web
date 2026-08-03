@@ -26,7 +26,7 @@ use Throwable;
 
 class PacienteController extends Controller
 {
-    private const DETALLE_COMPONENT = 'Pacientes/Detalle';
+    private const string DETALLE_COMPONENT = 'Pacientes/Detalle';
 
     /**
      * Muestra el listado de pacientes dentro del alcance del usuario autenticado.

@@ -11,12 +11,12 @@ class Interaccion extends Model
 {
     use SoftDeletes;
 
-    public const MODALIDADES = [
+    public const array MODALIDADES = [
         'Llamada por teléfono / WhatsApp',
         'Encuentro presencial / en persona',
     ];
 
-    public const DESCRIPCION_CONTACTO = [
+    public const array DESCRIPCION_CONTACTO = [
         0 => 'No contactado',
         1 => 'Contactado',
     ];

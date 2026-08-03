@@ -45,7 +45,7 @@ class EstadoAnimo extends Model
 
     public $timestamps = false;
 
-    public const RANGO_NORMAL = '7 - 10';
+    public const string RANGO_NORMAL = '7 - 10';
 
     public function paciente()
     {
