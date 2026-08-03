@@ -226,8 +226,9 @@ class DashboardService
                     ->whereNotExists(function ($query) {
                         $query->selectRaw('1')
                             ->from('interacciones AS subquery')
-                            ->whereRaw('interacciones.nueva_fecha_contacto < subquery.fecha')
                             ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
+                            ->where('subquery.contactado', true)
+                            ->whereColumn('subquery.fecha', '>=', 'interacciones.nueva_fecha_contacto')
                             ->whereNull('subquery.deleted_at');
                     })
                     ->orderBy('nueva_fecha_contacto')
