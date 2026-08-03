@@ -12,32 +12,51 @@ use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
 use App\Models\Interaccion;
 use App\Models\Paciente;
+use App\Models\User;
 use App\Services\AlertaService;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Inertia\Response;
 use Throwable;
 
 class PacienteController extends Controller
 {
     private const DETALLE_COMPONENT = 'Pacientes/Detalle';
 
-    public function index(FilterPacienteRequest $request, DashboardService $dashboardService)
+    /**
+     * Muestra el listado de pacientes dentro del alcance del usuario autenticado.
+     *
+     * Los filtros y el ordenamiento ya fueron validados por FilterPacienteRequest;
+     * DashboardService prepara los datos auxiliares que consume la vista.
+     */
+    public function index(FilterPacienteRequest $request, DashboardService $dashboardService): Response
     {
         $viewData = $dashboardService->getDataForPacientesPage($request->validated());
 
         return Inertia::render('Pacientes/Index', $viewData);
     }
 
-    public function create()
+    /**
+     * Muestra el detalle vacío utilizado para crear un paciente.
+     */
+    public function create(): Response
     {
         return $this->renderDetalle();
     }
 
-    public function store(StorePacienteRequest $request, PacienteService $pacienteService)
+    /**
+     * Crea o actualiza un paciente a partir de los datos validados del formulario.
+     *
+     * StorePacienteRequest decide si se trata de un alta o una edición y autoriza
+     * ambas operaciones. El servicio persiste el paciente y sus relaciones de forma
+     * transaccional.
+     */
+    public function store(StorePacienteRequest $request, PacienteService $pacienteService): RedirectResponse
     {
         try {
             $pacienteService->storePaciente($request->validated());
@@ -48,21 +67,27 @@ class PacienteController extends Controller
                 return redirect()->route('dashboard.pacientes.index')
                     ->with('success', 'Se guardó con éxito.');
             }
-        } catch (Throwable $th) {
-            Log::error('Error al guardar paciente: '.$th->getMessage(), [
-                'stack' => $th->getTraceAsString(),
+        } catch (Throwable $exception) {
+            Log::error('Error al guardar paciente.', [
+                'exception' => $exception,
             ]);
 
             return back()->with('error', 'Error al guardar el paciente.');
         }
     }
 
-    public function edit(Paciente $paciente)
+    /**
+     * Muestra el detalle de un paciente para su edición.
+     */
+    public function edit(Paciente $paciente): Response
     {
         return $this->renderDetalle($paciente);
     }
 
-    public function alertas(Paciente $paciente, AlertaService $alertaService)
+    /**
+     * Muestra las alertas pendientes del paciente, separadas por tipo.
+     */
+    public function alertas(Paciente $paciente, AlertaService $alertaService): Response
     {
         $alertas = $alertaService->getAlertasPaciente($paciente, true);
 
@@ -74,7 +99,10 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function alertasHistorial(Paciente $paciente, AlertaService $alertaService)
+    /**
+     * Muestra el historial de alertas ya revisadas del paciente, separado por tipo.
+     */
+    public function alertasHistorial(Paciente $paciente, AlertaService $alertaService): Response
     {
         $alertas = $alertaService->getAlertasPaciente($paciente, false);
 
@@ -86,10 +114,17 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function interacciones(Request $request, Paciente $paciente)
+    /**
+     * Muestra las interacciones manuales del paciente, ordenadas desde la más reciente.
+     *
+     * Las relaciones requeridas por InteraccionResource se cargan por adelantado para
+     * evitar consultas adicionales por cada elemento de la página.
+     */
+    public function interacciones(Request $request, Paciente $paciente): Response
     {
         // TODO: agregar una opción para filtrar por rango de fechas de la interacción
         $interacciones = $paciente->interacciones()
+            ->with(['paciente', 'user'])
             ->whereNull('alerta_id')
             ->orderByDesc('fecha')
             ->paginate(10);
@@ -100,7 +135,13 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function createInteraccion(Request $request, Paciente $paciente, AlertaService $alertaService)
+    /**
+     * Muestra el formulario para registrar una interacción de un paciente activo.
+     *
+     * Cuando se recibe el parámetro opcional `alerta`, solamente se carga si pertenece
+     * al paciente de la ruta; así se evita asociar o exponer alertas de otro paciente.
+     */
+    public function createInteraccion(Request $request, Paciente $paciente, AlertaService $alertaService): Response|RedirectResponse
     {
         if (! $paciente->activo) {
             return back()->with('error', 'No se pueden agregar interacciones a un paciente inactivo.');
@@ -109,10 +150,14 @@ class PacienteController extends Controller
         $viewData = [];
 
         if ($request->filled('alerta')) {
-            $alerta = Alerta::with(['paciente', 'user'])->find($request->alerta);
+            $alerta = Alerta::query()
+                ->with(['paciente', 'user'])
+                ->whereKey($request->integer('alerta'))
+                ->where('paciente_id', $paciente->id)
+                ->first();
 
             if (! $alerta) {
-                return back()->with('error', 'No se encontró la alerta.');
+                return back()->with('error', 'No se encontró una alerta para este paciente.');
             }
 
             $alertaService->cargarEntidades(collect([$alerta]));
@@ -123,9 +168,15 @@ class PacienteController extends Controller
         return $this->renderDetalle($paciente, 'nueva-interaccion', $viewData);
     }
 
-    public function editInteraccion(Paciente $paciente, Interaccion $interaccion, AlertaService $alertaService)
+    /**
+     * Muestra una interacción existente para su edición.
+     *
+     * Solo los superusuarios y supervisores de país pueden editar. También se valida
+     * que el binding de interacción pertenezca al paciente de la ruta.
+     */
+    public function editInteraccion(Paciente $paciente, Interaccion $interaccion, AlertaService $alertaService): Response|RedirectResponse
     {
-        if (auth()->user()->isNotA('superusuario', 'supervisor_pais')) {
+        if (auth()->user()->isNotA(User::ROL_SUPERUSUARIO, User::ROL_SUPERVISOR_PAIS)) {
             return back()->with('error', 'No tienes permiso para realizar esta acción.');
         }
 
@@ -144,7 +195,11 @@ class PacienteController extends Controller
         ]);
     }
 
-    public function datosClinicos(FilterDatosClinicosRequest $request, Paciente $paciente, PacienteService $pacienteService)
+    /**
+     * Muestra las mediciones clínicas combinadas del paciente y aplica el rango de
+     * fechas opcional validado por FilterDatosClinicosRequest.
+     */
+    public function datosClinicos(FilterDatosClinicosRequest $request, Paciente $paciente, PacienteService $pacienteService): Response
     {
         $filtros = $request->validated();
 
@@ -158,7 +213,13 @@ class PacienteController extends Controller
         ]);
     }
 
-    private function renderDetalle(?Paciente $paciente = null, string $tab = 'datos_paciente', array $props = [])
+    /**
+     * Renderiza la pantalla de detalle y completa las relaciones requeridas por el
+     * recurso del paciente cuando se está consultando uno existente.
+     *
+     * @param  array<string, mixed>  $props  Propiedades adicionales específicas de la pestaña.
+     */
+    private function renderDetalle(?Paciente $paciente = null, string $tab = 'datos_paciente', array $props = []): Response
     {
         if ($paciente) {
             app(PacienteService::class)->cargarRelacionesParaResource($paciente);

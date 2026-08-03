@@ -46,9 +46,10 @@ Route::middleware('auth')->group(function () {
             Route::get('crear', [PacienteController::class, 'create'])
                 ->name('dashboard.pacientes.create')
                 ->can('create', Paciente::class);
+
+            Route::post('guardar', [PacienteController::class, 'store'])
+                ->name('dashboard.pacientes.store');
         });
-        Route::post('guardar', [PacienteController::class, 'store'])
-            ->name('dashboard.pacientes.store');
         Route::get('{paciente}/editar', [PacienteController::class, 'edit'])
             ->name('dashboard.pacientes.edit')
             ->can('update', 'paciente');
