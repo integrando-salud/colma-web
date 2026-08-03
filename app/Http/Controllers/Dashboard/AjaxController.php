@@ -9,7 +9,7 @@ use App\Http\Requests\Dashboard\Diagnostico\GetDiagnosticoRequest;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\DiagnosticoResource;
 use App\Http\Resources\Dashboard\EntrenamientoResource;
-use App\Http\Resources\Dashboard\PacienteResource;
+use App\Http\Resources\Dashboard\PacienteListResource;
 use App\Http\Resources\Dashboard\UserResource;
 use App\Models\Paciente;
 use App\Models\User;
@@ -205,8 +205,11 @@ class AjaxController extends Controller
             $pacienteService->resetearDatosPacienteTest($paciente);
 
             $paciente->refresh();
+            $pacienteService->cargarRelacionesParaResource($paciente);
 
-            return response()->json(PacienteResource::make($paciente));
+            // La respuesta reemplaza una fila del listado y debe conservar los
+            // datos que consume su modal "Ver más", incluida la clave permitida.
+            return response()->json(PacienteListResource::make($paciente));
         } catch (Throwable $th) {
             Log::error('Error al resetear los datos del paciente: ' . $th->getMessage(), [
                 'stack' => $th->getTraceAsString(),

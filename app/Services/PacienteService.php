@@ -301,10 +301,10 @@ class PacienteService
     {
         $fechasContactoInteracciones = $paciente->relationLoaded('proximosContactosProgramados')
             ? $paciente->proximosContactosProgramados
-            : $this->getFechasProximosContactosProgramados($paciente);
+            : $this->getFechasProximosContactosProgramados($paciente, $cantidad);
         $fechasContactoAlertas = $paciente->relationLoaded('proximosContactosAlertas')
             ? $paciente->proximosContactosAlertas
-            : $this->getFechasProximosContactosAlertas($paciente);
+            : $this->getFechasProximosContactosAlertas($paciente, $cantidad);
         $fechas = collect()
             ->merge($fechasContactoInteracciones->toArray())
             ->merge($fechasContactoAlertas->toArray())
@@ -322,11 +322,55 @@ class PacienteService
     }
 
     /**
+     * Precarga los datos que serializa PacienteResource para que las pantallas
+     * de detalle no ejecuten consultas implícitas al transformar el modelo.
+     */
+    public function cargarRelacionesParaResource(Paciente $paciente): Paciente
+    {
+        $paciente->loadMissing([
+            'centroSalud',
+            'promotor',
+            'usuario',
+            'diagnosticos',
+            'entrenamientos' => fn ($query) => $query->where('activo', true)->latest(),
+            'proximosContactosProgramados' => fn ($query) => $query
+                ->whereNotNull('nueva_fecha_contacto')
+                ->whereNotExists(function ($query) {
+                    $query->selectRaw('1')
+                        ->from('interacciones AS subquery')
+                        ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
+                        ->where('subquery.contactado', true)
+                        ->whereColumn('subquery.fecha', '>=', 'interacciones.nueva_fecha_contacto')
+                        ->whereNull('subquery.deleted_at');
+                })
+                ->orderBy('nueva_fecha_contacto')
+                ->limit(3)
+                ->selectRaw('id, paciente_id, motivo, nueva_fecha_contacto AS fecha'),
+            'proximosContactosAlertas' => fn ($query) => $query
+                ->whereNotNull('fecha_contacto')
+                ->whereNull('revisado')
+                ->orderBy('fecha_contacto')
+                ->limit(3)
+                ->selectRaw("id, paciente_id, fecha_contacto AS fecha, CASE
+                    WHEN tipo = 'operativa' THEN 'Alerta operativa'
+                    WHEN tipo = 'clinica' THEN 'Alerta clínica'
+                    ELSE ''
+                END AS motivo"),
+        ]);
+
+        if (! isset($paciente->numero_alertas)) {
+            $paciente->loadCount(['alertas AS numero_alertas' => fn (Builder $query) => $query->whereNull('revisado')]);
+        }
+
+        return $paciente;
+    }
+
+    /**
      * Obtiene las fechas y motivos de contacto programados para un paciente
      *
      * @return mixed
      */
-    public function getFechasProximosContactosProgramados(Paciente $paciente): Collection
+    public function getFechasProximosContactosProgramados(Paciente $paciente, int $cantidad = 3): Collection
     {
         return $paciente->interacciones()
             ->whereNotNull('nueva_fecha_contacto')
@@ -339,6 +383,7 @@ class PacienteService
                     ->whereNull('subquery.deleted_at');
             })
             ->orderBy('nueva_fecha_contacto')
+            ->limit($cantidad)
             ->get(['id', 'motivo', 'nueva_fecha_contacto AS fecha']);
     }
 
@@ -347,12 +392,13 @@ class PacienteService
      *
      * @return mixed
      */
-    public function getFechasProximosContactosAlertas(Paciente $paciente): Collection
+    public function getFechasProximosContactosAlertas(Paciente $paciente, int $cantidad = 3): Collection
     {
         return $paciente->alertas()
             ->whereNotNull('fecha_contacto')
             ->whereNull('revisado')
             ->orderBy('fecha_contacto')
+            ->limit($cantidad)
             ->selectRaw("
                 id, fecha_contacto AS fecha,
                 CASE
@@ -369,6 +415,17 @@ class PacienteService
      */
     public function getFechaProximoContacto(Paciente $paciente): ?string
     {
+        if ($paciente->relationLoaded('proximosContactosProgramados')
+            && $paciente->relationLoaded('proximosContactosAlertas')) {
+            return collect()
+                ->merge($paciente->proximosContactosProgramados)
+                ->merge($paciente->proximosContactosAlertas)
+                ->pluck('fecha')
+                ->filter()
+                ->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())
+                ->min();
+        }
+
         $fechaContactoInteracciones = $this->getFechaProximoContactoProgramado($paciente);
         $fechaContactoAlertas = $this->getFechaProximoContactoAlerta($paciente);
 

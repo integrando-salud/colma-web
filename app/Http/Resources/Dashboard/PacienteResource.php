@@ -5,7 +5,6 @@ namespace App\Http\Resources\Dashboard;
 use App\Services\PacienteService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Carbon;
 
 class PacienteResource extends JsonResource
@@ -17,13 +16,21 @@ class PacienteResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $pacienteService = new PacienteService();
+        $pacienteService = app(PacienteService::class);
+
+        // DashboardService precarga únicamente los entrenamientos activos y los
+        // ordena por fecha. Si esta relación se carga desde otro contexto, se
+        // conserva el criterio de negocio y no se toma un entrenamiento inactivo.
         $entrenamientoActual = $this->resource->relationLoaded('entrenamientos')
-            ? $this->entrenamientos->first()
+            ? $this->entrenamientos->firstWhere('activo', true)
             : $this->entrenamientos()->where('activo', true)->latest()->first();
-        $fechaProximoContacto = $this->nueva_fecha_contacto
-            ? Carbon::parse($this->nueva_fecha_contacto)
-            : $pacienteService->getFechaProximoContacto($this->resource);
+        // El selectSub del listado devuelve una cadena, mientras que el cast del
+        // modelo puede devolver Carbon. Se normaliza antes de calcular los días.
+        $fechaProximoContactoRaw = $this->nueva_fecha_contacto
+            ?: $pacienteService->getFechaProximoContacto($this->resource);
+        $fechaProximoContacto = $fechaProximoContactoRaw
+            ? Carbon::parse($fechaProximoContactoRaw)
+            : null;
         $proximosContactos = $pacienteService->getFechasProximosContactos($this->resource);
         $diasPostFechaProximoContacto = (int) $fechaProximoContacto?->diffInDays(now()) ?? 0;
 
@@ -32,13 +39,14 @@ class PacienteResource extends JsonResource
             'id_externo' => $this->id_externo,
             'nombre' => $this->nombre,
             'apellido' => $this->apellido,
-            'fecha_nacimiento' => $this->fecha_nacimiento->format('Y-m-d'),
-            'fecha_nacimiento_format' => $this->fecha_nacimiento->format('d/m/Y'),
-            'edad' => $this->fecha_nacimiento->age,
+            'fecha_nacimiento' => $this->fecha_nacimiento?->format('Y-m-d'),
+            'fecha_nacimiento_format' => $this->fecha_nacimiento?->format('d/m/Y'),
+            'edad' => $this->fecha_nacimiento?->age,
             'sexo' => $this->sexo,
             'sexo_descripcion' => match ($this->sexo) {
                 'M' => 'Masculino',
                 'F' => 'Femenino',
+                default => null,
             },
             'documento' => $this->documento,
             'telefono' => $this->telefono,
@@ -49,8 +57,8 @@ class PacienteResource extends JsonResource
             'observaciones' => $this->observaciones,
             'centro_salud' => new CentroSaludResource($this->centroSalud),
             'promotor' => new UserResource($this->promotor),
-            'fecha_enrolamiento' => $this->fecha_enrolamiento->format('Y-m-d'),
-            'fecha_enrolamiento_format' => $this->fecha_enrolamiento->format('d/m/Y'),
+            'fecha_enrolamiento' => $this->fecha_enrolamiento?->format('Y-m-d'),
+            'fecha_enrolamiento_format' => $this->fecha_enrolamiento?->format('d/m/Y'),
             'diagnosticos' => DiagnosticoResource::collection($this->diagnosticos),
             'usuario' => new UserResource($this->usuario),
             'sesiones' => $entrenamientoActual ? [
@@ -64,7 +72,6 @@ class PacienteResource extends JsonResource
             'proximos_contactos' => $proximosContactos,
             'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),
             'fecha_proximo_contacto_dias' => $diasPostFechaProximoContacto,
-            'clave' => $this->clave ? Crypt::decryptString($this->clave) : null,
             'test' => $this->test,
         ];
     }

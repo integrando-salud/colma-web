@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\MotivoInteraccion;
+use App\Http\Resources\Dashboard\PacienteListResource;
+use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
 use App\Models\Diagnostico;
 use App\Models\Entrenamiento;
@@ -14,6 +16,7 @@ use App\Models\PresionArterial;
 use App\Models\User;
 use App\Services\PacienteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
 
 class PacienteServiceTest extends TestCase
@@ -130,6 +133,20 @@ class PacienteServiceTest extends TestCase
         $this->crearAlerta($paciente, ['fecha_contacto' => '2026-03-02']);
 
         $this->assertSame('2026-03-02', substr((string) $this->service->getFechaProximoContacto($paciente), 0, 10));
+    }
+
+    public function test_resource_normaliza_la_fecha_y_limita_la_clave_al_listado(): void
+    {
+        $paciente = $this->crearPaciente(['clave' => Crypt::encryptString('clave-visible-en-modal')]);
+        $this->crearAlerta($paciente, ['fecha_contacto' => '2026-03-02']);
+        $this->service->cargarRelacionesParaResource($paciente);
+
+        $detalle = (new PacienteResource($paciente))->resolve();
+        $listado = (new PacienteListResource($paciente))->resolve();
+
+        $this->assertSame('02/03/2026', $detalle['fecha_proximo_contacto']);
+        $this->assertArrayNotHasKey('clave', $detalle);
+        $this->assertSame('clave-visible-en-modal', $listado['clave']);
     }
 
     public function test_get_fecha_proximo_contacto_programado_devuelve_la_primera_pendiente(): void

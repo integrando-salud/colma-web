@@ -232,11 +232,13 @@ class DashboardService
                             ->whereNull('subquery.deleted_at');
                     })
                     ->orderBy('nueva_fecha_contacto')
+                    ->limit(3)
                     ->selectRaw('id, paciente_id, motivo, nueva_fecha_contacto AS fecha'),
                 'proximosContactosAlertas' => fn ($query) => $query
                     ->whereNotNull('fecha_contacto')
                     ->whereNull('revisado')
                     ->orderBy('fecha_contacto')
+                    ->limit(3)
                     ->selectRaw("id, paciente_id, fecha_contacto AS fecha, CASE
                         WHEN tipo = 'operativa' THEN 'Alerta operativa'
                         WHEN tipo = 'clinica' THEN 'Alerta clínica'

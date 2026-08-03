@@ -160,6 +160,10 @@ class PacienteController extends Controller
 
     private function renderDetalle(?Paciente $paciente = null, string $tab = 'datos_paciente', array $props = [])
     {
+        if ($paciente) {
+            app(PacienteService::class)->cargarRelacionesParaResource($paciente);
+        }
+
         return Inertia::render(self::DETALLE_COMPONENT, array_merge($props, [
             'paciente' => $paciente ? new PacienteResource($paciente) : null,
             'tab' => $tab,
