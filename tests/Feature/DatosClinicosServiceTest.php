@@ -34,7 +34,7 @@ class DatosClinicosServiceTest extends TestCase
         $this->assertDatabaseCount('presion_arterial', 1);
         $this->assertDatabaseCount('estado_animo', 1);
         $this->assertDatabaseCount('cuestionarios', 1);
-        $this->assertDatabaseCount('cuestionarios_preguntas', 1);
+        $this->assertDatabaseCount('cuestionarios_preguntas', 2);
         $this->assertDatabaseCount('metas', 1);
         $this->assertDatabaseCount('multimedia_read', 1);
         $this->assertDatabaseCount('alertas', 2);
