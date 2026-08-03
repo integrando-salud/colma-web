@@ -9,7 +9,13 @@ use Illuminate\Support\Facades\File;
 
 class TratamientoService
 {
-    public function getTratamientoPaciente(Paciente $paciente)
+    /**
+     * Obtiene el tratamiento multimedia que corresponde al diagnóstico del paciente.
+     *
+     * Retorna `null` cuando el paciente no posee un diagnóstico con tratamiento
+     * configurado.
+     */
+    public function getTratamientoPaciente(Paciente $paciente): ?array
     {
         $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
 
@@ -20,6 +26,11 @@ class TratamientoService
         return $this->getTratamiento(...$tratamiento);
     }
 
+    /**
+     * Cuenta las sesiones válidas disponibles para el tratamiento del paciente.
+     *
+     * Solo se consideran directorios con el formato `semana-N/sesion-N`.
+     */
     public function getCantidadSesionesPaciente(Paciente $paciente): int
     {
         $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
@@ -40,6 +51,14 @@ class TratamientoService
             ->sum(fn (string $semanaPath) => count($this->getDirectoriosConNombre($semanaPath, 'sesion-')));
     }
 
+    /**
+     * Determina la ubicación y los metadatos del tratamiento según los
+     * diagnósticos del paciente.
+     *
+     * @return array{0: string, 1: string, 2: string, 3: string}|null
+     *
+     * @throws Exception Cuando el paciente no tiene un país asociado.
+     */
     private function getConfiguracionTratamientoPaciente(Paciente $paciente): ?array
     {
         $diagnosticosIds = $paciente->diagnosticos->pluck('id');
@@ -68,7 +87,10 @@ class TratamientoService
         return null;
     }
 
-    private function getTratamiento(string $pais, ?string $diagnosticoDirname, string $tipo, string $nombre): array
+    /**
+     * Construye la estructura de respuesta del tratamiento a partir de su configuración.
+     */
+    private function getTratamiento(string $pais, string $diagnosticoDirname, string $tipo, string $nombre): array
     {
         $tratamientosDirname = config('filesystems.multimedia.tratamientos_dirname');
         $path = storage_path("app/private/$tratamientosDirname/$pais/$diagnosticoDirname");
@@ -85,6 +107,9 @@ class TratamientoService
         ];
     }
 
+    /**
+     * Obtiene las semanas válidas del tratamiento, ordenadas por su número.
+     */
     private function getSemanas(string $path): array
     {
         $semanas = array_map(function (string $semanaPath) {
@@ -95,13 +120,16 @@ class TratamientoService
                 'title' => "Semana $numeroSemana",
                 'sesiones' => $this->getSesiones($semanaPath),
             ];
-        }, File::directories($path));
+        }, $this->getDirectoriosConNombre($path, 'semana-'));
 
         usort($semanas, fn (array $a, array $b) => $a['id'] <=> $b['id']);
 
         return $semanas;
     }
 
+    /**
+     * Filtra los subdirectorios cuyo nombre cumple el formato "{prefijo}N".
+     */
     private function getDirectoriosConNombre(string $path, string $prefijo): array
     {
         return array_values(array_filter(
@@ -110,6 +138,9 @@ class TratamientoService
         ));
     }
 
+    /**
+     * Obtiene las sesiones válidas de una semana, ordenadas por su número.
+     */
     private function getSesiones(string $path): array
     {
         $sesiones = array_map(function (string $sesionPath) {
@@ -120,13 +151,16 @@ class TratamientoService
                 'title' => "Sesión $numeroSesion",
                 'content' => $this->getContenido($sesionPath),
             ];
-        }, File::directories($path));
+        }, $this->getDirectoriosConNombre($path, 'sesion-'));
 
         usort($sesiones, fn (array $a, array $b) => $a['id'] <=> $b['id']);
 
         return $sesiones;
     }
 
+    /**
+     * Lista los archivos de una sesión, clasificados por su tipo MIME.
+     */
     private function getContenido(string $path): array
     {
         $contenido = array_map(function ($archivo) {
@@ -145,6 +179,9 @@ class TratamientoService
         return $contenido;
     }
 
+    /**
+     * Extrae el primer número incluido en el nombre de un directorio.
+     */
     private function getNumeroDesdeNombre(string $nombre): int
     {
         preg_match('/\d+/', $nombre, $matches);
@@ -152,6 +189,9 @@ class TratamientoService
         return (int) ($matches[0] ?? 0);
     }
 
+    /**
+     * Convierte un tipo MIME en una categoría consumible por el cliente.
+     */
     private function getTipoContenido(string $mime): string
     {
         if (str_starts_with($mime, 'image/')) {
@@ -169,6 +209,9 @@ class TratamientoService
         return 'ARCHIVO';
     }
 
+    /**
+     * Convierte una ruta absoluta dentro del almacenamiento privado en una ruta relativa.
+     */
     private function getPathRelativoStorage(string $path): string
     {
         return str_replace(storage_path('app/private/'), '', $path);
