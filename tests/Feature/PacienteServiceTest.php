@@ -15,6 +15,7 @@ use App\Models\Paciente;
 use App\Models\PresionArterial;
 use App\Models\User;
 use App\Services\PacienteService;
+use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
@@ -28,12 +29,14 @@ class PacienteServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(RolesSeeder::class);
         $this->service = app(PacienteService::class);
     }
 
     public function test_query_get_pacientes_filtra_y_conserva_la_fecha_proxima_al_ordenar(): void
     {
         $usuario = $this->crearUsuario('operador');
+        $usuario->assign(User::ROL_SUPERUSUARIO);
         $this->actingAs($usuario);
         $paciente = $this->crearPaciente(['nombre' => 'Ana', 'apellido' => 'Paz']);
         $this->crearInteraccion($paciente, ['nueva_fecha_contacto' => '2026-03-10']);

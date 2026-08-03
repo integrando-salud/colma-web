@@ -51,6 +51,22 @@ class UsuarioServiceTest extends TestCase
         $this->assertSame('desc', $query->orders[0]['direction']);
     }
 
+    public function test_query_get_usuarios_no_expone_promotores_ajenos_a_promotores_ni_pacientes(): void
+    {
+        $pais = $this->crearPais('Argentina');
+        $centro = $this->crearCentro($pais);
+        $promotor = $this->crearUsuario($pais, $centro, User::ROL_PROMOTOR);
+        $otroPromotor = $this->crearUsuario($pais, $centro, User::ROL_PROMOTOR);
+        $paciente = $this->crearUsuario($pais, $centro, User::ROL_PACIENTE);
+
+        $this->actingAs($promotor);
+        $this->assertSame([$promotor->id], $this->service->queryGetUsuarios(['onlyPromotores' => true])->pluck('id')->all());
+
+        $this->actingAs($paciente);
+        $this->assertSame([], $this->service->queryGetUsuarios(['onlyPromotores' => true])->pluck('id')->all());
+        $this->assertNotSame($promotor->id, $otroPromotor->id);
+    }
+
     public function test_store_usuario_crea_actualiza_y_sincroniza_el_rol(): void
     {
         $pais = $this->crearPais('Argentina');

@@ -29,17 +29,9 @@ class PacienteService
     public function queryGetPacientes(array $filters = []): Builder
     {
         $usuario = auth()->user();
-        $query = Paciente::query()->select('pacientes.*');
-
-        if ($usuario->isA('promotor')) {
-            $query->where('promotor_id', $usuario->id);
-        } elseif ($usuario->isA('supervisor')) {
-            $query->whereIn('promotor_id', $usuario->promotores->pluck('id'));
-        } elseif ($usuario->isA('supervisor_pais')) {
-            $query->whereHas('centroSalud', function (Builder $query) use ($usuario) {
-                $query->where('pais_id', $usuario->pais_id);
-            });
-        }
+        $query = Paciente::query()
+            ->select('pacientes.*')
+            ->visibleTo($usuario);
 
         $query->withCount(['alertas AS numero_alertas' => function (Builder $query) {
             $query->whereNull('revisado');

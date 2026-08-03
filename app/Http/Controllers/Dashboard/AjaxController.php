@@ -50,7 +50,13 @@ class AjaxController extends Controller
     public function getUsuarios(GetUserRequest $request, UsuarioService $usuarioService): AnonymousResourceCollection|JsonResponse
     {
         try {
-            $usuarios = $usuarioService->queryGetUsuarios($request->validated())->get();
+            // Este endpoint alimenta exclusivamente el selector de promotores.
+            // El alcance no depende de un parámetro manipulable por el cliente.
+            $usuarios = $usuarioService->queryGetUsuarios([
+                ...$request->validated(),
+                'forSelector' => true,
+                'onlyPromotores' => true,
+            ])->get();
 
             return UserResource::collection($usuarios);
         } catch (Throwable $th) {
@@ -114,9 +120,7 @@ class AjaxController extends Controller
      */
     public function cambiarEstadoPaciente(Paciente $paciente, PacienteService $pacienteService, UsuarioService $usuarioService): JsonResponse
     {
-        $this->ensurePacienteIsVisible($paciente, $pacienteService);
-
-        abort_if(auth()->user()->isNotA(User::ROL_SUPERUSUARIO, User::ROL_SUPERVISOR), 403);
+        $this->authorize('changeStatus', $paciente);
 
         $accionPendiente = $paciente->activo ? 'desactivar' : 'activar';
 
@@ -187,7 +191,7 @@ class AjaxController extends Controller
      */
     public function getEntrenamientoActual(Paciente $paciente, PacienteService $pacienteService): JsonResponse|Response
     {
-        $this->ensurePacienteIsVisible($paciente, $pacienteService);
+        $this->authorize('view', $paciente);
 
         try {
             $entrenamientoActual = $pacienteService->getEntrenamientoActual($paciente);
@@ -210,7 +214,7 @@ class AjaxController extends Controller
      */
     public function resetearDatosPaciente(Paciente $paciente, PacienteService $pacienteService): JsonResponse
     {
-        $this->ensurePacienteIsVisible($paciente, $pacienteService);
+        $this->authorize('view', $paciente);
 
         try {
             DB::transaction(function () use ($paciente, $pacienteService): void {
@@ -244,16 +248,5 @@ class AjaxController extends Controller
     private function ensureCurrentUser(User $usuario): void
     {
         abort_unless($usuario->is(auth()->user()), 403);
-    }
-
-    /**
-     * Impide operar sobre un paciente fuera del alcance del usuario autenticado.
-     */
-    private function ensurePacienteIsVisible(Paciente $paciente, PacienteService $pacienteService): void
-    {
-        abort_unless(
-            $pacienteService->queryGetPacientes()->whereKey($paciente->getKey())->exists(),
-            403,
-        );
     }
 }

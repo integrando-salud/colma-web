@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Dashboard\Paciente;
 
+use App\Models\Paciente;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +13,17 @@ class StorePacienteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        if (! auth()->check()) {
+            return false;
+        }
+
+        if (! $this->filled('id')) {
+            return auth()->user()->can('create', Paciente::class);
+        }
+
+        $paciente = Paciente::find($this->input('id'));
+
+        return $paciente !== null && auth()->user()->can('update', $paciente);
     }
 
     /**

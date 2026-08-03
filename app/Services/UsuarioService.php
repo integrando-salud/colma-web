@@ -26,13 +26,14 @@ class UsuarioService
      * Los supervisores solo acceden a los promotores de su país y los supervisores de país solo
      * a promotores y supervisores de su país.
      *
-     * @param  array{forSelector?: bool, withoutPais?: bool, rol?: string, pais?: int|string, nombre?: string, orderBy?: string, orderDir?: string}  $filters
+     * @param  array{forSelector?: bool, onlyPromotores?: bool, withoutPais?: bool, rol?: string, pais?: int|string, nombre?: string, orderBy?: string, orderDir?: string}  $filters
      * @return Builder<User>
      */
     public function queryGetUsuarios(array $filters = []): Builder
     {
         $authUser = auth()->user();
         $forSelector = (bool) data_get($filters, 'forSelector', false);
+        $onlyPromotores = (bool) data_get($filters, 'onlyPromotores', false);
         $withoutPais = (bool) data_get($filters, 'withoutPais', false);
         $relations = $forSelector
             ? ['pais', 'centroSalud']
@@ -51,26 +52,34 @@ class UsuarioService
             $this->addDashboardCounts($query);
         }
 
-        if ($authUser->isA('supervisor')) {
+        if ($authUser->isA(User::ROL_PROMOTOR)) {
+            // Un promotor no administra usuarios ni puede enumerar a sus pares.
+            $query->whereKey($authUser->getKey());
+        } elseif ($authUser->isA(User::ROL_SUPERVISOR)) {
             $query->where('supervisor_id', $authUser->id)
                 ->where('pais_id', $authUser->pais_id);
-        } elseif ($authUser->isA('supervisor_pais')) {
+        } elseif ($authUser->isA(User::ROL_SUPERVISOR_PAIS)) {
             $query->where('pais_id', $authUser->pais_id)
-                ->whereHas('roles', function ($query) {
-                    $query->whereIn('name', [
-                        'supervisor',
-                        'promotor'
-                    ]);
-                });
+            ->whereHas('roles', function ($query) {
+                $query->whereIn('name', [
+                    User::ROL_SUPERVISOR,
+                    User::ROL_PROMOTOR,
+                ]);
+            });
+        } elseif ($authUser->isNotA(User::ROL_SUPERUSUARIO)) {
+            // Pacientes y roles no contemplados no pueden descubrir usuarios.
+            $query->whereRaw('1 = 0');
         }
 
-        if (!empty($filters['rol'])) {
+        if ($onlyPromotores) {
+            $query->whereIs(User::ROL_PROMOTOR);
+        } elseif (!empty($filters['rol'])) {
             $query->whereHas('roles', function ($query) use ($filters) {
                 $query->where('name', $filters['rol']);
             });
         }
 
-        if (!empty($filters['pais']) && !$authUser->isA('supervisor') && !$authUser->isA('supervisor_pais')) {
+        if (!empty($filters['pais']) && !$authUser->isA(User::ROL_SUPERVISOR) && !$authUser->isA(User::ROL_SUPERVISOR_PAIS)) {
             $query->where('pais_id', $filters['pais']);
         }
 
