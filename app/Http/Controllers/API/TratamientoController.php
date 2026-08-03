@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
-use App\Models\Paciente;
-use App\Models\User;
 use App\Services\MultimediaService;
 use App\Services\TratamientoService;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +12,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * Expone el tratamiento y su material multimedia a usuarios de la aplicación
  * móvil que poseen un perfil de paciente.
  */
-class TratamientoController extends Controller
+class TratamientoController extends PacienteAutenticadoController
 {
     /**
      * Obtiene la estructura del tratamiento asignado al paciente autenticado.
@@ -52,36 +49,12 @@ class TratamientoController extends Controller
         string $path,
         TratamientoService $tratamientoService,
         MultimediaService $multimediaService,
-    ): BinaryFileResponse
-    {
+    ): BinaryFileResponse {
         abort_unless(
             $tratamientoService->puedeAccederAMultimedia($this->pacienteAutenticado($request), $path),
             404,
         );
 
         return $multimediaService->descargarMultimedia($path);
-    }
-
-    /**
-     * Obtiene el perfil de paciente del usuario autenticado en la aplicación.
-     *
-     * Aunque las rutas están protegidas por Sanctum, el token podría pertenecer
-     * a un usuario del panel. La comprobación evita errores de tipo y restringe
-     * estos endpoints a pacientes con un perfil asociado.
-     *
-     * @param  Request  $request  Solicitud de la que se obtiene el usuario autenticado.
-     * @return Paciente Perfil asociado al usuario autenticado.
-     */
-    private function pacienteAutenticado(Request $request): Paciente
-    {
-        $user = $request->user();
-
-        abort_unless($user instanceof User && $user->isA(User::ROL_PACIENTE), 403);
-
-        $paciente = $user->paciente;
-
-        abort_unless($paciente instanceof Paciente, 403);
-
-        return $paciente;
     }
 }

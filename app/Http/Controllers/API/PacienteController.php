@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
 use App\Http\Requests\API\Paciente\SyncDataRequest;
-use App\Models\Paciente;
-use App\Models\User;
 use App\Services\AlertaService;
 use App\Services\DatosClinicosService;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +13,7 @@ use Throwable;
  * Expone las operaciones de la aplicación móvil que solo puede realizar el
  * usuario que posee el perfil de paciente.
  */
-class PacienteController extends Controller
+class PacienteController extends PacienteAutenticadoController
 {
     /**
      * Sincroniza la información clínica enviada por el paciente autenticado.
@@ -75,24 +72,5 @@ class PacienteController extends Controller
                 'message' => 'Error al registrar el pedido de ayuda.',
             ], 500);
         }
-    }
-
-    /**
-     * Obtiene el perfil de paciente del usuario autenticado en la aplicación móvil.
-     *
-     * @param  Request  $request  Solicitud cuya sesión se debe validar.
-     * @return Paciente Perfil de paciente asociado al usuario autenticado.
-     */
-    private function pacienteAutenticado(Request $request): Paciente
-    {
-        $user = $request->user();
-
-        abort_unless($user instanceof User && $user->isA(User::ROL_PACIENTE), 403);
-
-        $paciente = $user->paciente;
-
-        abort_unless($paciente instanceof Paciente, 403);
-
-        return $paciente;
     }
 }
