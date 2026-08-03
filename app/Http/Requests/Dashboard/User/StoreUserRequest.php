@@ -13,7 +13,13 @@ class StoreUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && (auth()->user()->can('crear-usuarios') || auth()->user()->can('editar-usuarios'));
+        if (!auth()->check()) {
+            return false;
+        }
+
+        return $this->filled('id')
+            ? auth()->user()->can('editar-usuarios')
+            : auth()->user()->can('crear-usuarios');
     }
 
     /**

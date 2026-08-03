@@ -27,9 +27,7 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.usuarios.index')
             ->can('ver-usuarios');
         Route::post('guardar', [UsuarioController::class, 'store'])
-            ->name('dashboard.usuarios.store')
-            ->can('crear-usuarios')
-            ->can('editar-usuarios');
+            ->name('dashboard.usuarios.store');
         Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
             ->name('dashboard.usuarios.delete')
             ->can('eliminar-usuarios');
