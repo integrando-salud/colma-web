@@ -9,23 +9,28 @@ use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\Meta;
 use App\Models\MultimediaRead;
-use App\Models\Paciente;
 use App\Models\PresionArterial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class DatosClinicosService
 {
-    public function syncDatosApp(array $data)
+    /**
+     * Sincroniza los datos clínicos enviados por la aplicación móvil de un paciente.
+     *
+     * La operación es atómica: ante cualquier error no persiste datos parciales.
+     *
+     * @param array<string, mixed> $data Datos validados por SyncDataRequest.
+     */
+    public function syncDatosApp(array $data): bool
     {
-        try {
-            $usuario = User::find($data['userId']);
-            $idPaciente = $usuario->paciente->id;
-            DB::beginTransaction();
+        $usuario = User::query()->findOrFail($data['userId']);
+        $paciente = $usuario->paciente()->firstOrFail();
+        $idPaciente = $paciente->id;
 
+        return DB::transaction(function () use ($data, $paciente, $idPaciente): bool {
             if (!empty($data['glucosa'])) {
                 $this->saveDatosGlucosa($idPaciente, $data['glucosa']);
             }
@@ -50,8 +55,6 @@ class DatosClinicosService
                 $this->saveDatosMultimediaRead($idPaciente, $data['multimedia_read']);
             }
 
-            $paciente = Paciente::find($idPaciente);
-
             if (array_key_exists('sesiones_completadas', $data)) {
                 $paciente->entrenamientos()
                     ->where('activo', true)
@@ -64,15 +67,16 @@ class DatosClinicosService
                 'fecha_ultima_sincronizacion' => now(),
             ]);
 
-            DB::commit();
             return true;
-        } catch (Throwable $th) {
-            DB::rollBack();
-            throw $th;
-        }
+        });
     }
 
-    protected function saveDatosGlucosa(int $idPaciente, array $data)
+    /**
+     * Guarda o actualiza las mediciones de glucosa y crea sus alertas cuando corresponde.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosGlucosa(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             $registroGlucosa = Glucosa::updateOrCreate([
@@ -113,7 +117,8 @@ class DatosClinicosService
         }
     }
 
-    public function getRecomendacionGlucosa(int $valor)
+    /** Obtiene la recomendación operativa para un valor de glucosa crítico. */
+    public function getRecomendacionGlucosa(int $valor): ?string
     {
         if ($valor < 70) {
             return 'Contactar y preguntar si pudo agendar un control con su médico.';
@@ -124,7 +129,12 @@ class DatosClinicosService
         return null;
     }
 
-    protected function saveDatosPresionArterial(int $idPaciente, array $data)
+    /**
+     * Guarda o actualiza las mediciones de presión arterial y crea sus alertas cuando corresponde.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosPresionArterial(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             $registroPresion = PresionArterial::updateOrCreate([
@@ -169,6 +179,10 @@ class DatosClinicosService
         }
     }
 
+    /**
+     * Obtiene la recomendación para una medición de presión arterial.
+     * La presión elevada requiere cuatro mediciones recientes elevadas en días distintos.
+     */
     public function getRecomendacionPresionArterial(
         int $presionSistolica,
         int $presionDiastolica,
@@ -211,11 +225,13 @@ class DatosClinicosService
         return null;
     }
 
+    /** Determina si una medición está en el rango elevado no crítico. */
     private function isPresionElevada(int $presionSistolica, int $presionDiastolica): bool
     {
         return ($presionSistolica >= 140 && $presionSistolica <= 179) || ($presionDiastolica >= 90 && $presionDiastolica <= 119);
     }
 
+    /** Recupera las últimas mediciones de presión arterial de un paciente. */
     public function getUltimosRegistrosPresionArterial(int $idPaciente, int $cantidadRegistros): Collection
     {
         return PresionArterial::query()
@@ -225,6 +241,7 @@ class DatosClinicosService
             ->get();
     }
 
+    /** Verifica que el conjunto tenga la cantidad esperada y una medición por día. */
     private function checkUltimosRegistrosFechasDiferentes(int $cantidadRegistros, Collection $ultimosRegistros): bool
     {
         $fechasUnicas = $ultimosRegistros
@@ -236,7 +253,8 @@ class DatosClinicosService
             && $fechasUnicas->count() === $cantidadRegistros;
     }
 
-    public function getRecomendacionEstadoAnimo(int $valor)
+    /** Obtiene la recomendación operativa según el puntaje de estado de ánimo. */
+    public function getRecomendacionEstadoAnimo(int $valor): ?string
     {
         if ($valor >= 10 && $valor <= 14) {
             return 'Contactar y preguntar si pudo agendar un control con su médico.';
@@ -247,7 +265,12 @@ class DatosClinicosService
         return null;
     }
 
-    protected function saveDatosEstadoAnimo(int $idPaciente, array $data)
+    /**
+     * Guarda cuestionarios de estado de ánimo, calcula el puntaje y genera alertas si aplica.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosEstadoAnimo(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             $valor = 0;
@@ -291,6 +314,7 @@ class DatosClinicosService
         }
     }
 
+    /** Crea una alerta clínica vinculada a un dato clínico concreto. */
     protected function saveAlerta(
         int $idPaciente,
         string $tipo,
@@ -298,8 +322,8 @@ class DatosClinicosService
         string $entidad_tipo,
         string $descripcion,
         string $recomendacion,
-        string $fecha_contacto
-    )
+        string $fechaContacto
+    ): Alerta
     {
         return Alerta::create([
             'paciente_id' => $idPaciente,
@@ -309,11 +333,16 @@ class DatosClinicosService
             'descripcion' => $descripcion,
             'recomendacion' => $recomendacion,
             'fecha' => now(),
-            'fecha_contacto' => $fecha_contacto,
+            'fecha_contacto' => $fechaContacto,
         ]);
     }
 
-    protected function saveDatosCuestionario(int $idPaciente, array $data)
+    /**
+     * Guarda cuestionarios y sus respuestas, identificándolos por el id de la aplicación móvil.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosCuestionario(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             $cuestionario = Cuestionario::updateOrCreate([
@@ -323,7 +352,7 @@ class DatosClinicosService
                 'quiz_type' => $d['quiz_type'],
                 'fecha_registro' => $d['fecha_registro'],
                 'fecha_usuario' => $d['fecha_usuario'],
-                'fecha_sincronizacion' => $d['fecha_sincronizacion']
+                'fecha_sincronizacion' => $d['fecha_sincronizacion'],
             ]);
 
             foreach ($d['preguntas'] as $p) {
@@ -342,7 +371,12 @@ class DatosClinicosService
         }
     }
 
-    protected function saveDatosMetas(int $idPaciente, array $data)
+    /**
+     * Guarda o actualiza las metas enviadas por la aplicación móvil.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosMetas(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             Meta::updateOrCreate([
@@ -366,7 +400,12 @@ class DatosClinicosService
         }
     }
 
-    protected function saveDatosMultimediaRead(int $idPaciente, array $data)
+    /**
+     * Guarda o actualiza los contenidos multimedia que el paciente marcó como leídos.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveDatosMultimediaRead(int $idPaciente, array $data): void
     {
         foreach ($data as $d) {
             MultimediaRead::updateOrCreate([
