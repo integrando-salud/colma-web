@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Services\MultimediaService;
 use App\Services\TratamientoService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -24,6 +25,8 @@ class TratamientoController extends PacienteAutenticadoController
      * @param  Request  $request  Solicitud autenticada de la aplicación móvil.
      * @param  TratamientoService  $tratamientoService  Servicio que construye el tratamiento y sus recursos.
      * @return JsonResponse Respuesta JSON con el tratamiento o `null` si no corresponde uno.
+     *
+     * @throws Exception Cuando no se puede determinar el país del paciente.
      */
     public function getTratamiento(Request $request, TratamientoService $tratamientoService): JsonResponse
     {
@@ -43,6 +46,8 @@ class TratamientoController extends PacienteAutenticadoController
      * @param  TratamientoService  $tratamientoService  Servicio que autoriza el material para el paciente.
      * @param  MultimediaService  $multimediaService  Servicio que valida y devuelve el archivo.
      * @return BinaryFileResponse Respuesta de descarga del archivo multimedia.
+     *
+     * @throws Exception Cuando no se puede determinar el país del paciente.
      */
     public function getMultimedia(
         Request $request,

@@ -13,9 +13,9 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const int MAX_LOGIN_ATTEMPTS = 5;
 
-    private const LOGIN_DECAY_SECONDS = 60;
+    private const int LOGIN_DECAY_SECONDS = 60;
 
     /**
      * Autentica a un paciente en la aplicación móvil y emite un token Sanctum.
