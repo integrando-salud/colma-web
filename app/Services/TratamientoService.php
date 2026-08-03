@@ -14,6 +14,8 @@ class TratamientoService
      *
      * Retorna `null` cuando el paciente no posee un diagnóstico con tratamiento
      * configurado.
+     *
+     * @throws Exception Cuando el paciente no tiene un país asociado.
      */
     public function getTratamientoPaciente(Paciente $paciente): ?array
     {
@@ -30,6 +32,8 @@ class TratamientoService
      * Cuenta las sesiones válidas disponibles para el tratamiento del paciente.
      *
      * Solo se consideran directorios con el formato `semana-N/sesion-N`.
+     *
+     * @throws Exception Cuando el paciente no tiene un país asociado.
      */
     public function getCantidadSesionesPaciente(Paciente $paciente): int
     {
@@ -61,6 +65,8 @@ class TratamientoService
      * @param  Paciente  $paciente  Paciente que solicita el archivo.
      * @param  string  $path  Ruta relativa recibida en la URL.
      * @return bool `true` si la ruta está dentro del material autorizado.
+     *
+     * @throws Exception Cuando el paciente no tiene un país asociado.
      */
     public function puedeAccederAMultimedia(Paciente $paciente, string $path): bool
     {
