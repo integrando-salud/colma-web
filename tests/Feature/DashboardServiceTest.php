@@ -77,6 +77,16 @@ class DashboardServiceTest extends TestCase
         $this->service->handleIndexView(Request::create('/'));
     }
 
+    public function test_indice_del_panel_devuelve_403_para_un_usuario_sin_rol_compatible(): void
+    {
+        $pais = $this->crearPais('Argentina');
+        $centro = $this->crearCentroSalud($pais, 'Centro Buenos Aires');
+        $usuarioSinRol = $this->crearUsuario($pais, $centro);
+        $this->actingAs($usuarioSinRol);
+
+        $this->get(route('dashboard.index'))->assertForbidden();
+    }
+
     public function test_get_data_for_usuarios_page_aplica_el_alcance_del_supervisor_y_precarga_paises(): void
     {
         $paisPropio = $this->crearPais('Argentina');
