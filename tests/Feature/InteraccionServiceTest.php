@@ -101,17 +101,12 @@ class InteraccionServiceTest extends TestCase
         $entrenamiento = Entrenamiento::firstOrFail();
 
         $this->assertSame(12, $entrenamiento->sesiones);
-        $this->assertSame(0, $entrenamiento->sesiones_completadas);
         $this->assertSame('2026-08-15', $entrenamiento->seguimiento_dos_semanas_inicio->toDateString());
         $this->assertSame('2027-01-30', $entrenamiento->agendar_cita_final_fin->toDateString());
-
-        $entrenamiento->sesiones_completadas = 4;
-        $entrenamiento->save();
 
         $this->assertTrue($this->service->guardarEntrenamiento($paciente->id, '2026-09-01', $entrenamiento->id));
         $entrenamiento->refresh();
 
-        $this->assertSame(4, $entrenamiento->sesiones_completadas);
         $this->assertSame('2026-09-15', $entrenamiento->seguimiento_dos_semanas_inicio->toDateString());
     }
 

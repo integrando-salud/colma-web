@@ -129,9 +129,7 @@ class InteraccionService
     /**
      * Crea o actualiza el cronograma de entrenamiento de un paciente.
      *
-     * Conserva las sesiones completadas al actualizar un entrenamiento existente y las inicia en
-     * cero cuando se crea uno nuevo. Un entrenamiento existente no puede reasignarse a otro
-     * paciente.
+     * Un entrenamiento existente no puede reasignarse a otro paciente.
      *
      * @throws Exception Cuando no se puede determinar el país del paciente.
      * @throws InvalidArgumentException Cuando el entrenamiento pertenece a otro paciente.
@@ -153,10 +151,6 @@ class InteraccionService
         $entrenamiento->user_id = auth()->id();
         $entrenamiento->fecha = $fechaEntrenamiento;
         $entrenamiento->sesiones = $this->tratamientoService->getCantidadSesionesPaciente($paciente);
-
-        if ($esNuevo) {
-            $entrenamiento->sesiones_completadas = 0;
-        }
 
         foreach (Entrenamiento::DIAS_SUMA as $tipo => $diasSuma) {
             $entrenamiento->{$tipo} = $this->sumarDias($fechaEntrenamiento, $diasSuma);

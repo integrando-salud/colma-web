@@ -26,7 +26,6 @@ class SyncDataRequest extends FormRequest
     {
         return [
             'userId' => ['required', 'numeric', 'exists:App\Models\User,id'],
-            'sesiones_completadas' => ['sometimes', 'integer', 'min:0'],
 
             'glucosa' => ['nullable', 'array'],
             'glucosa.*.id_glucosa' => ['required', 'numeric'],

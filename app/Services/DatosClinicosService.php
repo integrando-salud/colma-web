@@ -59,14 +59,6 @@ class DatosClinicosService
                 $this->saveDatosMultimediaRead($idPaciente, $data['multimedia_read']);
             }
 
-            if (array_key_exists('sesiones_completadas', $data)) {
-                $paciente->entrenamientos()
-                    ->where('activo', true)
-                    ->latest()
-                    ->first()
-                    ?->update(['sesiones_completadas' => $data['sesiones_completadas']]);
-            }
-
             $paciente->update([
                 'fecha_ultima_sincronizacion' => now(),
             ]);

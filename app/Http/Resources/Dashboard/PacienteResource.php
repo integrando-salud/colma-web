@@ -63,7 +63,7 @@ class PacienteResource extends JsonResource
             'usuario' => new UserResource($this->usuario),
             'sesiones' => $entrenamientoActual ? [
                 'total' => $entrenamientoActual->sesiones,
-                'completadas' => $entrenamientoActual->sesiones_completadas,
+                'completadas' => 0,
             ] : null,
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
