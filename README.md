@@ -56,5 +56,8 @@ docker compose -f docker-compose.prod.yml run --rm node npm run build
 Ejecutar comandos de Artisan
 
 ````bash
-docker compose -f docker-compose.prod.yml exec php84 php artisan <command>
+docker compose -f docker-compose.prod.yml exec --user www-data php84 php artisan <command>
 ````
+
+Los comandos de Artisan se ejecutan como `www-data` para que los archivos generados
+(por ejemplo, cachés) tengan los permisos adecuados para el proceso de PHP-FPM.
