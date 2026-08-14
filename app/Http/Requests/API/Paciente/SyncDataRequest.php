@@ -3,6 +3,7 @@
 namespace App\Http\Requests\API\Paciente;
 
 use App\Enums\AdvertenciaClinica;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,13 +20,12 @@ class SyncDataRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
         return [
             'userId' => ['required', 'numeric', 'exists:App\Models\User,id'],
-            'sesiones_completadas' => ['sometimes', 'integer', 'min:0'],
 
             'glucosa' => ['nullable', 'array'],
             'glucosa.*.id_glucosa' => ['required', 'numeric'],

@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('entrenamientos', function (Blueprint $table) {
             $table->integer('sesiones')->nullable()->after('fecha');
-            $table->integer('sesiones_completadas')->nullable()->after('sesiones');
         });
     }
 
@@ -24,7 +23,6 @@ return new class extends Migration
     {
         Schema::table('entrenamientos', function (Blueprint $table) {
             $table->dropColumn('sesiones');
-            $table->dropColumn('sesiones_completadas');
         });
     }
 };

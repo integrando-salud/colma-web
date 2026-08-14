@@ -12,29 +12,51 @@ use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
 use App\Models\Interaccion;
 use App\Models\Paciente;
+use App\Models\User;
+use App\Services\AlertaService;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Inertia\Response;
 use Throwable;
 
 class PacienteController extends Controller
 {
-    public function index(FilterPacienteRequest $request, DashboardService $dashboardService)
+    private const string DETALLE_COMPONENT = 'Pacientes/Detalle';
+
+    /**
+     * Muestra el listado de pacientes dentro del alcance del usuario autenticado.
+     *
+     * Los filtros y el ordenamiento ya fueron validados por FilterPacienteRequest;
+     * DashboardService prepara los datos auxiliares que consume la vista.
+     */
+    public function index(FilterPacienteRequest $request, DashboardService $dashboardService): Response
     {
         $viewData = $dashboardService->getDataForPacientesPage($request->validated());
 
         return Inertia::render('Pacientes/Index', $viewData);
     }
 
-    public function create()
+    /**
+     * Muestra el detalle vacío utilizado para crear un paciente.
+     */
+    public function create(): Response
     {
-        return Inertia::render('Pacientes/Detalle');
+        return $this->renderDetalle();
     }
 
-    public function store(StorePacienteRequest $request, PacienteService $pacienteService)
+    /**
+     * Crea o actualiza un paciente a partir de los datos validados del formulario.
+     *
+     * StorePacienteRequest decide si se trata de un alta o una edición y autoriza
+     * ambas operaciones. El servicio persiste el paciente y sus relaciones de forma
+     * transaccional.
+     */
+    public function store(StorePacienteRequest $request, PacienteService $pacienteService): RedirectResponse
     {
         try {
             $pacienteService->storePaciente($request->validated());
@@ -45,108 +67,116 @@ class PacienteController extends Controller
                 return redirect()->route('dashboard.pacientes.index')
                     ->with('success', 'Se guardó con éxito.');
             }
-        } catch (Throwable $th) {
-            Log::error('Error al guardar paciente: ' . $th->getMessage(), [
-                'stack' => $th->getTraceAsString(),
+        } catch (Throwable $exception) {
+            Log::error('Error al guardar paciente.', [
+                'exception' => $exception,
             ]);
 
             return back()->with('error', 'Error al guardar el paciente.');
         }
     }
 
-    public function edit(Paciente $paciente)
+    /**
+     * Muestra el detalle de un paciente para su edición.
+     */
+    public function edit(Paciente $paciente): Response
     {
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente)
-        ]);
+        return $this->renderDetalle($paciente);
     }
 
-    public function alertas(Paciente $paciente)
+    /**
+     * Muestra las alertas pendientes del paciente, separadas por tipo.
+     */
+    public function alertas(Paciente $paciente, AlertaService $alertaService): Response
     {
-        $alertasClinicas = $paciente->alertas()
-            ->whereNull('revisado')
-            ->where('tipo', 'clinica')
-            ->get();
-        $alertasOperativas = $paciente->alertas()
-            ->whereNull('revisado')
-            ->where('tipo', 'operativa')
-            ->get();
+        $alertas = $alertaService->getAlertasPaciente($paciente, true);
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'alertas',
+        return $this->renderDetalle($paciente, 'alertas', [
             'alertasPendientes' => [
-                'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
-            ]
+                'clinicas' => AlertaResource::collection($alertas['clinicas']),
+                'operativas' => AlertaResource::collection($alertas['operativas']),
+            ],
         ]);
     }
 
-    public function alertasHistorial(Paciente $paciente)
+    /**
+     * Muestra el historial de alertas ya revisadas del paciente, separado por tipo.
+     */
+    public function alertasHistorial(Paciente $paciente, AlertaService $alertaService): Response
     {
-        $alertasClinicas = $paciente->alertas()
-            ->whereNotNull('revisado')
-            ->where('tipo', 'clinica')
-            ->paginate(config('app.rpp'), ['*'], 'page-clinicas');
+        $alertas = $alertaService->getAlertasPaciente($paciente, false);
 
-        $alertasOperativas = $paciente->alertas()
-            ->whereNotNull('revisado')
-            ->where('tipo', 'operativa')
-            ->paginate(config('app.rpp'), ['*'], 'page-operativas');
-
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'alertas-historial',
+        return $this->renderDetalle($paciente, 'alertas-historial', [
             'alertasHistoricas' => [
-                'clinicas' => AlertaResource::collection($alertasClinicas),
-                'operativas' => AlertaResource::collection($alertasOperativas)
-            ]
+                'clinicas' => AlertaResource::collection($alertas['clinicas']),
+                'operativas' => AlertaResource::collection($alertas['operativas']),
+            ],
         ]);
     }
 
-    public function interacciones(Request $request, Paciente $paciente)
+    /**
+     * Muestra las interacciones manuales del paciente, ordenadas desde la más reciente.
+     *
+     * Las relaciones requeridas por InteraccionResource se cargan por adelantado para
+     * evitar consultas adicionales por cada elemento de la página.
+     */
+    public function interacciones(Request $request, Paciente $paciente): Response
     {
         // TODO: agregar una opción para filtrar por rango de fechas de la interacción
         $interacciones = $paciente->interacciones()
+            ->with(['paciente', 'user'])
             ->whereNull('alerta_id')
             ->orderByDesc('fecha')
             ->paginate(10);
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'historial-interacciones',
+        return $this->renderDetalle($paciente, 'historial-interacciones', [
             'interacciones' => InteraccionResource::collection($interacciones),
             'interaccion' => $request->contacto ?? null,
         ]);
     }
 
-    public function createInteraccion(Request $request, Paciente $paciente)
+    /**
+     * Muestra el formulario para registrar una interacción de un paciente activo.
+     *
+     * Cuando se recibe el parámetro opcional `alerta`, solamente se carga si pertenece
+     * al paciente de la ruta; así se evita asociar o exponer alertas de otro paciente.
+     */
+    public function createInteraccion(Request $request, Paciente $paciente, AlertaService $alertaService): Response|RedirectResponse
     {
-        if (!$paciente->activo) {
+        if (! $paciente->activo) {
             return back()->with('error', 'No se pueden agregar interacciones a un paciente inactivo.');
         }
 
-        $viewData = [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'nueva-interaccion',
-        ];
+        $viewData = [];
 
         if ($request->filled('alerta')) {
-            $alerta = Alerta::find($request->alerta);
+            $alerta = Alerta::query()
+                ->with(['paciente', 'user'])
+                ->whereKey($request->integer('alerta'))
+                ->where('paciente_id', $paciente->id)
+                ->first();
 
-            if (!$alerta) {
-                return back()->with('error', 'No se encontró la alerta.');
+            if (! $alerta) {
+                return back()->with('error', 'No se encontró una alerta para este paciente.');
             }
+
+            $alertaService->cargarEntidades(collect([$alerta]));
 
             $viewData['alerta'] = new AlertaResource($alerta);
         }
 
-        return Inertia::render('Pacientes/Detalle', $viewData);
+        return $this->renderDetalle($paciente, 'nueva-interaccion', $viewData);
     }
 
-    public function editInteraccion(Paciente $paciente, Interaccion $interaccion)
+    /**
+     * Muestra una interacción existente para su edición.
+     *
+     * Solo los superusuarios y supervisores de país pueden editar. También se valida
+     * que el binding de interacción pertenezca al paciente de la ruta.
+     */
+    public function editInteraccion(Paciente $paciente, Interaccion $interaccion, AlertaService $alertaService): Response|RedirectResponse
     {
-        if (auth()->user()->isNotA('superusuario', 'supervisor_pais')) {
+        if (auth()->user()->isNotA(User::ROL_SUPERUSUARIO, User::ROL_SUPERVISOR_PAIS)) {
             return back()->with('error', 'No tienes permiso para realizar esta acción.');
         }
 
@@ -154,15 +184,22 @@ class PacienteController extends Controller
             return back()->with('error', 'La interacción no pertenece a este paciente.');
         }
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'nueva-interaccion',
+        $interaccion->load(['paciente', 'user', 'alerta.paciente', 'alerta.user']);
+        if ($interaccion->alerta) {
+            $alertaService->cargarEntidades(collect([$interaccion->alerta]));
+        }
+
+        return $this->renderDetalle($paciente, 'nueva-interaccion', [
             'interaccion' => new InteraccionResource($interaccion),
             'alerta' => $interaccion->alerta ? new AlertaResource($interaccion->alerta) : null,
         ]);
     }
 
-    public function datosClinicos(FilterDatosClinicosRequest $request, Paciente $paciente, PacienteService $pacienteService)
+    /**
+     * Muestra las mediciones clínicas combinadas del paciente y aplica el rango de
+     * fechas opcional validado por FilterDatosClinicosRequest.
+     */
+    public function datosClinicos(FilterDatosClinicosRequest $request, Paciente $paciente, PacienteService $pacienteService): Response
     {
         $filtros = $request->validated();
 
@@ -170,11 +207,27 @@ class PacienteController extends Controller
             ->getDatosClinicos($paciente, 10, $filtros['desde'] ?? null, $filtros['hasta'] ?? null)
             ->withQueryString();
 
-        return Inertia::render('Pacientes/Detalle', [
-            'paciente' => new PacienteResource($paciente),
-            'step' => 'datos-clinicos',
+        return $this->renderDetalle($paciente, 'datos-clinicos', [
             'datosClinicos' => JsonResource::collection($registros),
             'filtrosDatosClinicos' => $filtros,
         ]);
+    }
+
+    /**
+     * Renderiza la pantalla de detalle y completa las relaciones requeridas por el
+     * recurso del paciente cuando se está consultando uno existente.
+     *
+     * @param  array<string, mixed>  $props  Propiedades adicionales específicas de la pestaña.
+     */
+    private function renderDetalle(?Paciente $paciente = null, string $tab = 'datos_paciente', array $props = []): Response
+    {
+        if ($paciente) {
+            app(PacienteService::class)->cargarRelacionesParaResource($paciente);
+        }
+
+        return Inertia::render(self::DETALLE_COMPONENT, array_merge($props, [
+            'paciente' => $paciente ? new PacienteResource($paciente) : null,
+            'tab' => $tab,
+        ]));
     }
 }

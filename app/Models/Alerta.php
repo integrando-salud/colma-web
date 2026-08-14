@@ -9,12 +9,12 @@ class Alerta extends Model
 {
     use SoftDeletes;
 
-    public const TIPOS_ALERTA = [
+    public const array TIPOS_ALERTA = [
         'clinica',
         'operativa'
     ];
 
-    public const TIPOS_ENTIDADES = [
+    public const array TIPOS_ENTIDADES = [
         'glucosa',
         'presion_arterial',
         'estado_animo',

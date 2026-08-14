@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,18 +12,18 @@ use Silber\Bouncer\Database\HasRolesAndAbilities;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasRolesAndAbilities, HasFactory, Notifiable, SoftDeletes;
 
-    public const ROL_SUPERUSUARIO = 'superusuario';
+    public const string ROL_SUPERUSUARIO = 'superusuario';
 
-    public const ROL_SUPERVISOR = 'supervisor';
+    public const string ROL_SUPERVISOR = 'supervisor';
 
-    public const ROL_SUPERVISOR_PAIS = 'supervisor_pais';
+    public const string ROL_SUPERVISOR_PAIS = 'supervisor_pais';
 
-    public const ROL_PROMOTOR = 'promotor';
+    public const string ROL_PROMOTOR = 'promotor';
 
-    public const ROL_PACIENTE = 'paciente';
+    public const string ROL_PACIENTE = 'paciente';
 
     /**
      * The attributes that are mass assignable.

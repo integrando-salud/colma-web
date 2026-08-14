@@ -1,5 +1,7 @@
 <script setup>
 import Table from "@/Components/Table.vue";
+import { Link } from "@inertiajs/vue3";
+import Pagination from "@/Components/Pagination.vue";
 
 const props = defineProps({
     alertas: {
@@ -18,7 +20,7 @@ const props = defineProps({
             <h5 class="text-primary-emphasis">Alertas clínicas</h5>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="alertas.clinicas.length === 0">No se encontraron alertas clínicas pendientes.</div>
+            <div class="alert alert-secondary" v-if="alertas.clinicas.data.length === 0">No se encontraron alertas clínicas pendientes.</div>
             <Table v-else>
                 <template #header>
                     <tr>
@@ -32,7 +34,7 @@ const props = defineProps({
                     </tr>
                 </template>
 
-                <tr v-for="alerta in alertas.clinicas" :key="alerta.id">
+                <tr v-for="alerta in alertas.clinicas.data" :key="alerta.id">
                     <td>{{ alerta.descripcion }}</td>
                     <td>{{ alerta.valor }}</td>
                     <td>{{ alerta.rango_normal }}</td>
@@ -40,7 +42,7 @@ const props = defineProps({
                     <td>{{ alerta.fecha_contacto }}</td>
                     <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
-                        <a v-if="alerta.paciente.activo"
+                        <Link v-if="alerta.paciente.activo"
                             :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
@@ -48,16 +50,25 @@ const props = defineProps({
                             class="btn btn-secondary btn-sm text-white fw-semibold shadow"
                         >
                             Ir al formulario
-                        </a>
+                        </Link>
                     </td>
                 </tr>
+
+                <template #footer>
+                    <tr>
+                        <td colspan="7" class="text-center small border-top">
+                            Viendo {{ alertas.clinicas.meta.from }} a {{ alertas.clinicas.meta.to }} de {{ alertas.clinicas.meta.total }} alertas
+                        </td>
+                    </tr>
+                </template>
             </Table>
+            <Pagination v-if="alertas.clinicas.meta.last_page > 1" :prev-url="alertas.clinicas.links.prev" :next-url="alertas.clinicas.links.next" />
         </div>
         <div class="col-12">
             <h5 class="text-primary-emphasis">Alertas operativas</h5>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="alertas.operativas.length === 0">No se encontraron alertas operativas pendientes.</div>
+            <div class="alert alert-secondary" v-if="alertas.operativas.data.length === 0">No se encontraron alertas operativas pendientes.</div>
             <Table v-else>
                 <template #header>
                     <tr>
@@ -69,23 +80,32 @@ const props = defineProps({
                     </tr>
                 </template>
 
-                <tr v-for="alerta in alertas.operativas" :key="alerta.id">
+                <tr v-for="alerta in alertas.operativas.data" :key="alerta.id">
                     <td>{{ alerta.descripcion }}</td>
                     <td>{{ alerta.fecha }}</td>
                     <td>{{ alerta.fecha_contacto }}</td>
                     <td class="recomendacion">{{ alerta.recomendacion }}</td>
                     <td>
-                        <a :href="route('dashboard.pacientes.createInteraccion', {
+                        <Link :href="route('dashboard.pacientes.createInteraccion', {
                                 paciente: alerta.paciente.id,
                                 alerta: alerta.id,
                             })"
                            class="btn btn-secondary btn-sm text-white fw-semibold shadow"
                         >
                             Ir al formulario
-                        </a>
+                        </Link>
                     </td>
                 </tr>
+
+                <template #footer>
+                    <tr>
+                        <td colspan="5" class="text-center small border-top">
+                            Viendo {{ alertas.operativas.meta.from }} a {{ alertas.operativas.meta.to }} de {{ alertas.operativas.meta.total }} alertas
+                        </td>
+                    </tr>
+                </template>
             </Table>
+            <Pagination v-if="alertas.operativas.meta.last_page > 1" :prev-url="alertas.operativas.links.prev" :next-url="alertas.operativas.links.next" />
         </div>
     </div>
 </template>

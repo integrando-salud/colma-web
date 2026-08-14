@@ -17,8 +17,8 @@ class InteraccionResource extends JsonResource
     public function toArray(Request $request): array
     {
         if ($this->alerta) {
-            $alertaService = new AlertaService();
-            $entidad = $alertaService->getEntidad($this->alerta->id);
+            $alertaService = new AlertaService;
+            $entidad = $alertaService->getEntidad($this->alerta);
             $alertaData = [
                 'id' => $this->alerta->id,
                 'descripcion' => $this->alerta->descripcion,
@@ -32,7 +32,7 @@ class InteraccionResource extends JsonResource
             'id' => $this->id,
             'paciente' => [
                 'id' => $this->paciente_id,
-                'nombre' => trim($this->paciente->nombre . ' ' . $this->paciente->apellido),
+                'nombre' => trim($this->paciente->nombre.' '.$this->paciente->apellido),
             ],
             'usuario' => [
                 'id' => $this->user_id,

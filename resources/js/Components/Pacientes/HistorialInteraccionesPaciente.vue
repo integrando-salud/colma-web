@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, useTemplateRef } from "vue";
-import { usePage, useForm } from "@inertiajs/vue3";
+import { Link, usePage, useForm } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import Pagination from "@/Components/Pagination.vue";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
@@ -141,10 +141,10 @@ onMounted(() => {
     </div>
     <div class="row" v-else>
         <div class="col-12 mb-2">
-            <a :href="route('dashboard.pacientes.interacciones', idPaciente)" class="btn btn-secondary text-white text-decoration-none" @click="interaccionSelected = null">
+            <Link :href="route('dashboard.pacientes.interacciones', idPaciente)" class="btn btn-secondary text-white text-decoration-none" @click="interaccionSelected = null">
                 <i class="fa fa-arrow-left"></i>
                 Volver al historial de interacciones
-            </a>
+            </Link>
         </div>
 
         <DetalleAlertaInteraccion v-if="interaccionSelected.alerta" :alerta="interaccionSelected.alerta" />

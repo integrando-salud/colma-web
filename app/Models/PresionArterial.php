@@ -35,7 +35,7 @@ class PresionArterial extends Model
 
     public $timestamps = false;
 
-    public const RANGO_NORMAL = '120 - 80';
+    public const string RANGO_NORMAL = '120 - 80';
 
     public function paciente()
     {

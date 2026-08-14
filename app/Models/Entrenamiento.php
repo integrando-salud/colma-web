@@ -10,7 +10,6 @@ class Entrenamiento extends Model
         'paciente_id',
         'fecha',
         'sesiones',
-        'sesiones_completadas',
         'seguimiento_dos_semanas_inicio',
         'seguimiento_dos_semanas_fin',
         'llamada_mensual_1_inicio',
@@ -32,7 +31,6 @@ class Entrenamiento extends Model
     protected $casts = [
         'activo' => 'boolean',
         'sesiones' => 'integer',
-        'sesiones_completadas' => 'integer',
         'fecha' => 'date',
         'seguimiento_dos_semanas_inicio' => 'date',
         'seguimiento_dos_semanas_fin' => 'date',
@@ -50,7 +48,7 @@ class Entrenamiento extends Model
         'agendar_cita_final_fin' => 'date',
     ];
 
-    const DIAS_SUMA = [
+    const array DIAS_SUMA = [
         'seguimiento_dos_semanas_inicio' => 14,
         'seguimiento_dos_semanas_fin' => 21,
         'llamada_mensual_1_inicio' => 28,

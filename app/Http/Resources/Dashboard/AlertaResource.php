@@ -15,8 +15,8 @@ class AlertaResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $alertaService = new AlertaService();
-        $entidad = $alertaService->getEntidad($this->id);
+        $alertaService = new AlertaService;
+        $entidad = $alertaService->getEntidad($this->resource);
 
         return [
             'id' => $this->id,
