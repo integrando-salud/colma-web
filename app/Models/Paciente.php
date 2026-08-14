@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -42,6 +43,40 @@ class Paciente extends Model
         'fecha_primer_login_app' => 'datetime',
         'test' => 'boolean',
     ];
+
+    /**
+     * Restringe una consulta al alcance asistencial del usuario del panel.
+     *
+     * Este alcance es la fuente de verdad que utilizan tanto los listados como
+     * la política de autorización de pacientes.
+     *
+     * @param  Builder<Paciente>  $query
+     * @return Builder<Paciente>
+     */
+    public function scopeVisibleTo(Builder $query, User $usuario): Builder
+    {
+        if ($usuario->isA(User::ROL_SUPERUSUARIO)) {
+            return $query;
+        }
+
+        if ($usuario->isA(User::ROL_PROMOTOR)) {
+            return $query->where('promotor_id', $usuario->id);
+        }
+
+        if ($usuario->isA(User::ROL_SUPERVISOR)) {
+            return $query->whereIn('promotor_id', $usuario->promotores()->select('id'));
+        }
+
+        if ($usuario->isA(User::ROL_SUPERVISOR_PAIS)) {
+            return $query->whereHas('centroSalud', function (Builder $query) use ($usuario) {
+                $query->where('pais_id', $usuario->pais_id);
+            });
+        }
+
+        // Los usuarios pacientes (y cualquier rol no previsto) no acceden al
+        // panel de gestión, incluso si llegan a una ruta autenticada.
+        return $query->whereRaw('1 = 0');
+    }
 
     public function usuario()
     {

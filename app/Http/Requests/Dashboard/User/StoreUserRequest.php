@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Dashboard\User;
 
 use App\Models\User;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,13 +14,19 @@ class StoreUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check() && (auth()->user()->can('crear-usuarios') || auth()->user()->can('editar-usuarios'));
+        if (!auth()->check()) {
+            return false;
+        }
+
+        return $this->filled('id')
+            ? auth()->user()->can('editar-usuarios')
+            : auth()->user()->can('crear-usuarios');
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {

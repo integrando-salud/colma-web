@@ -5,6 +5,7 @@ namespace App\Http\Requests\Dashboard\Interacciones;
 use App\Enums\MotivoInteraccion;
 use App\Enums\MotivoReprogramacion;
 use App\Models\Interaccion;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,14 +22,14 @@ class StoreInteraccionRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
         return [
             'id' => ['nullable', 'exists:interacciones,id'],
             'paciente_id' => ['required', 'exists:pacientes,id'],
-            'alerta_id' => ['nullable', 'integer'],
+            'alerta_id' => ['nullable', 'integer', 'exists:alertas,id'],
             'contactado' => ['required', 'boolean'],
             'fecha' => [
                 'nullable',
@@ -318,7 +319,7 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
                 })
             ],
-            'id_entrenamiento' => ['nullable'],
+            'id_entrenamiento' => ['nullable', 'integer', 'exists:entrenamientos,id'],
         ];
     }
 

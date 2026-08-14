@@ -7,6 +7,7 @@ use App\Http\Controllers\Dashboard\InteraccionController;
 use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
 use App\Http\Middleware\ProhibirPromotoresPeru;
+use App\Models\Paciente;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -26,9 +27,7 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.usuarios.index')
             ->can('ver-usuarios');
         Route::post('guardar', [UsuarioController::class, 'store'])
-            ->name('dashboard.usuarios.store')
-            ->can('crear-usuarios')
-            ->can('editar-usuarios');
+            ->name('dashboard.usuarios.store');
         Route::delete('eliminar/{user}', [UsuarioController::class, 'delete'])
             ->name('dashboard.usuarios.delete')
             ->can('eliminar-usuarios');
@@ -39,27 +38,37 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('pacientes')->group(function () {
         Route::get('/', [PacienteController::class, 'index'])
-            ->name('dashboard.pacientes.index');
+            ->name('dashboard.pacientes.index')
+            ->can('viewAny', Paciente::class);
         Route::middleware(ProhibirPromotoresPeru::class)->group(function () {
             Route::get('crear', [PacienteController::class, 'create'])
-                ->name('dashboard.pacientes.create');
+                ->name('dashboard.pacientes.create')
+                ->can('create', Paciente::class);
+
+            Route::post('guardar', [PacienteController::class, 'store'])
+                ->name('dashboard.pacientes.store');
         });
-        Route::post('guardar', [PacienteController::class, 'store'])
-            ->name('dashboard.pacientes.store');
         Route::get('{paciente}/editar', [PacienteController::class, 'edit'])
-            ->name('dashboard.pacientes.edit');
+            ->name('dashboard.pacientes.edit')
+            ->can('update', 'paciente');
         Route::get('{paciente}/alertas', [PacienteController::class, 'alertas'])
-            ->name('dashboard.pacientes.alertas');
+            ->name('dashboard.pacientes.alertas')
+            ->can('view', 'paciente');
         Route::get('{paciente}/alertas/historial', [PacienteController::class, 'alertasHistorial'])
-            ->name('dashboard.pacientes.alertas.historial');
+            ->name('dashboard.pacientes.alertas.historial')
+            ->can('view', 'paciente');
         Route::get('{paciente}/interacciones', [PacienteController::class, 'interacciones'])
-            ->name('dashboard.pacientes.interacciones');
+            ->name('dashboard.pacientes.interacciones')
+            ->can('view', 'paciente');
         Route::get('{paciente}/interacciones/crear', [PacienteController::class, 'createInteraccion'])
-            ->name('dashboard.pacientes.createInteraccion');
+            ->name('dashboard.pacientes.createInteraccion')
+            ->can('view', 'paciente');
         Route::get('{paciente}/interacciones/{interaccion}/editar', [PacienteController::class, 'editInteraccion'])
-            ->name('dashboard.pacientes.editInteraccion');
+            ->name('dashboard.pacientes.editInteraccion')
+            ->can('view', 'paciente');
         Route::get('{paciente}/datos-clinicos', [PacienteController::class, 'datosClinicos'])
-            ->name('dashboard.pacientes.datosClinicos');
+            ->name('dashboard.pacientes.datosClinicos')
+            ->can('view', 'paciente');
     });
 
     Route::post('interacciones/guardar', [InteraccionController::class, 'store'])
@@ -85,10 +94,13 @@ Route::middleware('auth')->group(function () {
             ->name('ajax.usuario.contarContactosPendientes');
 
         Route::patch('{paciente}/cambiar-estado', [AjaxController::class, 'cambiarEstadoPaciente'])
-            ->name('ajax.paciente.cambiarEstado');
+            ->name('ajax.paciente.cambiarEstado')
+            ->can('changeStatus', 'paciente');
         Route::get('{paciente}/entrenamiento-actual', [AjaxController::class, 'getEntrenamientoActual'])
-            ->name('ajax.paciente.entrenamientoActual');
+            ->name('ajax.paciente.entrenamientoActual')
+            ->can('view', 'paciente');
         Route::post('{paciente}/resetear-datos', [AjaxController::class, 'resetearDatosPaciente'])
-            ->name('ajax.paciente.resetearDatos');
+            ->name('ajax.paciente.resetearDatos')
+            ->can('view', 'paciente');
     });
 });

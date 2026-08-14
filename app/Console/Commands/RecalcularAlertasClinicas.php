@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\MotivoInteraccion;
 use App\Models\Alerta;
 use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\PresionArterial;
+use App\Services\AlertaService;
 use App\Services\DatosClinicosService;
 use Illuminate\Console\Command;
 
@@ -16,7 +16,7 @@ class RecalcularAlertasClinicas extends Command
 
     protected $description = 'Recalcula recomendaciones clínicas para glucosa, presión arterial y estado de ánimo.';
 
-    public function handle(DatosClinicosService $service): int
+    public function handle(DatosClinicosService $service, AlertaService $alertaService): int
     {
         $chunkSize = max(1, (int) $this->option('chunk'));
         $dryRun = (bool) $this->option('dry-run');
@@ -44,7 +44,7 @@ class RecalcularAlertasClinicas extends Command
                         ? 'Glucosa baja'
                         : 'Glucosa elevada / alta';
 
-                    $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
+                    $recomendacion .= PHP_EOL.'Completar formulario de alerta clínica.';
 
                     $this->upsertAlerta(
                         $registro->paciente_id,
@@ -77,7 +77,7 @@ class RecalcularAlertasClinicas extends Command
                         ? 'Presión arterial baja'
                         : 'Presión arterial elevada / alta';
 
-                    $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
+                    $recomendacion .= PHP_EOL.'Completar formulario de alerta clínica.';
 
                     $this->upsertAlerta(
                         $registro->paciente_id,
@@ -102,7 +102,7 @@ class RecalcularAlertasClinicas extends Command
                         continue;
                     }
 
-                    $recomendacion .= PHP_EOL . 'Completar formulario de alerta clínica.';
+                    $recomendacion .= PHP_EOL.'Completar formulario de alerta clínica.';
 
                     $this->upsertAlerta(
                         $registro->paciente_id,
@@ -118,7 +118,7 @@ class RecalcularAlertasClinicas extends Command
                 }
             });
 
-        $operativas = $this->actualizarAlertasOperativas($dryRun);
+        $operativas = $this->actualizarAlertasOperativas($dryRun, $alertaService);
         $totals['operativas_actualizadas'] = $operativas;
 
         $this->line('');
@@ -138,13 +138,9 @@ class RecalcularAlertasClinicas extends Command
         return self::SUCCESS;
     }
 
-    private function actualizarAlertasOperativas(bool $dryRun): int
+    private function actualizarAlertasOperativas(bool $dryRun, AlertaService $alertaService): int
     {
-        $recomendaciones = [
-            MotivoInteraccion::NO_COMPLETA_SESIONES->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
-            MotivoInteraccion::PROBLEMAS_CONEXION->value => "Contactar y preguntar si es que tiene problemas con el app o el celular o el internet. Intentar dar solución y/o motivarla a seguir usando el app.\nCompletar formulario de alerta operativa.",
-            MotivoInteraccion::PEDIDO_AYUDA->value => "Contactar y explorar motivo del pedido de ayuda. Intentar dar solución.\nCompletar formulario de alerta operativa.",
-        ];
+        $recomendaciones = $alertaService->recomendacionesOperativas();
 
         $query = Alerta::query()
             ->where('tipo', 'operativa')
@@ -154,11 +150,11 @@ class RecalcularAlertasClinicas extends Command
             return (int) $query->count();
         }
 
-        return (int) $query->get()->each(function (Alerta $alerta) use ($recomendaciones) {
+        return (int) $query->get()->each(function (Alerta $alerta) use ($alertaService, $recomendaciones) {
             $fechaBase = $alerta->fecha ?? now();
             $alerta->update([
                 'recomendacion' => $recomendaciones[$alerta->descripcion],
-                'fecha_contacto' => $fechaBase->copy()->addDays(3)->format('Y-m-d'),
+                'fecha_contacto' => $alertaService->fechaContactoOperativa($fechaBase),
             ]);
         })->count();
     }
@@ -180,7 +176,7 @@ class RecalcularAlertasClinicas extends Command
             ->first();
 
         if ($alerta) {
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $fechaBase = $alerta->fecha ?? now();
                 $fechaContacto = $fechaBase->copy()->addDays(2)->format('Y-m-d');
 
@@ -191,10 +187,11 @@ class RecalcularAlertasClinicas extends Command
             }
 
             $totals['actualizadas']++;
+
             return;
         }
 
-        if (!$dryRun) {
+        if (! $dryRun) {
             $fecha = now();
             Alerta::create([
                 'paciente_id' => $pacienteId,

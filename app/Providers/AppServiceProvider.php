@@ -3,10 +3,13 @@
 namespace App\Providers;
 
 use App\Http\Middleware\Authenticate;
-use App\View\Composers\RoleComposer;
+use App\Models\Paciente;
+use App\Models\User;
+use App\Policies\PacientePolicy;
+use App\Policies\UserPolicy;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Route::aliasMiddleware('auth', Authenticate::class);
+        Gate::policy(Paciente::class, PacientePolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
 
         JsonResource::withoutWrapping();
     }

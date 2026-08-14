@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, useTemplateRef, onMounted } from "vue";
-import { router, usePage } from "@inertiajs/vue3";
+import { Link, router, usePage } from "@inertiajs/vue3";
 import Table from "@/Components/Table.vue";
 import Pagination from "@/Components/Pagination.vue";
 import Modal from "@/Components/Modal.vue";
@@ -20,6 +20,7 @@ const page = usePage();
 const pacienteSelected = ref(null);
 const pacienteSelectedCambiarEstado = ref(null);
 const pacienteSelectedResetearDatos = ref(null);
+const pendingDetalleNavigation = ref(null);
 const notification = useNotificationStore();
 const modalCambiarEstado = useTemplateRef('modalCambiarEstado');
 const modalResetearDatosPaciente = useTemplateRef('modalResetearDatosPaciente');
@@ -85,6 +86,17 @@ const hideModalDetallePaciente = () => {
 
 const handleCloseModalDetallePaciente = () => {
     pacienteSelected.value = null;
+
+    if (pendingDetalleNavigation.value) {
+        const url = pendingDetalleNavigation.value;
+        pendingDetalleNavigation.value = null;
+        router.visit(url);
+    }
+};
+
+const navigateFromDetalleModal = (url) => {
+    pendingDetalleNavigation.value = url;
+    hideModalDetallePaciente();
 };
 
 const formFiltros = reactive({
@@ -171,9 +183,9 @@ onMounted(() => {
 <template>
     <div class="row" v-if="ocultarCrear === false">
         <div class="col-12 text-end mb-4">
-            <a :href="route('dashboard.pacientes.create')" class="btn btn-secondary text-white fw-semibold">
+            <Link :href="route('dashboard.pacientes.create')" class="btn btn-secondary text-white fw-semibold">
                 Agregar paciente
-            </a>
+            </Link>
         </div>
     </div>
 
@@ -338,9 +350,9 @@ onMounted(() => {
                                 </span>
                             </td>
                             <td>
-                                <a :href="route('dashboard.pacientes.createInteraccion', paciente.id)" class="btn btn-link text-body fs-5">
+                                <Link :href="route('dashboard.pacientes.createInteraccion', paciente.id)" class="btn btn-link text-body fs-5">
                                     <i class="fa-regular fa-pen-to-square"></i>
-                                </a>
+                                </Link>
                             </td>
                             <td>
                                 <button type="button" class="btn btn-link btn-ver-mas text-decoration-none" @click="showModalDetallePaciente(paciente)">
@@ -595,14 +607,22 @@ onMounted(() => {
                     <i class="fa-solid fa-rotate-left"></i>
                     Resetear datos
                 </button>
-                <a class="btn btn-outline-primary shadow" :href="route('dashboard.pacientes.alertas', pacienteSelected.id)">
+                <button
+                    type="button"
+                    class="btn btn-outline-primary shadow"
+                    @click="navigateFromDetalleModal(route('dashboard.pacientes.alertas', pacienteSelected.id))"
+                >
                     <i class="fa-solid fa-triangle-exclamation"></i>
                     Ir a alertas
-                </a>
-                <a class="btn bg-primary text-white shadow" :href="route('dashboard.pacientes.edit', pacienteSelected.id)">
+                </button>
+                <button
+                    type="button"
+                    class="btn bg-primary text-white shadow"
+                    @click="navigateFromDetalleModal(route('dashboard.pacientes.edit', pacienteSelected.id))"
+                >
                     <i class="fa-solid fa-arrow-right"></i>
                     Ir a detalle
-                </a>
+                </button>
             </template>
             <button type="button" class="btn btn-grey fw-semibold shadow" @click="hideModalDetallePaciente">
                 Cerrar
