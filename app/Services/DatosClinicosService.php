@@ -302,7 +302,7 @@ class DatosClinicosService
                     'clinica',
                     $registroEstadoAnimo->id,
                     'estado_animo',
-                    'Estado de ánimo alterado',
+                    'Estado de ánimo',
                     $recomendacion,
                     now()->addDays(2)->format('Y-m-d')
                 );

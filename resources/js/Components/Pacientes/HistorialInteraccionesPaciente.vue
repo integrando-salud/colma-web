@@ -21,6 +21,7 @@ const props = defineProps({
 const page = usePage();
 const notification = useNotificationStore();
 const interaccionSelected = ref(null);
+const interaccionAEliminar = ref(null);
 const formEliminar = useForm({
     interaccion: null
 });
@@ -32,6 +33,7 @@ const puedeEliminar = computed(() => {
 });
 
 const showModalEliminarInteraccion = (interaccion) => {
+    interaccionAEliminar.value = interaccion;
     formEliminar.interaccion = interaccion.id;
     modalEliminarInteraccion.value.showModal();
 };
@@ -42,6 +44,7 @@ const hideModalEliminarInteraccion = () => {
 
 const handleCloseModalEliminarInteraccion = () => {
     formEliminar.interaccion = null;
+    interaccionAEliminar.value = null;
 };
 
 const eliminarInteraccion = async () => {
@@ -52,6 +55,7 @@ const eliminarInteraccion = async () => {
         onSuccess: () => {
             notification.successNotification('Se eliminó con éxito.');
             formEliminar.interaccion = null;
+            interaccionAEliminar.value = null;
             hideModalEliminarInteraccion();
         },
         onError: () => {
@@ -515,7 +519,7 @@ onMounted(() => {
     </div>
 
     <Modal id="modalEliminarInteraccion" ref="modalEliminarInteraccion" title="Eliminar interacción" :loading="eliminando" @modalClosed="handleCloseModalEliminarInteraccion">
-        <p>Se eliminará interacción del día {{ formEliminar.interaccion?.fecha }} a las {{ formEliminar.interaccion?.hora }}.</p>
+        <p>Se eliminará interacción del día {{ interaccionAEliminar?.fecha }} a las {{ interaccionAEliminar?.hora }}.</p>
         <p>¿Desea continuar?</p>
 
         <template #footer>

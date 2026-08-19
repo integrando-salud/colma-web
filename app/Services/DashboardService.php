@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MotivoInteraccion;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\PacienteListResource;
 use App\Http\Resources\Dashboard\PaisResource;
@@ -208,7 +209,7 @@ class DashboardService
         $pacienteService = new PacienteService;
 
         if (empty($filters['orderBy'])) {
-            $filters['orderBy'] = 'id';
+            $filters['orderBy'] = 'id_externo';
         }
 
         if (empty($filters['orderDir'])) {
@@ -247,6 +248,20 @@ class DashboardService
                         WHEN tipo = 'clinica' THEN 'Alerta clínica'
                         ELSE ''
                     END AS motivo"),
+                'proximasCitasEntrenamiento' => fn ($query) => $query
+                    ->where('motivo', MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO)
+                    ->whereNotNull('fecha_cita')
+                    ->whereNotExists(function ($query) {
+                        $query->selectRaw('1')
+                            ->from('interacciones AS subquery')
+                            ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
+                            ->where('subquery.contactado', true)
+                            ->whereColumn('subquery.fecha', '>=', 'interacciones.fecha_cita')
+                            ->whereNull('subquery.deleted_at');
+                    })
+                    ->orderBy('fecha_cita')
+                    ->limit(3)
+                    ->selectRaw('id, paciente_id, motivo, fecha_cita AS fecha'),
             ])
             ->paginate(config('app.rpp'))
             ->withQueryString();

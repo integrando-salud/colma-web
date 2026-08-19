@@ -9,12 +9,12 @@ export const VENTANA_CONTACTO_KEYS = [
 ];
 
 export const VENTANA_CONTACTO_LABELS = {
-    seguimientoDosSemanas: 'Llamada de seguimiento de 2 semanas',
-    llamadaMensual: 'Llamada mensual 1',
-    llamadaMensualDos: 'Llamada mensual 2',
-    llamadaMensualTres: 'Llamada mensual 3',
-    llamadaMensualCuatro: 'Llamada mensual 4',
-    llamadaMensualCinco: 'Llamada mensual 5',
+    seguimientoDosSemanas: 'Seguimiento 2 semanas luego del entrenamiento',
+    llamadaMensual: 'Seguimiento mensual 1',
+    llamadaMensualDos: 'Seguimiento mensual 2',
+    llamadaMensualTres: 'Seguimiento mensual 3',
+    llamadaMensualCuatro: 'Seguimiento mensual 4',
+    llamadaMensualCinco: 'Seguimiento mensual 5',
     citaFinal: 'Agendar cita final',
 };
 

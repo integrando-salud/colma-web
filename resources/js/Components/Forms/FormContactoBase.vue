@@ -1,6 +1,6 @@
 <script setup>
 import { toRef } from 'vue';
-import { MODALIDAD, MOTIVO_CONTACTO } from '@/Constants/contacto';
+import { MODALIDAD } from '@/Constants/contacto';
 import { vMaska } from 'maska/vue';
 import MeridiemSelect from '@/Components/Form/MeridiemSelect.vue';
 import Time12Input from '@/Components/Form/Time12Input.vue';
@@ -15,10 +15,6 @@ const props = defineProps({
         required: true,
     },
     alerta: {
-        type: Object,
-        default: null,
-    },
-    entrenamientoActual: {
         type: Object,
         default: null,
     },
@@ -51,7 +47,6 @@ const formContacto = toRef(props, 'form');
                     v-for="motivo in motivosContacto"
                     :key="motivo"
                     :value="motivo"
-                    :disabled="motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO && entrenamientoActual"
                 >{{ motivo }}</option>
             </select>
             <div class="invalid-feedback" v-if="formContacto.errors?.motivo">

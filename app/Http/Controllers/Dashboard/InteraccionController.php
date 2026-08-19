@@ -43,7 +43,11 @@ class InteraccionController extends Controller
         try {
             $interaccionService->storeInteraccion($data);
 
-            return to_route('dashboard.pacientes.interacciones', [
+            $rutaDestino = isset($data['alerta_id'])
+                ? 'dashboard.pacientes.alertas'
+                : 'dashboard.pacientes.interacciones';
+
+            return to_route($rutaDestino, [
                 'paciente' => $paciente->id,
             ])->with('success', 'Se guardó con éxito.');
         } catch (Throwable $exception) {
