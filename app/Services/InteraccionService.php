@@ -38,13 +38,18 @@ class InteraccionService
         return DB::transaction(function () use ($data): bool {
             $alertaId = data_get($data, 'alerta_id');
             $userId = auth()->id();
-            $interaccion = empty($data['id'])
+            $esNueva = empty($data['id']);
+            $interaccion = $esNueva
                 ? new Interaccion()
                 : Interaccion::query()->findOrFail($data['id']);
 
             $interaccion->fill([
                 'paciente_id' => $data['paciente_id'],
-                'user_id' => $userId,
+                // user_id identifica siempre a quien creó la interacción.
+                // El último usuario que la modificó se guarda por separado.
+                ...($esNueva
+                    ? ['user_id' => $userId]
+                    : ['updated_by_user_id' => $userId]),
                 'alerta_id' => $alertaId,
                 'contactado' => $data['contactado'],
                 'fecha' => $this->fechaContacto($data),
@@ -93,12 +98,19 @@ class InteraccionService
             ]);
             $interaccion->save();
 
-            if ($interaccion->motivo === MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO && $interaccion->contactado) {
-                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->fecha_cita->toDateString(), data_get($data, 'id_entrenamiento'));
-            }
+            if ($interaccion->motivo === MotivoInteraccion::CITA_ENTRENAMIENTO && $interaccion->contactado) {
+                $entrenamiento = $this->guardarEntrenamientoModelo(
+                    $interaccion->paciente_id,
+                    $interaccion->fecha->toDateString(),
+                    data_get($data, 'id_entrenamiento')
+                );
 
-            if ($interaccion->motivo === MotivoInteraccion::CITA_ENTRENAMIENTO && ! $interaccion->contactado) {
-                $this->guardarEntrenamiento($interaccion->paciente_id, $interaccion->nueva_fecha_contacto->toDateString(), data_get($data, 'id_entrenamiento'));
+                // Al reagendar se actualiza un entrenamiento existente; no es propiedad de
+                // esta interacción y, por lo tanto, no debe borrarse junto con ella.
+                if ($interaccion->entrenamiento_id || ! data_get($data, 'id_entrenamiento')) {
+                    $interaccion->entrenamiento()->associate($entrenamiento);
+                    $interaccion->save();
+                }
             }
 
             if ($alertaId) {
@@ -123,7 +135,13 @@ class InteraccionService
      */
     public function deleteInteraccion(Interaccion $interaccion): bool
     {
-        return (bool) $interaccion->delete();
+        return DB::transaction(function () use ($interaccion): bool {
+            // La relación se asigna únicamente al guardar una cita de entrenamiento contactada.
+            // Por ello, el entrenamiento asociado es propiedad de esta interacción.
+            $interaccion->entrenamiento()->delete();
+
+            return (bool) $interaccion->delete();
+        });
     }
 
     /**
@@ -136,6 +154,18 @@ class InteraccionService
      * @throws ModelNotFoundException Cuando no existe el paciente o entrenamiento.
      */
     public function guardarEntrenamiento(int $idPaciente, string $fechaEntrenamiento, ?int $idEntrenamiento = null): bool
+    {
+        return $this->guardarEntrenamientoModelo($idPaciente, $fechaEntrenamiento, $idEntrenamiento)->exists;
+    }
+
+    /**
+     * Crea o actualiza un entrenamiento y devuelve la instancia persistida.
+     *
+     * @throws Exception Cuando no se puede determinar el país del paciente.
+     * @throws InvalidArgumentException Cuando el entrenamiento pertenece a otro paciente.
+     * @throws ModelNotFoundException Cuando no existe el paciente o entrenamiento.
+     */
+    private function guardarEntrenamientoModelo(int $idPaciente, string $fechaEntrenamiento, ?int $idEntrenamiento = null): Entrenamiento
     {
         $entrenamiento = $idEntrenamiento
             ? Entrenamiento::query()->findOrFail($idEntrenamiento)
@@ -156,7 +186,9 @@ class InteraccionService
             $entrenamiento->{$tipo} = $this->sumarDias($fechaEntrenamiento, $diasSuma);
         }
 
-        return $entrenamiento->save();
+        $entrenamiento->save();
+
+        return $entrenamiento;
     }
 
     /**

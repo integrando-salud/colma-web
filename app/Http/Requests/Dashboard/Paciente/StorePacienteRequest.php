@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Dashboard\Paciente;
 
+use App\Models\Diagnostico;
 use App\Models\Paciente;
+use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,7 +38,7 @@ class StorePacienteRequest extends FormRequest
     {
         return [
             'id' => ['nullable', 'exists:pacientes,id'],
-            'id_externo' => ['nullable'],
+            'id_externo' => ['required', 'string'],
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
             'fecha_nacimiento' => ['required', 'date_format:d/m/Y'],
@@ -52,7 +54,20 @@ class StorePacienteRequest extends FormRequest
             'promotor_id' => ['required', 'exists:users,id'],
             'fecha_enrolamiento' => ['required', 'date_format:d/m/Y'],
             'password' => ['nullable', 'required_without:id', 'min:6'],
-            'diagnosticos' => ['required', 'array'],
+            'diagnosticos' => [
+                'required',
+                'array',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    $diagnosticosRequeridos = [
+                        Diagnostico::DIABETES,
+                        Diagnostico::HIPERTENSION_ARTERIAL,
+                    ];
+
+                    if (empty(array_intersect($diagnosticosRequeridos, (array) $value))) {
+                        $fail('Seleccione Diabetes o Hipertensión arterial.');
+                    }
+                },
+            ],
             'diagnosticos.*' => ['exists:diagnosticos,id'],
         ];
     }
@@ -64,6 +79,7 @@ class StorePacienteRequest extends FormRequest
             'date' => 'Ingrese una fecha válida.',
             'string' => 'El campo debe ser una cadena de texto.',
             'id.exists' => 'El paciente no es válido.',
+            'id_externo.required' => 'Ingrese el ID RedCap.',
             'nombre.required' => 'Ingrese el nombre del paciente.',
             'apellido.required' => 'Ingrese el apellido del paciente.',
             'fecha_nacimiento.required' => 'Ingrese la fecha de nacimiento del paciente.',
@@ -86,7 +102,7 @@ class StorePacienteRequest extends FormRequest
             'fecha_enrolamiento.required' => 'Ingrese la fecha de enrolamiento del paciente.',
             'password.required_without' => 'Ingrese la contraseña del paciente.',
             'password.min' => 'La contraseña debe tener al menos 6 caracteres.',
-            'diagnosticos.required' => 'Seleccione al menos un diagnóstico.',
+            'diagnosticos.required' => 'Seleccione Diabetes o Hipertensión arterial.',
             'diagnosticos.array' => 'Los diagnósticos deben ser un arreglo.',
             'diagnosticos.*.exists' => 'El diagnóstico seleccionado no es válido.',
         ];

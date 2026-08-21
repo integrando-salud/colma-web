@@ -251,9 +251,9 @@ onMounted(() => {
                             <th>
                                 <span class="me-3">Código</span>
                                 <i class="fa order" :class="{
-                                    'fa-chevron-down': formFiltros.orderBy !== 'id' || formFiltros.orderBy === 'id' && formFiltros.orderDir === 'asc',
-                                    'fa-chevron-up': formFiltros.orderBy === 'id' && formFiltros.orderDir === 'desc'
-                                }" @click="orderBy('id')"></i>
+                                    'fa-chevron-down': formFiltros.orderBy !== 'id_externo' || formFiltros.orderBy === 'id_externo' && formFiltros.orderDir === 'asc',
+                                    'fa-chevron-up': formFiltros.orderBy === 'id_externo' && formFiltros.orderDir === 'desc'
+                                }" @click="orderBy('id_externo')"></i>
                             </th>
                             <th>
                                 <span class="me-3">Nombre paciente</span>
@@ -318,7 +318,7 @@ onMounted(() => {
 
                     <template v-for="paciente in pacientes.data" :key="paciente.id">
                         <tr :class="{ 'row-alerta': paciente.alertas_pendientes > 0 }">
-                            <td>{{ paciente.id }}</td>
+                            <td>{{ paciente.id_externo }}</td>
                             <td>{{ paciente.nombre }} {{ paciente.apellido }}</td>
                             <td>{{ paciente.fecha_enrolamiento_format }}</td>
                             <td v-if="$page.props.usuario.rol?.nombre !== 'promotor'">{{ paciente.promotor?.nombre }}</td>
@@ -577,7 +577,8 @@ onMounted(() => {
                     <span class="fw-semibold">Fecha de última actualización:</span> {{ pacienteSelected.fecha_ultima_sincronizacion }}
                 </div>
                 <div class="col-12 col-md-6">
-                    <span class="fw-semibold">Sesiones completas:</span> 4/5
+                    <span class="fw-semibold">Sesiones completas:</span>
+                    {{ pacienteSelected.sesiones?.completadas != null && pacienteSelected.sesiones?.total != null ? `${pacienteSelected.sesiones.completadas}/${pacienteSelected.sesiones.total}` : '-/-' }}
                 </div>
                 <div class="col-12 col-md-6">
                     <span class="fw-semibold">Metas cumplidas:</span> 4

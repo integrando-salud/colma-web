@@ -26,7 +26,9 @@ class Interaccion extends Model
     protected $fillable = [
         'paciente_id',
         'user_id',
+        'updated_by_user_id',
         'alerta_id',
+        'entrenamiento_id',
         'contactado',
         'fecha',
         'hora',
@@ -104,8 +106,20 @@ class Interaccion extends Model
         return $this->belongsTo(User::class)->withTrashed();
     }
 
+    /** Usuario que realizó la última edición de la interacción. */
+    public function updatedByUser()
+    {
+        return $this->belongsTo(User::class, 'updated_by_user_id')->withTrashed();
+    }
+
     public function alerta()
     {
         return $this->belongsTo(Alerta::class);
+    }
+
+    /** Entrenamiento generado al registrar esta cita como realizada. */
+    public function entrenamiento()
+    {
+        return $this->belongsTo(Entrenamiento::class);
     }
 }

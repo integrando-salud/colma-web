@@ -49,7 +49,7 @@ class PacienteServiceTest extends TestCase
         $this->assertSame('2026-03-10', substr((string) $resultado->nueva_fecha_contacto, 0, 10));
         $this->assertSame(
             $this->service->queryGetPacientes(['orderBy' => 'id; DROP TABLE pacientes', 'orderDir' => 'invalid'])->toSql(),
-            $this->service->queryGetPacientes(['orderBy' => 'id', 'orderDir' => 'desc'])->toSql(),
+            $this->service->queryGetPacientes(['orderBy' => 'id_externo', 'orderDir' => 'desc'])->toSql(),
         );
     }
 
@@ -103,6 +103,31 @@ class PacienteServiceTest extends TestCase
         $this->assertSame('02/03/2026', $fechas[0]['fecha']);
         $this->assertSame('Alerta clínica', $fechas[0]['motivo']);
         $this->assertSame('Seguimiento 2 semanas', $fechas[1]['motivo']);
+    }
+
+    public function test_la_cita_de_entrenamiento_programada_se_usa_como_proximo_contacto(): void
+    {
+        $usuario = $this->crearUsuario('operador-citas');
+        $usuario->assign(User::ROL_SUPERUSUARIO);
+        $this->actingAs($usuario);
+        $paciente = $this->crearPaciente();
+        $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'fecha' => '2026-07-08',
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO,
+            'fecha_cita' => '2026-07-09',
+            'nueva_fecha_contacto' => '2026-07-22',
+        ]);
+
+        $this->assertSame('2026-07-09', substr((string) $this->service->getFechaProximoContacto($paciente), 0, 10));
+        $this->assertSame('2026-07-09', substr((string) $this->service->queryGetPacientes()->firstOrFail()->nueva_fecha_contacto, 0, 10));
+
+        $this->service->cargarRelacionesParaResource($paciente);
+        $detalle = (new PacienteResource($paciente))->resolve();
+
+        $this->assertSame('09/07/2026', $detalle['fecha_proximo_contacto']);
+        $this->assertSame('09/07/2026', $detalle['proximos_contactos'][0]['fecha']);
+        $this->assertSame('22/07/2026', $detalle['proximos_contactos'][1]['fecha']);
     }
 
     public function test_get_fechas_proximos_contactos_programados_excluye_las_ya_contactadas(): void
