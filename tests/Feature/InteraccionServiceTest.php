@@ -49,6 +49,7 @@ class InteraccionServiceTest extends TestCase
         $interaccion = Interaccion::firstOrFail();
         $this->assertSame($paciente->id, $interaccion->paciente_id);
         $this->assertSame(auth()->id(), $interaccion->user_id);
+        $this->assertNull($interaccion->updated_by_user_id);
         $this->assertSame($alerta->id, $interaccion->alerta_id);
         $this->assertFalse($interaccion->contactado);
         $this->assertSame('2026-08-02', $interaccion->fecha->toDateString());
@@ -65,6 +66,9 @@ class InteraccionServiceTest extends TestCase
         $paciente = $this->crearPaciente();
         $this->service->storeInteraccion($this->datosInteraccion($paciente));
         $interaccion = Interaccion::firstOrFail();
+        $creadorId = $interaccion->user_id;
+        $editor = $this->crearUsuario();
+        $this->actingAs($editor);
 
         $resultado = $this->service->storeInteraccion($this->datosInteraccion($paciente, [
             'id' => $interaccion->id,
@@ -80,6 +84,8 @@ class InteraccionServiceTest extends TestCase
         $this->assertDatabaseCount('interacciones', 1);
         $interaccion->refresh();
         $this->assertTrue($interaccion->contactado);
+        $this->assertSame($creadorId, $interaccion->user_id);
+        $this->assertSame($editor->id, $interaccion->updated_by_user_id);
         $this->assertSame('2026-08-09', $interaccion->fecha->toDateString());
         $this->assertSame('14:45', $interaccion->hora->format('H:i'));
     }
@@ -91,6 +97,39 @@ class InteraccionServiceTest extends TestCase
 
         $this->assertTrue($this->service->deleteInteraccion($interaccion));
         $this->assertSoftDeleted('interacciones', ['id' => $interaccion->id]);
+    }
+
+    public function test_elimina_el_entrenamiento_generado_al_eliminar_su_interaccion(): void
+    {
+        $paciente = $this->crearPaciente();
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO->value,
+        ]));
+        $interaccion = Interaccion::firstOrFail();
+        $entrenamientoId = $interaccion->entrenamiento_id;
+
+        $this->assertNotNull($entrenamientoId);
+        $this->assertTrue($this->service->deleteInteraccion($interaccion));
+
+        $this->assertSoftDeleted('interacciones', ['id' => $interaccion->id]);
+        $this->assertDatabaseMissing('entrenamientos', ['id' => $entrenamientoId]);
+    }
+
+    public function test_no_elimina_un_entrenamiento_preexistente_reagendado_por_la_interaccion(): void
+    {
+        $paciente = $this->crearPaciente();
+        $this->service->guardarEntrenamiento($paciente->id, '2026-07-01');
+        $entrenamiento = Entrenamiento::firstOrFail();
+
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO->value,
+            'id_entrenamiento' => $entrenamiento->id,
+        ]));
+        $interaccion = Interaccion::firstOrFail();
+
+        $this->assertNull($interaccion->entrenamiento_id);
+        $this->assertTrue($this->service->deleteInteraccion($interaccion));
+        $this->assertDatabaseHas('entrenamientos', ['id' => $entrenamiento->id]);
     }
 
     public function test_crea_y_actualiza_el_cronograma_de_entrenamiento(): void
@@ -108,6 +147,44 @@ class InteraccionServiceTest extends TestCase
         $entrenamiento->refresh();
 
         $this->assertSame('2026-09-15', $entrenamiento->seguimiento_dos_semanas_inicio->toDateString());
+    }
+
+    public function test_crea_el_entrenamiento_al_registrar_una_cita_de_entrenamiento_contactada(): void
+    {
+        $paciente = $this->crearPaciente();
+
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value,
+            'fecha_cita' => '05/08/2026',
+        ]));
+
+        $this->assertDatabaseCount('entrenamientos', 0);
+
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO->value,
+            'fecha' => null,
+            'hora' => null,
+            'fecha_cita_final' => '09/08/2026',
+            'hora_cita_final' => '14:45',
+        ]));
+
+        $this->assertDatabaseHas('entrenamientos', [
+            'paciente_id' => $paciente->id,
+            'fecha' => '2026-08-09',
+        ]);
+    }
+
+    public function test_no_crea_el_entrenamiento_al_registrar_una_cita_de_entrenamiento_no_contactada(): void
+    {
+        $paciente = $this->crearPaciente();
+
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'contactado' => false,
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO->value,
+            'nueva_fecha_contacto' => '09/08/2026',
+        ]));
+
+        $this->assertDatabaseCount('entrenamientos', 0);
     }
 
     public function test_no_reasigna_un_entrenamiento_a_otro_paciente(): void
@@ -134,11 +211,14 @@ class InteraccionServiceTest extends TestCase
 
     private function crearUsuario(): User
     {
+        static $numero = 0;
+        $numero++;
+
         return User::create([
             'nombre' => 'Promotora de prueba',
             'sexo' => 'F',
-            'documento' => 'USER-1',
-            'email' => 'promotora@example.test',
+            'documento' => "USER-$numero",
+            'email' => "promotora$numero@example.test",
             'password' => 'password',
         ]);
     }

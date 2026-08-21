@@ -111,7 +111,6 @@ onMounted(async () => {
                     :form="formContacto"
                     :motivos-contacto="motivosContacto"
                     :alerta="alerta"
-                    :entrenamiento-actual="entrenamientoActual"
                     :ver-fecha-hora-contacto="verFechaHoraContacto"
                 />
 

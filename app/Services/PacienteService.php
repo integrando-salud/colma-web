@@ -67,6 +67,25 @@ class PacienteService
                     ORDER BY a.fecha_contacto
                     LIMIT 1
                 ) AS fecha
+                UNION ALL
+                SELECT (
+                    SELECT i_cita.fecha_cita
+                    FROM interacciones i_cita
+                    WHERE i_cita.paciente_id = pacientes.id
+                        AND i_cita.motivo = \'Agendar cita de entrenamiento\'
+                        AND i_cita.fecha_cita IS NOT NULL
+                        AND i_cita.deleted_at IS NULL
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM interacciones i_contactado
+                            WHERE i_contactado.paciente_id = pacientes.id
+                                AND i_contactado.contactado = 1
+                                AND i_contactado.deleted_at IS NULL
+                                AND i_contactado.fecha >= i_cita.fecha_cita
+                        )
+                    ORDER BY i_cita.fecha_cita
+                    LIMIT 1
+                ) AS fecha
             ) proximas_fechas
         ', 'nueva_fecha_contacto');
 
@@ -101,10 +120,10 @@ class PacienteService
         }
 
         $query->orderByDesc('pacientes.activo');
-        $orderBy = data_get($filters, 'orderBy', 'id');
-        $orderBy = in_array($orderBy, ['id', 'sesiones', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
+        $orderBy = data_get($filters, 'orderBy', 'id_externo');
+        $orderBy = in_array($orderBy, ['id_externo', 'sesiones', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
             ? $orderBy
-            : 'id';
+            : 'id_externo';
         $orderDir = strtolower((string) data_get($filters, 'orderDir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         switch ($orderBy) {
@@ -133,6 +152,11 @@ class PacienteService
             default:
                 $query->orderBy("pacientes.$orderBy", $orderDir);
         }
+
+        // La columna elegida para ordenar (por ejemplo, id_externo) puede
+        // repetirse o ser nula. El ID garantiza un orden total y evita que la
+        // paginación por offset omita o repita pacientes entre solicitudes.
+        $query->orderBy('pacientes.id', $orderDir);
 
         return $query;
     }
@@ -298,9 +322,13 @@ class PacienteService
         $fechasContactoAlertas = $paciente->relationLoaded('proximosContactosAlertas')
             ? $paciente->proximosContactosAlertas
             : $this->getFechasProximosContactosAlertas($paciente, $cantidad);
+        $fechasCitasEntrenamiento = $paciente->relationLoaded('proximasCitasEntrenamiento')
+            ? $paciente->proximasCitasEntrenamiento
+            : $this->getFechasProximasCitasEntrenamiento($paciente, $cantidad);
         $fechas = collect()
             ->merge($fechasContactoInteracciones->toArray())
             ->merge($fechasContactoAlertas->toArray())
+            ->merge($fechasCitasEntrenamiento->toArray())
             ->sortBy('fecha')
             ->values()
             ->map(function ($fecha) {
@@ -349,6 +377,20 @@ class PacienteService
                     WHEN tipo = 'clinica' THEN 'Alerta clínica'
                     ELSE ''
                 END AS motivo"),
+            'proximasCitasEntrenamiento' => fn ($query) => $query
+                ->where('motivo', MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO)
+                ->whereNotNull('fecha_cita')
+                ->whereNotExists(function ($query) {
+                    $query->selectRaw('1')
+                        ->from('interacciones AS subquery')
+                        ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
+                        ->where('subquery.contactado', true)
+                        ->whereColumn('subquery.fecha', '>=', 'interacciones.fecha_cita')
+                        ->whereNull('subquery.deleted_at');
+                })
+                ->orderBy('fecha_cita')
+                ->limit(3)
+                ->selectRaw('id, paciente_id, motivo, fecha_cita AS fecha'),
         ]);
 
         if (! isset($paciente->numero_alertas)) {
@@ -404,15 +446,38 @@ class PacienteService
     }
 
     /**
+     * Obtiene las citas de entrenamiento pendientes que fueron programadas durante un contacto.
+     */
+    public function getFechasProximasCitasEntrenamiento(Paciente $paciente, int $cantidad = 3): Collection
+    {
+        return $paciente->interacciones()
+            ->where('motivo', MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO)
+            ->whereNotNull('fecha_cita')
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('interacciones AS subquery')
+                    ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
+                    ->where('subquery.contactado', true)
+                    ->whereColumn('subquery.fecha', '>=', 'interacciones.fecha_cita')
+                    ->whereNull('subquery.deleted_at');
+            })
+            ->orderBy('fecha_cita')
+            ->limit($cantidad)
+            ->get(['id', 'motivo', 'fecha_cita AS fecha']);
+    }
+
+    /**
      * Obtiene la fecha de contacto más próxima para un paciente
      */
     public function getFechaProximoContacto(Paciente $paciente): ?string
     {
         if ($paciente->relationLoaded('proximosContactosProgramados')
-            && $paciente->relationLoaded('proximosContactosAlertas')) {
+            && $paciente->relationLoaded('proximosContactosAlertas')
+            && $paciente->relationLoaded('proximasCitasEntrenamiento')) {
             return collect()
                 ->merge($paciente->proximosContactosProgramados)
                 ->merge($paciente->proximosContactosAlertas)
+                ->merge($paciente->proximasCitasEntrenamiento)
                 ->pluck('fecha')
                 ->filter()
                 ->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())
@@ -421,18 +486,12 @@ class PacienteService
 
         $fechaContactoInteracciones = $this->getFechaProximoContactoProgramado($paciente);
         $fechaContactoAlertas = $this->getFechaProximoContactoAlerta($paciente);
+        $fechaCitaEntrenamiento = $this->getFechaProximaCitaEntrenamiento($paciente);
 
-        if (is_null($fechaContactoInteracciones)) {
-            return $fechaContactoAlertas;
-        }
-
-        if (is_null($fechaContactoAlertas)) {
-            return $fechaContactoInteracciones;
-        }
-
-        return strtotime($fechaContactoInteracciones) <= strtotime($fechaContactoAlertas)
-            ? $fechaContactoInteracciones
-            : $fechaContactoAlertas;
+        return collect([$fechaContactoInteracciones, $fechaContactoAlertas, $fechaCitaEntrenamiento])
+            ->filter()
+            ->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())
+            ->min();
     }
 
     /**
@@ -465,6 +524,14 @@ class PacienteService
             ->whereNull('revisado')
             ->orderBy('fecha_contacto')
             ->value('fecha_contacto');
+    }
+
+    /** Obtiene la primera cita de entrenamiento pendiente. */
+    public function getFechaProximaCitaEntrenamiento(Paciente $paciente): ?string
+    {
+        $fecha = $this->getFechasProximasCitasEntrenamiento($paciente, 1)->first()?->fecha;
+
+        return $fecha ? Carbon::parse($fecha)->toDateString() : null;
     }
 
     /**

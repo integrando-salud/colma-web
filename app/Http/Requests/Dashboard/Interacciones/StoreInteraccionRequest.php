@@ -34,6 +34,7 @@ class StoreInteraccionRequest extends FormRequest
             'fecha' => [
                 'nullable',
                 'date_format:d/m/Y',
+                'before_or_equal:today',
                 Rule::requiredIf(function () {
                     return !$this->input('contactado') || !in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
@@ -60,12 +61,18 @@ class StoreInteraccionRequest extends FormRequest
             'motivo_reprogramacion' => [
                 'nullable',
                 Rule::enum(MotivoReprogramacion::class),
-                'required_if:contactado,0'
+                Rule::requiredIf(function () {
+                    return ! $this->input('contactado')
+                        && $this->input('motivo') !== MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value;
+                }),
             ],
             'nueva_fecha_contacto' => [
                 'nullable',
                 'date_format:d/m/Y',
-                'required_if:contactado,0'
+                Rule::requiredIf(function () {
+                    return ! $this->input('contactado')
+                        && $this->input('motivo') !== MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value;
+                }),
             ],
             'fecha_cita' => [
                 'nullable',

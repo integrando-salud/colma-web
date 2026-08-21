@@ -127,6 +127,7 @@ class PacienteController extends Controller
             ->with(['paciente', 'user'])
             ->whereNull('alerta_id')
             ->orderByDesc('fecha')
+            ->orderByDesc('hora')
             ->paginate(10);
 
         return $this->renderDetalle($paciente, 'historial-interacciones', [

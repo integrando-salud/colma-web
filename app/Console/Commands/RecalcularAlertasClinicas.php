@@ -108,7 +108,7 @@ class RecalcularAlertasClinicas extends Command
                         $registro->paciente_id,
                         'estado_animo',
                         $registro->id,
-                        'Estado de ánimo alterado',
+                        'Estado de ánimo',
                         $recomendacion,
                         $dryRun,
                         $totals

@@ -443,7 +443,7 @@ camposSoloLetras.forEach(campo => {
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label class="col-12 col-sm-4 col-xl-4 col-form-label">Diagnósticos</label>
+                        <label class="col-12 col-sm-4 col-xl-4 col-form-label">Diagnósticos <span class="text-danger">*</span></label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <template v-if="cargandoDiagnosticos">
                                 <span class="text-body-secondary">
@@ -528,13 +528,13 @@ camposSoloLetras.forEach(campo => {
             </div>
         </template>
         <div class="col-12 mt-3 mt-sm-0">
-            <h4 class="fs-5 text-primary-emphasis">ID sistema externo</h4>
+            <h4 class="fs-5 text-primary-emphasis">ID RedCap</h4>
         </div>
         <div class="col-12">
             <div class="row">
                 <div class="col-12 col-md-6 col-lg-4 mb-sm-3">
                     <div class="row">
-                        <label for="paciente_id_externo" class="col-12 col-sm-4 col-xl-4 col-form-label">ID</label>
+                        <label for="paciente_id_externo" class="col-12 col-sm-4 col-xl-4 col-form-label">ID <span class="text-danger">*</span></label>
                         <div class="col-12 col-sm-8 col-xl-6">
                             <input
                                 type="text"
@@ -544,7 +544,7 @@ camposSoloLetras.forEach(campo => {
                                 :class="{ 'is-invalid': formPaciente.errors.id_externo }"
                                 v-model="formPaciente.id_externo"
                                 :disabled="soloLectura"
-                                maxlength="8"
+                                required
                             />
                             <div class="invalid-feedback" v-if="formPaciente.errors?.id_externo">
                                 {{ formPaciente.errors.id_externo }}
