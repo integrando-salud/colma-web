@@ -3,7 +3,11 @@
 namespace App\Services;
 
 use App\Models\Diagnostico;
+use App\Models\Entrenamiento;
 use App\Models\Paciente;
+use App\Models\TratamientoMultimedia;
+use App\Models\TratamientoSesion;
+use App\Models\TratamientoVersion;
 use Exception;
 use Illuminate\Support\Facades\File;
 
@@ -25,7 +29,18 @@ class TratamientoService
             return null;
         }
 
-        return $this->getTratamiento(...$tratamiento);
+        [, , $tipo, $nombre] = $tratamiento;
+        $entrenamiento = $paciente->entrenamientos()->where('activo', true)->latest()->first();
+        $version = $entrenamiento?->tratamientoVersion
+            ?? $this->getVersionTratamientoPaciente($paciente);
+
+        // Los entrenamientos previos a este catálogo adoptan la versión vigente
+        // la primera vez que la aplicación consulta su tratamiento.
+        if ($entrenamiento && ! $entrenamiento->tratamiento_version_id && $version) {
+            $entrenamiento->update(['tratamiento_version_id' => $version->id]);
+        }
+
+        return $this->getTratamiento($tipo, $nombre, $version);
     }
 
     /**
@@ -43,16 +58,87 @@ class TratamientoService
             return 0;
         }
 
-        [$pais, $diagnosticoDirname] = $tratamiento;
-        $tratamientosDirname = config('filesystems.multimedia.tratamientos_dirname');
-        $path = storage_path("app/private/$tratamientosDirname/$pais/$diagnosticoDirname");
+        return $this->getVersionTratamientoPaciente($paciente)?->sesiones()->count() ?? 0;
+    }
 
-        if (! File::isDirectory($path)) {
+    /** Obtiene o crea la versión vigente del catálogo asignado al paciente. */
+    public function getVersionTratamientoPaciente(Paciente $paciente): ?TratamientoVersion
+    {
+        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+
+        if (! $tratamiento) {
+            return null;
+        }
+
+        [$pais, $diagnosticoDirname] = $tratamiento;
+
+        return $this->sincronizarCatalogo($pais, $diagnosticoDirname);
+    }
+
+    /**
+     * Sincroniza en el catálogo todos los tratamientos existentes en disco.
+     *
+     * @param array<int, string>|null $paises Códigos de país a importar; `null` importa todos.
+     * @param array<int, string>|null $tipos Directorios de tratamiento a importar; `null` importa todos.
+     * @return array<int, array{pais: string, tipo: string, version_id: int, creada: bool}>
+     */
+    public function sincronizarCatalogos(?array $paises = null, ?array $tipos = null): array
+    {
+        $dirname = config('filesystems.multimedia.tratamientos_dirname');
+        $basePath = storage_path("app/private/$dirname");
+
+        if (! File::isDirectory($basePath)) {
+            return [];
+        }
+
+        $paisesDisponibles = array_map('basename', File::directories($basePath));
+        $paises = $paises === null ? $paisesDisponibles : array_intersect($paisesDisponibles, $paises);
+        $tiposDisponibles = array_filter(array_unique([
+            config('filesystems.multimedia.tratamientos_diabetes_dirname'),
+            config('filesystems.multimedia.tratamientos_hipertension_dirname'),
+            config('filesystems.multimedia.tratamientos_diabetes_hipertension_dirname'),
+        ]));
+        $tipos = $tipos === null ? $tiposDisponibles : array_intersect($tiposDisponibles, $tipos);
+        $resultado = [];
+
+        foreach ($paises as $pais) {
+            foreach ($tipos as $tipo) {
+                $version = $this->sincronizarCatalogo($pais, $tipo);
+
+                if (! $version) {
+                    continue;
+                }
+
+                $resultado[] = [
+                    'pais' => $pais,
+                    'tipo' => $tipo,
+                    'version_id' => $version->id,
+                    'creada' => $version->wasRecentlyCreated,
+                ];
+            }
+        }
+
+        return $resultado;
+    }
+
+    /** Cuenta sesiones cuyo conjunto completo de archivos fue leído en el entrenamiento. */
+    public function getCantidadSesionesCompletadas(Entrenamiento $entrenamiento): int
+    {
+        if (! $entrenamiento->tratamiento_version_id) {
             return 0;
         }
 
-        return collect($this->getDirectoriosConNombre($path, 'semana-'))
-            ->sum(fn (string $semanaPath) => count($this->getDirectoriosConNombre($semanaPath, 'sesion-')));
+        return TratamientoSesion::query()
+            ->where('tratamiento_version_id', $entrenamiento->tratamiento_version_id)
+            ->has('multimedia')
+            ->withCount('multimedia')
+            ->withCount(['multimedia as multimedia_leida_count' => fn ($query) => $query->whereHas(
+                'lecturas',
+                fn ($lecturas) => $lecturas->where('entrenamiento_id', $entrenamiento->id),
+            )])
+            ->get()
+            ->filter(fn (TratamientoSesion $sesion) => $sesion->multimedia_count === $sesion->multimedia_leida_count)
+            ->count();
     }
 
     /**
@@ -123,13 +209,27 @@ class TratamientoService
     /**
      * Construye la estructura de respuesta del tratamiento a partir de su configuración.
      */
-    private function getTratamiento(string $pais, string $diagnosticoDirname, string $tipo, string $nombre): array
+    private function getTratamiento(string $tipo, string $nombre, ?TratamientoVersion $version): array
     {
-        $tratamientosDirname = config('filesystems.multimedia.tratamientos_dirname');
-        $path = storage_path("app/private/$tratamientosDirname/$pais/$diagnosticoDirname");
-        $semanas = File::isDirectory($path)
-            ? $this->getSemanas($path)
-            : [];
+        $sesiones = $version
+            ? $version->sesiones()->with('multimedia')->orderBy('semana')->orderBy('sesion')->get()
+            : collect();
+        $semanas = $sesiones->groupBy('semana')->map(fn ($sesionesSemana, $semana) => [
+            'id' => (int) $semana,
+            'title' => "Semana $semana",
+            'sesiones' => $sesionesSemana->map(fn (TratamientoSesion $sesion) => [
+                'id' => $sesion->sesion,
+                'title' => "Sesión {$sesion->sesion}",
+                'content' => $sesion->multimedia
+                    ->sortBy('ruta', SORT_NATURAL | SORT_FLAG_CASE)
+                    ->map(fn (TratamientoMultimedia $multimedia) => [
+                        'tratamiento_multimedia_id' => $multimedia->id,
+                        'type' => $multimedia->tipo,
+                        'title' => basename($multimedia->ruta),
+                        'link' => route('multimedia', ['path' => $multimedia->ruta]),
+                    ])->values()->all(),
+            ])->values()->all(),
+        ])->values()->all();
 
         return [
             'tratamiento' => [
@@ -141,23 +241,55 @@ class TratamientoService
     }
 
     /**
-     * Obtiene las semanas válidas del tratamiento, ordenadas por su número.
+     * Importa la estructura de archivos y retorna una versión inmutable.
+     * Un cambio en nombre, contenido o ubicación crea una nueva versión.
      */
-    private function getSemanas(string $path): array
+    private function sincronizarCatalogo(string $pais, string $tipo): ?TratamientoVersion
     {
-        $semanas = array_map(function (string $semanaPath) {
-            $numeroSemana = $this->getNumeroDesdeNombre(basename($semanaPath));
+        $dirname = config('filesystems.multimedia.tratamientos_dirname');
+        $basePath = storage_path("app/private/$dirname/$pais/$tipo");
 
-            return [
-                'id' => $numeroSemana,
-                'title' => "Semana $numeroSemana",
-                'sesiones' => $this->getSesiones($semanaPath),
-            ];
-        }, $this->getDirectoriosConNombre($path, 'semana-'));
+        if (! File::isDirectory($basePath)) {
+            return null;
+        }
 
-        usort($semanas, fn (array $a, array $b) => $a['id'] <=> $b['id']);
+        $contenido = [];
+        $sesiones = [];
+        foreach ($this->getDirectoriosConNombre($basePath, 'semana-') as $semanaPath) {
+            $semana = $this->getNumeroDesdeNombre(basename($semanaPath));
+            foreach ($this->getDirectoriosConNombre($semanaPath, 'sesion-') as $sesionPath) {
+                $sesion = $this->getNumeroDesdeNombre(basename($sesionPath));
+                $sesiones[] = ['semana' => $semana, 'sesion' => $sesion];
+                foreach (File::files($sesionPath) as $archivo) {
+                    $ruta = $this->getPathRelativoStorage($archivo->getPathname());
+                    $mime = File::mimeType($archivo->getPathname()) ?: 'application/octet-stream';
+                    $contenido[] = [
+                        'semana' => $semana,
+                        'sesion' => $sesion,
+                        'ruta' => $ruta,
+                        'tipo' => $this->getTipoContenido($mime),
+                        'checksum' => hash_file('sha256', $archivo->getPathname()),
+                    ];
+                }
+            }
+        }
 
-        return $semanas;
+        usort($contenido, fn (array $a, array $b) => [$a['semana'], $a['sesion'], $a['ruta']] <=> [$b['semana'], $b['sesion'], $b['ruta']]);
+        usort($sesiones, fn (array $a, array $b) => [$a['semana'], $a['sesion']] <=> [$b['semana'], $b['sesion']]);
+        $hash = hash('sha256', json_encode(['sesiones' => $sesiones, 'contenido' => $contenido], JSON_THROW_ON_ERROR));
+        $version = TratamientoVersion::query()->firstOrCreate(['pais' => $pais, 'tipo' => $tipo, 'hash' => $hash]);
+
+        if ($version->wasRecentlyCreated) {
+            foreach ($sesiones as $datosSesion) {
+                $archivos = collect($contenido)->where('semana', $datosSesion['semana'])->where('sesion', $datosSesion['sesion']);
+                $sesion = $version->sesiones()->create($datosSesion);
+                $sesion->multimedia()->createMany($archivos->map(fn (array $archivo) => [
+                    'ruta' => $archivo['ruta'], 'tipo' => $archivo['tipo'], 'checksum' => $archivo['checksum'],
+                ])->all());
+            }
+        }
+
+        return $version;
     }
 
     /**
@@ -169,47 +301,6 @@ class TratamientoService
             File::directories($path),
             fn (string $directory) => preg_match('/^'.preg_quote($prefijo, '/').'\\d+$/', basename($directory)) === 1
         ));
-    }
-
-    /**
-     * Obtiene las sesiones válidas de una semana, ordenadas por su número.
-     */
-    private function getSesiones(string $path): array
-    {
-        $sesiones = array_map(function (string $sesionPath) {
-            $numeroSesion = $this->getNumeroDesdeNombre(basename($sesionPath));
-
-            return [
-                'id' => $numeroSesion,
-                'title' => "Sesión $numeroSesion",
-                'content' => $this->getContenido($sesionPath),
-            ];
-        }, $this->getDirectoriosConNombre($path, 'sesion-'));
-
-        usort($sesiones, fn (array $a, array $b) => $a['id'] <=> $b['id']);
-
-        return $sesiones;
-    }
-
-    /**
-     * Lista los archivos de una sesión, clasificados por su tipo MIME.
-     */
-    private function getContenido(string $path): array
-    {
-        $contenido = array_map(function ($archivo) {
-            $archivoPath = $archivo->getPathname();
-            $mime = File::mimeType($archivoPath) ?: 'application/octet-stream';
-
-            return [
-                'type' => $this->getTipoContenido($mime),
-                'title' => $archivo->getFilename(),
-                'link' => route('multimedia', ['path' => $this->getPathRelativoStorage($archivoPath)]),
-            ];
-        }, File::files($path));
-
-        usort($contenido, fn (array $a, array $b) => strnatcasecmp($a['title'], $b['title']));
-
-        return $contenido;
     }
 
     /**

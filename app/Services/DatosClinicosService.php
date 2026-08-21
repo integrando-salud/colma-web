@@ -9,12 +9,15 @@ use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\Meta;
 use App\Models\MultimediaRead;
+use App\Models\Entrenamiento;
+use App\Models\TratamientoMultimedia;
 use App\Models\PresionArterial;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class DatosClinicosService
@@ -51,12 +54,22 @@ class DatosClinicosService
                 $this->saveDatosCuestionario($idPaciente, $data['quiz']);
             }
 
+            $idEntrenamiento = null;
+            if (!empty($data['metas']) || !empty($data['multimedia_read'])) {
+                // Se conserva el mismo criterio de negocio usado para obtener el
+                // entrenamiento actual: el último entrenamiento activo del paciente.
+                $idEntrenamiento = $paciente->entrenamientos()
+                    ->where('activo', true)
+                    ->latest()
+                    ->value('id');
+            }
+
             if (!empty($data['metas'])) {
-                $this->saveDatosMetas($idPaciente, $data['metas']);
+                $this->saveDatosMetas($idPaciente, $idEntrenamiento, $data['metas']);
             }
 
             if (!empty($data['multimedia_read'])) {
-                $this->saveDatosMultimediaRead($idPaciente, $data['multimedia_read']);
+                $this->saveDatosMultimediaRead($idPaciente, $idEntrenamiento, $data['multimedia_read']);
             }
 
             $paciente->update([
@@ -372,13 +385,14 @@ class DatosClinicosService
      *
      * @param array<int, array<string, mixed>> $data
      */
-    protected function saveDatosMetas(int $idPaciente, array $data): void
+    protected function saveDatosMetas(int $idPaciente, ?int $idEntrenamiento, array $data): void
     {
         foreach ($data as $d) {
             Meta::updateOrCreate([
                 'paciente_id' => $idPaciente,
                 'id_app' => $d['id_meta'],
             ], [
+                'entrenamiento_id' => $idEntrenamiento,
                 'semana' => $d['semana'],
                 'sesion' => $d['sesion'],
                 'tipo_actividad' => $d['tipo_actividad'],
@@ -401,17 +415,40 @@ class DatosClinicosService
      *
      * @param array<int, array<string, mixed>> $data
      */
-    protected function saveDatosMultimediaRead(int $idPaciente, array $data): void
+    protected function saveDatosMultimediaRead(int $idPaciente, ?int $idEntrenamiento, array $data): void
     {
+        if (! $idEntrenamiento) {
+            throw ValidationException::withMessages([
+                'multimedia_read' => 'El paciente no tiene un entrenamiento activo para asociar el contenido leído.',
+            ]);
+        }
+
+        $entrenamiento = Entrenamiento::query()->findOrFail($idEntrenamiento);
+        $ids = collect($data)->pluck('tratamiento_multimedia_id')->unique();
+        $multimedia = TratamientoMultimedia::query()
+            ->with('sesion.version')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
         foreach ($data as $d) {
+            $archivo = $multimedia->get($d['tratamiento_multimedia_id']);
+            if (! $archivo || $archivo->sesion->tratamiento_version_id !== $entrenamiento->tratamiento_version_id) {
+                throw ValidationException::withMessages([
+                    'multimedia_read' => 'El contenido multimedia no pertenece al entrenamiento activo del paciente.',
+                ]);
+            }
+
             MultimediaRead::updateOrCreate([
                 'paciente_id' => $idPaciente,
                 'id_app' => $d['id_multimedia_read'],
             ], [
-                'tratamiento' => $d['treatment_id'],
-                'semana' => $d['week_id'],
-                'sesion' => $d['session_id'],
-                'tipo' => $d['multimedia_type'],
+                'entrenamiento_id' => $idEntrenamiento,
+                'tratamiento_multimedia_id' => $archivo->id,
+                'tratamiento' => $archivo->sesion->version->tipo,
+                'semana' => $archivo->sesion->semana,
+                'sesion' => $archivo->sesion->sesion,
+                'tipo' => $archivo->tipo,
                 'key' => $d['multimedia_unique_key'],
                 'fecha_registro' => $d['fecha_registro'],
                 'fecha_sincronizacion' => $d['fecha_sincronizacion'],

@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Entrenamiento;
 use App\Models\Paciente;
+use App\Models\TratamientoMultimedia;
+use App\Models\TratamientoSesion;
+use App\Models\TratamientoVersion;
 use App\Models\User;
+use App\Services\TratamientoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +29,119 @@ class ApiPacienteControllerTest extends TestCase
             ->assertJsonPath('message', 'Datos sincronizados con éxito.');
 
         $this->assertNotNull($paciente->fresh()->fecha_ultima_sincronizacion);
+    }
+
+    /**
+     * Verifica que las sesiones completadas se registren con sus datos de contexto.
+     */
+    public function test_paciente_puede_sincronizar_las_sesiones_multimedia_completadas(): void
+    {
+        [$user, $paciente] = $this->crearPaciente();
+        $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('a', 64)]);
+        $sesionUno = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
+        $sesionDos = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 2]);
+        $multimediaUno = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-1/video.mp4', 'tipo' => 'VIDEO', 'checksum' => str_repeat('b', 64)]);
+        TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-1/guia.pdf', 'tipo' => 'ARCHIVO', 'checksum' => str_repeat('d', 64)]);
+        $multimediaDos = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionDos->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-2/audio.mp3', 'tipo' => 'AUDIO', 'checksum' => str_repeat('c', 64)]);
+        $entrenamiento = $this->crearEntrenamiento($paciente, $version);
+        $fecha = '2026-08-20 10:30:00';
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/sync-data-paciente', [
+                'userId' => $user->id,
+                'multimedia_read' => [
+                    [
+                        'id_multimedia_read' => 101,
+                        'id_usuario' => $user->id,
+                        'tratamiento_multimedia_id' => $multimediaUno->id,
+                        'treatment_id' => 'hta',
+                        'week_id' => 1,
+                        'session_id' => 1,
+                        'multimedia_type' => 'video',
+                        'multimedia_unique_key' => 'hta-semana-1-sesion-1',
+                        'fecha_registro' => $fecha,
+                        'fecha_sincronizacion' => $fecha,
+                    ],
+                    [
+                        'id_multimedia_read' => 102,
+                        'id_usuario' => $user->id,
+                        'tratamiento_multimedia_id' => $multimediaDos->id,
+                        'treatment_id' => 'hta',
+                        'week_id' => 1,
+                        'session_id' => 2,
+                        'multimedia_type' => 'audio',
+                        'multimedia_unique_key' => 'hta-semana-1-sesion-2',
+                        'fecha_registro' => $fecha,
+                        'fecha_sincronizacion' => $fecha,
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseCount('multimedia_read', 2);
+        $this->assertDatabaseHas('multimedia_read', [
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamiento->id,
+            'tratamiento_multimedia_id' => $multimediaUno->id,
+            'id_app' => 101,
+            'tratamiento' => 'HTA',
+            'semana' => 1,
+            'sesion' => 1,
+            'tipo' => 'VIDEO',
+            'key' => 'hta-semana-1-sesion-1',
+        ]);
+        $this->assertDatabaseHas('multimedia_read', [
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamiento->id,
+            'tratamiento_multimedia_id' => $multimediaDos->id,
+            'id_app' => 102,
+            'tratamiento' => 'HTA',
+            'semana' => 1,
+            'sesion' => 2,
+            'tipo' => 'AUDIO',
+            'key' => 'hta-semana-1-sesion-2',
+        ]);
+        $this->assertSame(1, app(TratamientoService::class)->getCantidadSesionesCompletadas($entrenamiento));
+    }
+
+    /**
+     * Verifica que las metas se registren con el entrenamiento activo del paciente.
+     */
+    public function test_paciente_puede_sincronizar_metas_con_su_entrenamiento(): void
+    {
+        [$user, $paciente] = $this->crearPaciente();
+        $entrenamiento = $this->crearEntrenamiento($paciente);
+        $fecha = '2026-08-20 10:30:00';
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/sync-data-paciente', [
+                'userId' => $user->id,
+                'metas' => [[
+                    'id_meta' => 201,
+                    'id_usuario' => $user->id,
+                    'semana' => 1,
+                    'sesion' => 1,
+                    'tipo_actividad' => 'Caminar',
+                    'actividad' => '30 minutos',
+                    'lugar' => 'Parque',
+                    'acompaniante' => null,
+                    'meta_cumplida' => true,
+                    'motivo_incumplimiento' => null,
+                    'fecha_registro' => $fecha,
+                    'fecha_usuario' => $fecha,
+                    'fecha_sincronizacion' => $fecha,
+                    'fecha_edicion' => null,
+                    'fecha_objetivo' => $fecha,
+                ]],
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('metas', [
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamiento->id,
+            'id_app' => 201,
+            'actividad' => '30 minutos',
+        ]);
     }
 
     /**
@@ -97,5 +215,18 @@ class ApiPacienteControllerTest extends TestCase
         ]);
 
         return [$user, $paciente];
+    }
+
+    private function crearEntrenamiento(Paciente $paciente, ?TratamientoVersion $version = null): Entrenamiento
+    {
+        return Entrenamiento::create(array_merge(
+            [
+                'paciente_id' => $paciente->id,
+                'tratamiento_version_id' => $version?->id,
+                'fecha' => '2026-08-01',
+                'activo' => true,
+            ],
+            array_fill_keys(array_keys(Entrenamiento::DIAS_SUMA), '2026-08-01'),
+        ));
     }
 }

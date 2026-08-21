@@ -581,7 +581,7 @@ onMounted(() => {
                     {{ pacienteSelected.sesiones?.completadas != null && pacienteSelected.sesiones?.total != null ? `${pacienteSelected.sesiones.completadas}/${pacienteSelected.sesiones.total}` : '-/-' }}
                 </div>
                 <div class="col-12 col-md-6">
-                    <span class="fw-semibold">Metas cumplidas:</span> 4
+                    <span class="fw-semibold">Metas cumplidas:</span> {{ pacienteSelected.metas_cumplidas }}
                 </div>
             </div>
 

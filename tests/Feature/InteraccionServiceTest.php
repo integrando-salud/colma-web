@@ -27,6 +27,7 @@ class InteraccionServiceTest extends TestCase
 
         $tratamientoService = Mockery::mock(TratamientoService::class);
         $tratamientoService->shouldReceive('getCantidadSesionesPaciente')->andReturn(12);
+        $tratamientoService->shouldReceive('getVersionTratamientoPaciente')->andReturn(null);
         $this->service = new InteraccionService($tratamientoService);
         $this->actingAs($this->crearUsuario());
     }

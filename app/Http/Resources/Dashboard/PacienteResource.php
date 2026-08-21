@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Dashboard;
 
 use App\Services\PacienteService;
+use App\Services\TratamientoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
@@ -24,6 +25,15 @@ class PacienteResource extends JsonResource
         $entrenamientoActual = $this->resource->relationLoaded('entrenamientos')
             ? $this->entrenamientos->firstWhere('activo', true)
             : $this->entrenamientos()->where('activo', true)->latest()->first();
+        $metasCumplidas = $entrenamientoActual
+            ? $this->metas()
+                ->where('entrenamiento_id', $entrenamientoActual->id)
+                ->where('meta_cumplida', true)
+                ->count()
+            : 0;
+        $sesionesCompletadas = $entrenamientoActual
+            ? app(TratamientoService::class)->getCantidadSesionesCompletadas($entrenamientoActual)
+            : 0;
         // El selectSub del listado devuelve una cadena, mientras que el cast del
         // modelo puede devolver Carbon. Se normaliza antes de calcular los días.
         $fechaProximoContactoRaw = $this->nueva_fecha_contacto
@@ -63,8 +73,9 @@ class PacienteResource extends JsonResource
             'usuario' => new UserResource($this->usuario),
             'sesiones' => $entrenamientoActual ? [
                 'total' => $entrenamientoActual->sesiones,
-                'completadas' => 0,
+                'completadas' => $sesionesCompletadas,
             ] : null,
+            'metas_cumplidas' => $metasCumplidas,
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
             'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',

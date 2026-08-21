@@ -10,10 +10,13 @@ use App\Services\TratamientoService;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class TratamientoServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     private string $tratamientosDirname = 'tratamientos-prueba';
 
     protected function setUp(): void
@@ -66,6 +69,7 @@ class TratamientoServiceTest extends TestCase
             route('multimedia', ['path' => "$this->tratamientosDirname/AR/DBT/semana-2/sesion-1/Foto.png"]),
             $tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'][0]['link']
         );
+        $this->assertIsInt($tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'][0]['tratamiento_multimedia_id']);
     }
 
     public function test_obtiene_el_tratamiento_de_hipertension_y_el_combinado(): void
