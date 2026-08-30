@@ -43,6 +43,9 @@ const logout = () => {
                     <li class="nav-item" v-if="showMenuUsuarios">
                         <MenuItem :link="route('dashboard.usuarios.index')" title="Administración de usuarios" />
                     </li>
+                    <li class="nav-item" v-if="showMenuUsuarios">
+                        <MenuItem :link="route('dashboard.indicadores.index')" title="Indicadores" />
+                    </li>
                 </ul>
                 <button type="button" class="btn btn-secondary text-white" @click="logout">
                     <i class="fa fa-sign-out"></i>

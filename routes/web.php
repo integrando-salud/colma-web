@@ -3,6 +3,7 @@
 use App\Http\Controllers\Dashboard\AjaxController;
 use App\Http\Controllers\Dashboard\Auth\LoginController;
 use App\Http\Controllers\Dashboard\IndexController;
+use App\Http\Controllers\Dashboard\IndicadorController;
 use App\Http\Controllers\Dashboard\InteraccionController;
 use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
@@ -70,6 +71,10 @@ Route::middleware('auth')->group(function () {
             ->name('dashboard.pacientes.datosClinicos')
             ->can('view', 'paciente');
     });
+
+    Route::get('indicadores', [IndicadorController::class, 'index'])
+        ->name('dashboard.indicadores.index')
+        ->can('ver-indicadores');
 
     Route::post('interacciones/guardar', [InteraccionController::class, 'store'])
         ->name('interacciones.store');

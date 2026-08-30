@@ -45,8 +45,16 @@ class RolesSeeder extends Seeder
             'eliminar-usuarios',
         ];
 
+        $permisosIndicadores = [
+            'ver-indicadores',
+        ];
+
         Bouncer::allow('superusuario')->to($permisosUsuarios);
         Bouncer::allow('supervisor_pais')->to($permisosUsuarios);
         Bouncer::allow('supervisor')->to($permisosUsuarios);
+
+        Bouncer::allow('superusuario')->to($permisosIndicadores);
+        Bouncer::allow('supervisor_pais')->to($permisosIndicadores);
+        Bouncer::allow('supervisor')->to($permisosIndicadores);
     }
 }
