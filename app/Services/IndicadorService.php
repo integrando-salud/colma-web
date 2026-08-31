@@ -8,14 +8,9 @@ use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 
 class IndicadorService
 {
-    public function __construct(private readonly TratamientoService $tratamientoService)
-    {
-    }
-
     /**
      * Obtiene los indicadores generales visibles para el usuario del panel.
      *
@@ -210,9 +205,10 @@ class IndicadorService
             ->visibleTo($usuario)
             ->where('activo', true)
             ->with([
-                'diagnosticos',
-                'centroSalud.pais',
-                'entrenamientos' => fn ($query) => $query->where('activo', true)->latest(),
+                'entrenamientos' => fn ($query) => $query
+                    ->where('activo', true)
+                    ->latest()
+                    ->with('tratamientoVersion.sesiones.multimedia'),
                 'multimediaReads',
             ])
             ->get();
@@ -229,47 +225,35 @@ class IndicadorService
     }
 
     /**
-     * Verifica que el participante haya leído todos los contenidos de cada
-     * sesión habilitada desde la fecha de su entrenamiento activo.
+     * Verifica que el participante haya leído todos los archivos de cada sesión
+     * habilitada de la versión asignada a su entrenamiento activo.
      */
     private function completoTodasLasSesionesHabilitadas(Paciente $paciente): bool
     {
         $entrenamiento = $paciente->entrenamientos->first();
 
-        if (! $entrenamiento || $entrenamiento->fecha->isFuture()) {
+        if (! $entrenamiento || ! $entrenamiento->tratamientoVersion || $entrenamiento->fecha->isFuture()) {
             return false;
         }
 
         $fechaInicio = $entrenamiento->fecha->copy()->startOfDay();
         $semanasHabilitadas = intdiv($fechaInicio->diffInDays(now()->startOfDay()), 7) + 1;
-        $tratamiento = $this->tratamientoService->getTratamientoPaciente($paciente);
-        $sesionesHabilitadas = collect(data_get($tratamiento, 'tratamiento.semanas', []))
-            ->filter(fn (array $semana) => $semana['id'] <= $semanasHabilitadas)
-            ->flatMap(fn (array $semana) => collect($semana['sesiones'])->map(
-                fn (array $sesion) => [...$sesion, 'semana' => $semana['id']]
-            ))
-            ->filter(fn (array $sesion) => ! empty($sesion['content']));
+        $sesionesHabilitadas = $entrenamiento->tratamientoVersion->sesiones
+            ->filter(fn ($sesion) => $sesion->semana <= $semanasHabilitadas)
+            ->filter(fn ($sesion) => $sesion->multimedia->isNotEmpty());
 
         if ($sesionesHabilitadas->isEmpty()) {
             return false;
         }
 
-        $lecturasPorSesion = $paciente->multimediaReads
-            ->filter(fn ($lectura) => $lectura->fecha_registro->greaterThanOrEqualTo($fechaInicio))
-            ->groupBy(fn ($lectura) => "{$lectura->semana}-{$lectura->sesion}");
+        $multimediaLeidaIds = $paciente->multimediaReads
+            ->where('entrenamiento_id', $entrenamiento->id)
+            ->pluck('tratamiento_multimedia_id')
+            ->filter()
+            ->unique();
 
-        return $sesionesHabilitadas->every(function (array $sesion) use ($lecturasPorSesion): bool {
-            $contenidosPendientes = collect($sesion['content'])
-                ->map(fn (array $contenido) => pathinfo($contenido['title'], PATHINFO_FILENAME))
-                ->unique();
-            /** @var Collection<int, \App\Models\MultimediaRead> $lecturasSesion */
-            $lecturasSesion = $lecturasPorSesion->get("{$sesion['semana']}-{$sesion['id']}", collect());
-
-            // Una sesión se completa solamente si cada archivo que la compone
-            // figura como leído en la aplicación.
-            return $contenidosPendientes->every(
-                fn (string $contenido) => $lecturasSesion->contains('key', $contenido)
-            );
-        });
+        return $sesionesHabilitadas->every(
+            fn ($sesion) => $sesion->multimedia->pluck('id')->diff($multimediaLeidaIds)->isEmpty()
+        );
     }
 }
