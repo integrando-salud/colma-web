@@ -96,6 +96,24 @@ class UsuarioServiceTest extends TestCase
         $this->assertTrue(Hash::check('secreto', $actualizado->fresh()->password));
     }
 
+    public function test_store_usuario_asigna_el_permiso_de_indicadores_a_los_roles_autorizados(): void
+    {
+        $pais = $this->crearPais('Argentina');
+        $centro = $this->crearCentro($pais);
+
+        foreach ([User::ROL_SUPERUSUARIO, User::ROL_SUPERVISOR_PAIS, User::ROL_SUPERVISOR] as $rol) {
+            $usuario = $this->service->storeUsuario($this->datosUsuario($pais, $centro, ['rol' => $rol]));
+
+            $this->assertTrue($usuario->can('ver-indicadores'));
+        }
+
+        $promotor = $this->service->storeUsuario($this->datosUsuario($pais, $centro, [
+            'rol' => User::ROL_PROMOTOR,
+        ]));
+
+        $this->assertFalse($promotor->can('ver-indicadores'));
+    }
+
     public function test_delete_usuario_realiza_borrado_logico(): void
     {
         $usuario = $this->crearUsuario($this->crearPais('Argentina'), null);
