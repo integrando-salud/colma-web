@@ -13,5 +13,7 @@ opcache.enable_cli = 1
 opcache.memory_consumption = 128
 opcache.interned_strings_buffer = 16
 opcache.max_accelerated_files = 20000
-opcache.validate_timestamps = 0
+# El código se actualiza mediante un volumen montado. Validar los timestamps evita
+# que PHP-FPM continúe ejecutando el bytecode de la versión anterior tras un deploy.
+opcache.validate_timestamps = 1
 opcache.revalidate_freq = 0
