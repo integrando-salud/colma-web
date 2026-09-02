@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\API;
 
+use App\Models\User;
+use App\Support\UserTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +30,11 @@ class InfoUsuarioResource extends JsonResource
                 'id' => $this->centroSalud?->id ?? null,
                 'nombre' => $this->centroSalud?->nombre ?? null,
             ],
-            'primer_login' => $this->paciente?->fecha_primer_login_app?->format('Y-m-d H:i:s') ?? null,
+            'primer_login' => $this->paciente?->fecha_primer_login_app
+                ?->setTimezone($this->resource instanceof User
+                    ? UserTimezone::forUser($this->resource)
+                    : UserTimezone::forRequest($request))
+                ->format('Y-m-d H:i:s') ?? null,
         ];
     }
 }

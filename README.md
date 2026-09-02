@@ -62,6 +62,21 @@ docker compose -f docker-compose.prod.yml exec --user www-data php84 php artisan
 Los comandos de Artisan se ejecutan como `www-data` para que los archivos generados
 (por ejemplo, cachés) tengan los permisos adecuados para el proceso de PHP-FPM.
 
+## Piloto de seguimientos mensuales
+
+La variable `PILOTO` define la cantidad de seguimientos mensuales de los
+entrenamientos nuevos:
+
+```dotenv
+PILOTO=true  # 3 seguimientos mensuales
+PILOTO=false # 5 seguimientos mensuales
+```
+
+El valor se guarda al crear cada entrenamiento. Por eso, cambiar la variable no
+altera los tratamientos ya iniciados; al finalizar el piloto, usar `PILOTO=false`
+para que los nuevos tratamientos vuelvan al circuito de cinco seguimientos. Luego
+de modificarla en producción, regenerar la caché de configuración.
+
 ## Actualizar la aplicación
 
 Después de actualizar el código en el servidor, ejecutar la siguiente secuencia.

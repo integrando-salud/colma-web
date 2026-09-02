@@ -7,6 +7,7 @@ use App\Models\Diagnostico;
 use App\Models\Entrenamiento;
 use App\Models\Paciente;
 use App\Models\User;
+use App\Support\UserTimezone;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -153,9 +154,8 @@ class PacienteService
                 $query->orderBy("pacientes.$orderBy", $orderDir);
         }
 
-        // La columna elegida para ordenar (por ejemplo, id_externo) puede
-        // repetirse o ser nula. El ID garantiza un orden total y evita que la
-        // paginación por offset omita o repita pacientes entre solicitudes.
+        // El ID garantiza un orden total y evita que la paginación por offset
+        // omita o repita pacientes entre solicitudes.
         $query->orderBy('pacientes.id', $orderDir);
 
         return $query;
@@ -262,40 +262,42 @@ class PacienteService
             $paciente = Paciente::findOrFail($paciente);
         }
 
+        $timezone = UserTimezone::forUser(auth()->user());
         $fechaDesde = $fechaDesde
-            ? Carbon::createFromFormat('d/m/Y', $fechaDesde)->startOfDay()
-            : $paciente->fecha_enrolamiento->copy()->startOfDay();
+            ? Carbon::createFromFormat('d/m/Y', $fechaDesde, $timezone)->startOfDay()->utc()
+            : $paciente->fecha_enrolamiento->copy()->setTimezone($timezone)->startOfDay()->utc();
         $fechaHasta = $fechaHasta
-            ? Carbon::createFromFormat('d/m/Y', $fechaHasta)->endOfDay()
+            ? Carbon::createFromFormat('d/m/Y', $fechaHasta, $timezone)->endOfDay()->utc()
             : now();
 
         $glucosa = DB::table('glucosa')
-            ->selectRaw("id, fecha_registro, valor_mgdl AS glucosa_valor, ayuno AS glucosa_ayuno,
+            ->selectRaw("id, fecha_registro, fecha_usuario, valor_mgdl AS glucosa_valor, ayuno AS glucosa_ayuno,
                 NULL AS presion_sistolica, NULL AS presion_diastolica, 'glucosa' AS tipo")
             ->where('paciente_id', $paciente->id)
             ->whereBetween('fecha_registro', [$fechaDesde, $fechaHasta]);
 
         $presion = DB::table('presion_arterial')
-            ->selectRaw("id, fecha_registro, NULL AS glucosa_valor, NULL AS glucosa_ayuno,
+            ->selectRaw("id, fecha_registro, fecha_usuario, NULL AS glucosa_valor, NULL AS glucosa_ayuno,
                 presion_sistolica, presion_diastolica, 'presion' AS tipo")
             ->where('paciente_id', $paciente->id)
             ->whereBetween('fecha_registro', [$fechaDesde, $fechaHasta]);
 
-        $fechaFormateada = DB::getDriverName() === 'sqlite'
-            ? "strftime('%d/%m/%Y %H:%M', fecha_registro)"
-            : "DATE_FORMAT(fecha_registro, '%d/%m/%Y %H:%i')";
-
         $registros = DB::query()
             ->fromSub($glucosa->unionAll($presion), 'registros')
-            ->selectRaw("$fechaFormateada AS fecha,
+            ->selectRaw("fecha_usuario,
                 glucosa_valor, glucosa_ayuno, presion_sistolica, presion_diastolica")
-            ->orderByDesc('fecha_registro')
+            ->orderByDesc('fecha_usuario')
             ->orderByDesc('tipo')
             ->orderByDesc('id')
             ->paginate(max(1, $cantidad));
 
         $registros->setCollection(
-            $registros->getCollection()->map(fn (object $registro) => (array) $registro)
+            $registros->getCollection()->map(fn (object $registro) => [
+                ...((array) $registro),
+                'fecha' => Carbon::parse($registro->fecha_usuario, 'UTC')
+                    ->setTimezone($timezone)
+                    ->format('d/m/Y h:i A'),
+            ])
         );
 
         return $registros;
@@ -331,15 +333,62 @@ class PacienteService
             ->merge($fechasCitasEntrenamiento->toArray())
             ->sortBy('fecha')
             ->values()
-            ->map(function ($fecha) {
+            ->map(function ($fecha) use ($paciente) {
+                $motivo = MotivoInteraccion::tryFrom($fecha['motivo'] ?? '');
+
                 return [
                     'fecha' => date('d/m/Y', strtotime($fecha['fecha'])),
-                    'motivo' => MotivoInteraccion::tryFrom($fecha['motivo'] ?? '')?->etiquetaCorta() ?? ($fecha['motivo'] ?? ''),
+                    'motivo' => $this->getMotivoSiguienteContacto($paciente, $fecha, $motivo)
+                        ?? $motivo?->etiquetaCorta()
+                        ?? ($fecha['motivo'] ?? ''),
                 ];
             })
             ->take($cantidad);
 
         return $fechas->toArray();
+    }
+
+    /**
+     * Resuelve la etapa siguiente del circuito de entrenamiento para la fecha
+     * programada. Los motivos ajenos al circuito conservan su etiqueta actual.
+     *
+     * @param array<string, mixed> $fecha
+     */
+    private function getMotivoSiguienteContacto(Paciente $paciente, array $fecha, ?MotivoInteraccion $motivo): ?string
+    {
+        if (! $motivo) {
+            return null;
+        }
+
+        $cantidadSeguimientosMensuales = 0;
+
+        if ($motivo === MotivoInteraccion::SEGUIMIENTO_MENSUAL) {
+            $query = $paciente->interacciones()
+                ->where('motivo', MotivoInteraccion::SEGUIMIENTO_MENSUAL);
+
+            if ($fecha['entrenamiento_id'] ?? null) {
+                $query->where('entrenamiento_id', $fecha['entrenamiento_id']);
+            } else {
+                $query->whereNull('entrenamiento_id');
+            }
+
+            if ($fecha['fecha_interaccion'] ?? null) {
+                $query->where('fecha', '<=', $fecha['fecha_interaccion']);
+            }
+
+            $cantidadSeguimientosMensuales = $query->count();
+        }
+
+        $maximoSeguimientosMensuales = Entrenamiento::SEGUIMIENTOS_MENSUALES_POR_DEFECTO;
+
+        if ($fecha['entrenamiento_id'] ?? null) {
+            $maximoSeguimientosMensuales = Entrenamiento::query()
+                ->whereKey($fecha['entrenamiento_id'])
+                ->value('seguimientos_mensuales')
+                ?? Entrenamiento::SEGUIMIENTOS_MENSUALES_POR_DEFECTO;
+        }
+
+        return $motivo->siguienteMotivoContacto($cantidadSeguimientosMensuales, $maximoSeguimientosMensuales);
     }
 
     /**
@@ -356,6 +405,7 @@ class PacienteService
             'entrenamientos' => fn ($query) => $query->where('activo', true)->latest(),
             'proximosContactosProgramados' => fn ($query) => $query
                 ->whereNotNull('nueva_fecha_contacto')
+                ->withoutDuplicatedPendingAlertSchedule()
                 ->whereNotExists(function ($query) {
                     $query->selectRaw('1')
                         ->from('interacciones AS subquery')
@@ -366,7 +416,7 @@ class PacienteService
                 })
                 ->orderBy('nueva_fecha_contacto')
                 ->limit(3)
-                ->selectRaw('id, paciente_id, motivo, nueva_fecha_contacto AS fecha'),
+                ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha'),
             'proximosContactosAlertas' => fn ($query) => $query
                 ->whereNotNull('fecha_contacto')
                 ->whereNull('revisado')
@@ -390,7 +440,7 @@ class PacienteService
                 })
                 ->orderBy('fecha_cita')
                 ->limit(3)
-                ->selectRaw('id, paciente_id, motivo, fecha_cita AS fecha'),
+                ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, fecha_cita AS fecha'),
         ]);
 
         if (! isset($paciente->numero_alertas)) {
@@ -409,6 +459,7 @@ class PacienteService
     {
         return $paciente->interacciones()
             ->whereNotNull('nueva_fecha_contacto')
+            ->withoutDuplicatedPendingAlertSchedule()
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from('interacciones AS subquery')
@@ -419,7 +470,7 @@ class PacienteService
             })
             ->orderBy('nueva_fecha_contacto')
             ->limit($cantidad)
-            ->get(['id', 'motivo', 'nueva_fecha_contacto AS fecha']);
+            ->get(['id', 'entrenamiento_id', 'motivo', 'fecha AS fecha_interaccion', 'nueva_fecha_contacto AS fecha']);
     }
 
     /**
@@ -463,7 +514,7 @@ class PacienteService
             })
             ->orderBy('fecha_cita')
             ->limit($cantidad)
-            ->get(['id', 'motivo', 'fecha_cita AS fecha']);
+            ->get(['id', 'entrenamiento_id', 'motivo', 'fecha AS fecha_interaccion', 'fecha_cita AS fecha']);
     }
 
     /**
@@ -502,6 +553,7 @@ class PacienteService
     {
         return $paciente->interacciones()
             ->whereNotNull('nueva_fecha_contacto')
+            ->withoutDuplicatedPendingAlertSchedule()
             ->whereNotExists(function ($query) {
                 $query->select(DB::raw(1))
                     ->from('interacciones AS subquery')

@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
             'app' => [
                 'nombre' => config('app.name'),
                 'logo' => asset(Storage::url('logo.webp')),
+                'seguimientosMensualesNuevos' => config('app.seguimientos_mensuales_nuevos'),
             ],
         ];
     }

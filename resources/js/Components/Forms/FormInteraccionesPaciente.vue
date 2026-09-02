@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
+import { usePage } from "@inertiajs/vue3";
 import { useNotificationStore } from "@/Stores/notification";
 import DetalleAlertaInteraccion from "@/Components/Pacientes/DetalleAlertaInteraccion.vue";
 import FormProximoContacto from "@/Components/Forms/FormProximoContacto.vue";
@@ -34,6 +35,8 @@ const props = defineProps({
 
 const notification = useNotificationStore();
 const entrenamientoActual = ref(null);
+const page = usePage();
+const seguimientosMensualesNuevos = computed(() => page.props.app.seguimientosMensualesNuevos);
 
 const {
     formContacto,
@@ -52,6 +55,7 @@ const {
 
 const {
     ventanaContacto,
+    ventanaContactoKeys,
     verVentanaContacto,
     colorFechaEntrenamiento,
     fillDataEntrenamientoActual,
@@ -63,6 +67,7 @@ const {
     formContacto,
     entrenamientoActual,
     reagendaEntrenamiento,
+    seguimientosMensualesNuevos,
 });
 
 registerFormWatchers({
@@ -137,6 +142,7 @@ onMounted(async () => {
         <VentanaContactoTable
             v-if="verVentanaContacto"
             :ventana-contacto="ventanaContacto"
+            :ventana-contacto-keys="ventanaContactoKeys"
             :color-fecha-entrenamiento="colorFechaEntrenamiento"
         />
     </div>

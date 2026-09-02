@@ -149,6 +149,25 @@ class InteraccionServiceTest extends TestCase
         $this->assertSame('2026-09-15', $entrenamiento->seguimiento_dos_semanas_inicio->toDateString());
     }
 
+    public function test_el_piloto_crea_un_entrenamiento_de_tres_seguimientos_sin_alterar_sus_sesiones(): void
+    {
+        config()->set('app.seguimientos_mensuales_nuevos', 3);
+        $paciente = $this->crearPaciente();
+
+        $this->assertTrue($this->service->guardarEntrenamiento($paciente->id, '2026-08-01'));
+        $entrenamiento = Entrenamiento::firstOrFail();
+
+        $this->assertSame(3, $entrenamiento->seguimientos_mensuales);
+        $this->assertSame(12, $entrenamiento->sesiones);
+        $this->assertSame('2026-11-21', $entrenamiento->agendar_cita_final_inicio->toDateString());
+        $this->assertSame('2026-12-05', $entrenamiento->agendar_cita_final_fin->toDateString());
+
+        config()->set('app.seguimientos_mensuales_nuevos', 5);
+        $this->assertTrue($this->service->guardarEntrenamiento($paciente->id, '2026-09-01', $entrenamiento->id));
+
+        $this->assertSame(3, $entrenamiento->fresh()->seguimientos_mensuales);
+    }
+
     public function test_crea_el_entrenamiento_al_registrar_una_cita_de_entrenamiento_contactada(): void
     {
         $paciente = $this->crearPaciente();

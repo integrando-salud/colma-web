@@ -38,7 +38,7 @@ class StorePacienteRequest extends FormRequest
     {
         return [
             'id' => ['nullable', 'exists:pacientes,id'],
-            'id_externo' => ['required', 'string'],
+            'id_externo' => ['required', 'string', 'max:50', Rule::unique('pacientes', 'id_externo')->ignore($this->id)],
             'nombre' => ['required', 'string', 'max:100'],
             'apellido' => ['required', 'string', 'max:100'],
             'fecha_nacimiento' => ['required', 'date_format:d/m/Y'],
@@ -80,6 +80,8 @@ class StorePacienteRequest extends FormRequest
             'string' => 'El campo debe ser una cadena de texto.',
             'id.exists' => 'El paciente no es válido.',
             'id_externo.required' => 'Ingrese el ID RedCap.',
+            'id_externo.max' => 'El ID RedCap no debe exceder los 50 caracteres.',
+            'id_externo.unique' => 'El ID RedCap ya está en uso.',
             'nombre.required' => 'Ingrese el nombre del paciente.',
             'apellido.required' => 'Ingrese el apellido del paciente.',
             'fecha_nacimiento.required' => 'Ingrese la fecha de nacimiento del paciente.',

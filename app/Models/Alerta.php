@@ -53,4 +53,15 @@ class Alerta extends Model
     {
         return $this->hasMany(Interaccion::class);
     }
+
+    /**
+     * Obtiene la última interacción que dejó la alerta revisada.
+     */
+    public function ultimaInteraccionContactada()
+    {
+        return $this->hasOne(Interaccion::class)->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->where('contactado', true)
+        );
+    }
 }
