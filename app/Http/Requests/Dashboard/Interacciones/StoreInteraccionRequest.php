@@ -62,16 +62,15 @@ class StoreInteraccionRequest extends FormRequest
                 'nullable',
                 Rule::enum(MotivoReprogramacion::class),
                 Rule::requiredIf(function () {
-                    return ! $this->input('contactado')
-                        && $this->input('motivo') !== MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value;
+                    return ! $this->input('contactado');
                 }),
             ],
             'nueva_fecha_contacto' => [
                 'nullable',
                 'date_format:d/m/Y',
+                'after_or_equal:today',
                 Rule::requiredIf(function () {
-                    return ! $this->input('contactado')
-                        && $this->input('motivo') !== MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value;
+                    return ! $this->input('contactado');
                 }),
             ],
             'fecha_cita' => [
@@ -105,6 +104,7 @@ class StoreInteraccionRequest extends FormRequest
             'fecha_cita_final' => [
                 'nullable',
                 'date_format:d/m/Y',
+                'before_or_equal:today',
                 Rule::requiredIf(function () {
                     return $this->input('contactado') && in_array($this->input('motivo'), [MotivoInteraccion::CITA_ENTRENAMIENTO->value, MotivoInteraccion::CITA_FINAL->value, MotivoInteraccion::REENTRENAMIENTO->value]);
                 })
@@ -340,7 +340,12 @@ class StoreInteraccionRequest extends FormRequest
             'boolean' => 'El valor seleccionado no es válido.',
             'date' => 'Ingrese una fecha válida.',
             'date_format' => 'Ingrese una fecha válida en formato DD/MM/AAAA.',
+            'before_or_equal' => 'La fecha no puede ser posterior a hoy.',
+            'after_or_equal' => 'La fecha no puede ser anterior a hoy.',
             'in' => 'El valor seleccionado no es válido.',
+            'enum' => 'El valor seleccionado no es válido.',
+            'array' => 'Este campo debe ser una lista.',
+            'string' => 'Este campo debe ser un texto.',
 
             'hora.date_format' => 'Ingrese una hora válida en formato HH:MM.',
             'hora_cita_final.date_format' => 'Ingrese una hora válida en formato HH:MM.',

@@ -27,4 +27,13 @@ class FilterDatosClinicosRequest extends FormRequest
             'hasta' => ['nullable', 'date_format:d/m/Y', 'after_or_equal:desde'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'date_format' => 'Ingrese una fecha válida en formato DD/MM/AAAA.',
+            'before_or_equal' => 'La fecha de inicio debe ser anterior o igual a la fecha de fin.',
+            'after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.',
+        ];
+    }
 }

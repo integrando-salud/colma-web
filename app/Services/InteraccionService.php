@@ -140,7 +140,22 @@ class InteraccionService
             // Por ello, el entrenamiento asociado es propiedad de esta interacción.
             $interaccion->entrenamiento()->delete();
 
-            return (bool) $interaccion->delete();
+            $eliminada = (bool) $interaccion->delete();
+
+            if ($eliminada && $interaccion->alerta_id) {
+                $alertaSigueRevisada = Interaccion::query()
+                    ->where('alerta_id', $interaccion->alerta_id)
+                    ->where('contactado', true)
+                    ->exists();
+
+                if (! $alertaSigueRevisada) {
+                    Alerta::query()
+                        ->whereKey($interaccion->alerta_id)
+                        ->update(['revisado' => null, 'user_id' => null]);
+                }
+            }
+
+            return $eliminada;
         });
     }
 
@@ -182,7 +197,11 @@ class InteraccionService
         $entrenamiento->fecha = $fechaEntrenamiento;
         $entrenamiento->sesiones = $this->tratamientoService->getCantidadSesionesPaciente($paciente);
 
-        foreach (Entrenamiento::DIAS_SUMA as $tipo => $diasSuma) {
+        if ($esNuevo) {
+            $entrenamiento->seguimientos_mensuales = config('app.seguimientos_mensuales_nuevos');
+        }
+
+        foreach (Entrenamiento::diasSuma($entrenamiento->seguimientos_mensuales) as $tipo => $diasSuma) {
             $entrenamiento->{$tipo} = $this->sumarDias($fechaEntrenamiento, $diasSuma);
         }
 

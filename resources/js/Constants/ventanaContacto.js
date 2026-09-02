@@ -1,12 +1,20 @@
-export const VENTANA_CONTACTO_KEYS = [
+const LLAMADAS_MENSUALES_KEYS = [
     'seguimientoDosSemanas',
     'llamadaMensual',
     'llamadaMensualDos',
     'llamadaMensualTres',
     'llamadaMensualCuatro',
     'llamadaMensualCinco',
+];
+
+export const getVentanaContactoKeys = (seguimientosMensuales = 5) => [
+    LLAMADAS_MENSUALES_KEYS[0],
+    ...LLAMADAS_MENSUALES_KEYS.slice(1, seguimientosMensuales + 1),
     'citaFinal',
 ];
+
+// Se conserva para los lugares que necesitan el circuito estándar completo.
+export const VENTANA_CONTACTO_KEYS = getVentanaContactoKeys();
 
 export const VENTANA_CONTACTO_LABELS = {
     seguimientoDosSemanas: 'Seguimiento 2 semanas luego del entrenamiento',
@@ -37,3 +45,14 @@ export const VENTANA_CONTACTO_DIAS_SUMA_FIN = {
     llamadaMensualCinco: 154,
     citaFinal: 182,
 };
+
+export const getVentanaContactoDiasSuma = (seguimientosMensuales = 5) => ({
+    inicio: {
+        ...VENTANA_CONTACTO_DIAS_SUMA_INICIO,
+        citaFinal: 28 * (seguimientosMensuales + 1),
+    },
+    fin: {
+        ...VENTANA_CONTACTO_DIAS_SUMA_FIN,
+        citaFinal: (28 * (seguimientosMensuales + 1)) + 14,
+    },
+});

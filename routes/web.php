@@ -8,6 +8,7 @@ use App\Http\Controllers\Dashboard\InteraccionController;
 use App\Http\Controllers\Dashboard\PacienteController;
 use App\Http\Controllers\Dashboard\UsuarioController;
 use App\Http\Middleware\ProhibirPromotoresPeru;
+use App\Http\Middleware\SetUserTimezone;
 use App\Models\Paciente;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +17,7 @@ Route::middleware('guest')->group(function () {
         ->name('dashboard.login');
     Route::post('ingresar', [LoginController::class, 'login']);
 });
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', SetUserTimezone::class])->group(function () {
     Route::post('salir', [LoginController::class, 'logout'])
         ->name('dashboard.logout');
 

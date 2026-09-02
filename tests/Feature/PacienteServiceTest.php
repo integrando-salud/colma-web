@@ -75,14 +75,19 @@ class PacienteServiceTest extends TestCase
     {
         $paciente = $this->crearPaciente(['fecha_enrolamiento' => '2026-01-01']);
         Glucosa::create($this->datosGlucosa($paciente, '2026-02-01 08:00:00'));
-        PresionArterial::create($this->datosPresion($paciente, '2026-02-02 09:00:00'));
+        PresionArterial::create(array_merge(
+            $this->datosPresion($paciente, '2026-02-02 09:00:00'),
+            ['fecha_usuario' => '2026-01-15 13:05:00'],
+        ));
         Glucosa::create($this->datosGlucosa($paciente, '2025-12-31 08:00:00'));
 
         $registros = $this->service->getDatosClinicos($paciente->id, 10, '01/02/2026', '02/02/2026');
 
         $this->assertSame(2, $registros->total());
-        $this->assertSame('02/02/2026 09:00', $registros->items()[0]['fecha']);
-        $this->assertSame(110, $registros->items()[0]['presion_sistolica']);
+        $this->assertSame('01/02/2026 08:00 AM', $registros->items()[0]['fecha']);
+        $this->assertSame(90, $registros->items()[0]['glucosa_valor']);
+        $this->assertSame('15/01/2026 01:05 PM', $registros->items()[1]['fecha']);
+        $this->assertSame(110, $registros->items()[1]['presion_sistolica']);
     }
 
     public function test_cambiar_estado_alterna_el_valor_activo(): void
@@ -102,7 +107,93 @@ class PacienteServiceTest extends TestCase
 
         $this->assertSame('02/03/2026', $fechas[0]['fecha']);
         $this->assertSame('Alerta clínica', $fechas[0]['motivo']);
-        $this->assertSame('Seguimiento 2 semanas', $fechas[1]['motivo']);
+        $this->assertSame('Seguimiento mensual 1', $fechas[1]['motivo']);
+    }
+
+    public function test_los_proximos_contactos_de_entrenamiento_muestran_la_siguiente_etapa(): void
+    {
+        $paciente = $this->crearPaciente();
+        $entrenamiento = $this->crearEntrenamiento($paciente);
+
+        $this->crearInteraccion($paciente, [
+            'fecha' => '2026-01-01',
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO,
+            'fecha_cita' => '2026-03-01',
+        ]);
+        $this->crearInteraccion($paciente, [
+            'fecha' => '2026-01-02',
+            'entrenamiento_id' => $entrenamiento->id,
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO,
+            'nueva_fecha_contacto' => '2026-03-02',
+        ]);
+        $this->crearInteraccion($paciente, [
+            'fecha' => '2026-01-03',
+            'entrenamiento_id' => $entrenamiento->id,
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            'nueva_fecha_contacto' => '2026-03-03',
+        ]);
+
+        foreach (range(1, 5) as $numero) {
+            $this->crearInteraccion($paciente, [
+                'fecha' => "2026-01-0".($numero + 3),
+                'entrenamiento_id' => $entrenamiento->id,
+                'motivo' => MotivoInteraccion::SEGUIMIENTO_MENSUAL,
+                'nueva_fecha_contacto' => "2026-03-0".($numero + 3),
+            ]);
+        }
+
+        $this->crearInteraccion($paciente, [
+            'fecha' => '2026-01-09',
+            'entrenamiento_id' => $entrenamiento->id,
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_FINAL,
+            'fecha_cita' => '2026-03-09',
+        ]);
+
+        $motivos = collect($this->service->getFechasProximosContactos($paciente, 10))
+            ->pluck('motivo')
+            ->all();
+
+        $this->assertSame([
+            'Cita de entrenamiento',
+            'Seguimiento 2 semanas luego del entrenamiento',
+            'Seguimiento mensual 1',
+            'Seguimiento mensual 2',
+            'Seguimiento mensual 3',
+            'Seguimiento mensual 4',
+            'Seguimiento mensual 5',
+            'Agendar cita final',
+            'Cita final',
+        ], $motivos);
+    }
+
+    public function test_los_proximos_contactos_del_piloto_finalizan_despues_del_tercer_seguimiento_mensual(): void
+    {
+        $paciente = $this->crearPaciente();
+        $entrenamiento = $this->crearEntrenamiento($paciente, ['seguimientos_mensuales' => 3]);
+
+        foreach (range(1, 3) as $numero) {
+            $this->crearInteraccion($paciente, [
+                'fecha' => "2026-01-0$numero",
+                'entrenamiento_id' => $entrenamiento->id,
+                'motivo' => MotivoInteraccion::SEGUIMIENTO_MENSUAL,
+                'nueva_fecha_contacto' => "2026-03-0$numero",
+            ]);
+        }
+
+        $motivos = collect($this->service->getFechasProximosContactos($paciente, 10))
+            ->pluck('motivo')
+            ->all();
+
+        $this->assertSame([
+            'Seguimiento mensual 2',
+            'Seguimiento mensual 3',
+            'Agendar cita final',
+        ], $motivos);
+
+        $this->assertSame(
+            'Agendar cita final',
+            MotivoInteraccion::SEGUIMIENTO_MENSUAL->siguienteMotivoContacto(3, $entrenamiento->seguimientos_mensuales),
+        );
     }
 
     public function test_la_cita_de_entrenamiento_programada_se_usa_como_proximo_contacto(): void
@@ -152,6 +243,33 @@ class PacienteServiceTest extends TestCase
 
         $this->assertSame([$pendiente->id], $fechas->pluck('id')->all());
         $this->assertSame('Alerta operativa', $fechas->first()->motivo);
+    }
+
+    public function test_una_alerta_reprogramada_no_duplica_el_proximo_contacto_y_conserva_la_fecha_en_su_interaccion(): void
+    {
+        $paciente = $this->crearPaciente();
+        $alerta = $this->crearAlerta($paciente, [
+            'tipo' => 'operativa',
+            'fecha_contacto' => '2026-03-03',
+        ]);
+        $interaccion = $this->crearInteraccion($paciente, [
+            'alerta_id' => $alerta->id,
+            'motivo' => MotivoInteraccion::PEDIDO_AYUDA,
+            'nueva_fecha_contacto' => '2026-03-03',
+        ]);
+
+        $this->assertCount(0, $this->service->getFechasProximosContactosProgramados($paciente));
+        $this->assertSame([
+            ['fecha' => '03/03/2026', 'motivo' => 'Alerta operativa'],
+        ], $this->service->getFechasProximosContactos($paciente));
+        $this->assertSame('2026-03-03', $interaccion->fresh()->nueva_fecha_contacto?->toDateString());
+
+        $this->service->cargarRelacionesParaResource($paciente);
+        $detalle = (new PacienteResource($paciente))->resolve();
+
+        $this->assertSame([
+            ['fecha' => '03/03/2026', 'motivo' => 'Alerta operativa'],
+        ], $detalle['proximos_contactos']);
     }
 
     public function test_get_fecha_proximo_contacto_elige_la_mas_cercana(): void

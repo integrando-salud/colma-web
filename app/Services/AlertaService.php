@@ -88,7 +88,7 @@ class AlertaService
     ): LengthAwarePaginator
     {
         $query = $paciente->alertas()
-            ->with(['paciente', 'user'])
+            ->with(['paciente', 'user', 'ultimaInteraccionContactada'])
             ->where('tipo', $tipo)
             ->when(
                 $pendientes,

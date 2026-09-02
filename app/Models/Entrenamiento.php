@@ -10,6 +10,7 @@ class Entrenamiento extends Model
         'paciente_id',
         'fecha',
         'sesiones',
+        'seguimientos_mensuales',
         'seguimiento_dos_semanas_inicio',
         'seguimiento_dos_semanas_fin',
         'llamada_mensual_1_inicio',
@@ -31,6 +32,7 @@ class Entrenamiento extends Model
     protected $casts = [
         'activo' => 'boolean',
         'sesiones' => 'integer',
+        'seguimientos_mensuales' => 'integer',
         'fecha' => 'date',
         'seguimiento_dos_semanas_inicio' => 'date',
         'seguimiento_dos_semanas_fin' => 'date',
@@ -64,6 +66,24 @@ class Entrenamiento extends Model
         'agendar_cita_final_inicio' => 168,
         'agendar_cita_final_fin' => 182,
     ];
+
+    public const int SEGUIMIENTOS_MENSUALES_POR_DEFECTO = 5;
+
+    /**
+     * Devuelve los días del cronograma. La cita final se agenda un mes después
+     * del último seguimiento mensual, independientemente de si el circuito es
+     * de tres o cinco seguimientos.
+     *
+     * @return array<string, int>
+     */
+    public static function diasSuma(int $seguimientosMensuales): array
+    {
+        $diasSuma = self::DIAS_SUMA;
+        $diasSuma['agendar_cita_final_inicio'] = 28 * ($seguimientosMensuales + 1);
+        $diasSuma['agendar_cita_final_fin'] = (28 * ($seguimientosMensuales + 1)) + 14;
+
+        return $diasSuma;
+    }
 
     public function paciente()
     {

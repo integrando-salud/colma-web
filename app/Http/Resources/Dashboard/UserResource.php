@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Support\UserTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,7 +32,9 @@ class UserResource extends JsonResource
             'numero_pacientes' => $this->when(isset($this->pacientes_count), (int) $this->pacientes_count),
             'numero_alertas' => $this->when(isset($this->alertas_count), (int) $this->alertas_count),
             'numero_accesos' => $this->accesos,
-            'ultimo_acceso' => $this->ultimo_acceso?->format('d/m/Y H:i'),
+            'ultimo_acceso' => $this->ultimo_acceso
+                ?->setTimezone(UserTimezone::forRequest($request))
+                ->format('d/m/Y H:i'),
         ];
     }
 }

@@ -4,12 +4,13 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\PacienteController;
 use App\Http\Controllers\API\TratamientoController;
 use App\Http\Resources\API\InfoUsuarioResource;
+use App\Http\Middleware\SetUserTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('login', [AuthController::class, 'login']);
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', SetUserTimezone::class])->group(function () {
     Route::get('/user', function (Request $request) {
         return new InfoUsuarioResource($request->user());
     });

@@ -30,4 +30,25 @@ enum MotivoInteraccion: string
             default => $this->value,
         };
     }
+
+    /**
+     * Texto de la etapa que corresponde realizar después de esta interacción
+     * dentro del circuito de entrenamiento.
+     */
+    public function siguienteMotivoContacto(
+        int $cantidadSeguimientosMensuales = 0,
+        int $maximoSeguimientosMensuales = 5,
+    ): ?string
+    {
+        return match ($this) {
+            self::AGENDAR_CITA_ENTRENAMIENTO => self::CITA_ENTRENAMIENTO->value,
+            self::CITA_ENTRENAMIENTO => self::SEGUIMIENTO_DOS_SEMANAS->value,
+            self::SEGUIMIENTO_DOS_SEMANAS => 'Seguimiento mensual 1',
+            self::SEGUIMIENTO_MENSUAL => $cantidadSeguimientosMensuales < $maximoSeguimientosMensuales
+                ? 'Seguimiento mensual '.($cantidadSeguimientosMensuales + 1)
+                : self::AGENDAR_CITA_FINAL->value,
+            self::AGENDAR_CITA_FINAL => self::CITA_FINAL->value,
+            default => null,
+        };
+    }
 }
