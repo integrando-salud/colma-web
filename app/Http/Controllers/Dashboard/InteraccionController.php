@@ -73,7 +73,9 @@ class InteraccionController extends Controller
         try {
             $interaccionService->deleteInteraccion($interaccion);
 
-            return to_route('dashboard.pacientes.interacciones', [
+            return to_route($interaccion->alerta_id
+                ? 'dashboard.pacientes.alertas.historial'
+                : 'dashboard.pacientes.interacciones', [
                 'paciente' => $paciente->id,
             ])->with('success', 'Se eliminó con éxito.');
         } catch (Throwable $exception) {

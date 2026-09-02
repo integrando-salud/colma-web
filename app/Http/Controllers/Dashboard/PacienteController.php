@@ -122,7 +122,6 @@ class PacienteController extends Controller
      */
     public function interacciones(Request $request, Paciente $paciente): Response
     {
-        // TODO: agregar una opción para filtrar por rango de fechas de la interacción
         $interacciones = $paciente->interacciones()
             ->with(['paciente', 'user'])
             ->whereNull('alerta_id')
@@ -130,9 +129,23 @@ class PacienteController extends Controller
             ->orderByDesc('hora')
             ->paginate(10);
 
+        $interaccionSeleccionada = null;
+        if ($request->filled('contacto')) {
+            $interaccionSeleccionada = Interaccion::query()
+                ->with(['paciente', 'user', 'alerta.paciente', 'alerta.user'])
+                ->whereKey($request->integer('contacto'))
+                ->where('paciente_id', $paciente->id)
+                ->first();
+
+            if ($interaccionSeleccionada?->alerta) {
+                $alertaService = app(AlertaService::class);
+                $alertaService->cargarEntidades(collect([$interaccionSeleccionada->alerta]));
+            }
+        }
+
         return $this->renderDetalle($paciente, 'historial-interacciones', [
             'interacciones' => InteraccionResource::collection($interacciones),
-            'interaccion' => $request->contacto ?? null,
+            'interaccion' => $interaccionSeleccionada ? new InteraccionResource($interaccionSeleccionada) : null,
         ]);
     }
 

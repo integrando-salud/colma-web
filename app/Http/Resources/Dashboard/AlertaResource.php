@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Dashboard;
 
 use App\Services\AlertaService;
+use App\Support\UserTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,11 +29,14 @@ class AlertaResource extends JsonResource
             'recomendacion' => $this->recomendacion,
             'fecha' => $this->fecha->format('d/m/Y'),
             'fecha_contacto' => $this->fecha_contacto?->format('d/m/Y') ?? null,
-            'fecha_revisado' => $this->revisado?->format('d/m/Y') ?? null,
+            'fecha_revisado' => $this->revisado
+                ?->setTimezone(UserTimezone::forRequest($request))
+                ->format('d/m/Y') ?? null,
             'usuario' => [
                 'id' => $this->user?->id ?? null,
                 'nombre' => $this->user?->nombre ?? null,
             ],
+            'interaccion_id' => $this->ultimaInteraccionContactada?->id,
         ];
     }
 }

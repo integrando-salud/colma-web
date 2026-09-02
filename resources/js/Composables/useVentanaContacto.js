@@ -2,8 +2,8 @@ import { computed, reactive } from 'vue';
 import { MOTIVO_CONTACTO } from '@/Constants/contacto';
 import {
     VENTANA_CONTACTO_KEYS,
-    VENTANA_CONTACTO_DIAS_SUMA_INICIO,
-    VENTANA_CONTACTO_DIAS_SUMA_FIN,
+    getVentanaContactoDiasSuma,
+    getVentanaContactoKeys,
 } from '@/Constants/ventanaContacto';
 
 const ENTRENAMIENTO_ACTUAL_FIELDS = {
@@ -37,7 +37,17 @@ const ENTRENAMIENTO_ACTUAL_FIELDS = {
     },
 };
 
-export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagendaEntrenamiento }) => {
+export const useVentanaContacto = ({
+    formContacto,
+    entrenamientoActual,
+    reagendaEntrenamiento,
+    seguimientosMensualesNuevos,
+}) => {
+    const cantidadSeguimientosMensuales = computed(() => Number(
+        entrenamientoActual.value?.seguimientos_mensuales ?? seguimientosMensualesNuevos.value,
+    ));
+    const ventanaContactoKeys = computed(() => getVentanaContactoKeys(cantidadSeguimientosMensuales.value));
+    const diasSumaVentanaContacto = computed(() => getVentanaContactoDiasSuma(cantidadSeguimientosMensuales.value));
     const verVentanaContacto = computed(() => {
         return !!(formContacto.motivo === MOTIVO_CONTACTO.CITA_ENTRENAMIENTO && formContacto.contactado || entrenamientoActual.value);
     });
@@ -152,7 +162,8 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
 
         ventanaContacto.fechaEntrenamiento = entrenamientoActual.value.fecha;
 
-        Object.entries(ENTRENAMIENTO_ACTUAL_FIELDS).forEach(([key, fields]) => {
+        ventanaContactoKeys.value.forEach((key) => {
+            const fields = ENTRENAMIENTO_ACTUAL_FIELDS[key];
             ventanaContacto[key].inicio = entrenamientoActual.value[fields.inicio];
             ventanaContacto[key].fin = entrenamientoActual.value[fields.fin];
             ventanaContacto[key].color = colorFecha(ventanaContacto[key].inicio, ventanaContacto[key].fin);
@@ -172,9 +183,9 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
 
         ventanaContacto.fechaEntrenamiento = fechaBase;
 
-        VENTANA_CONTACTO_KEYS.forEach(key => {
-            ventanaContacto[key].inicio = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_INICIO[key], fechaBase);
-            ventanaContacto[key].fin = getFechaMasDias(VENTANA_CONTACTO_DIAS_SUMA_FIN[key], fechaBase);
+        ventanaContactoKeys.value.forEach(key => {
+            ventanaContacto[key].inicio = getFechaMasDias(diasSumaVentanaContacto.value.inicio[key], fechaBase);
+            ventanaContacto[key].fin = getFechaMasDias(diasSumaVentanaContacto.value.fin[key], fechaBase);
             ventanaContacto[key].color = colorFecha(ventanaContacto[key].inicio, ventanaContacto[key].fin);
         });
     };
@@ -187,7 +198,7 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
 
         ventanaContacto.fechaEntrenamiento = '';
 
-        VENTANA_CONTACTO_KEYS.forEach(key => {
+        ventanaContactoKeys.value.forEach(key => {
             ventanaContacto[key].inicio = '';
             ventanaContacto[key].fin = '';
         });
@@ -204,6 +215,7 @@ export const useVentanaContacto = ({ formContacto, entrenamientoActual, reagenda
 
     return {
         ventanaContacto,
+        ventanaContactoKeys,
         verVentanaContacto,
         colorFechaEntrenamiento,
         fillDataEntrenamientoActual,

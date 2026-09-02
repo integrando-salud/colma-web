@@ -7,8 +7,10 @@ use App\Models\Alerta;
 use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
+use App\Support\UserTimezone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 
 class IndicadorService
 {
@@ -139,15 +141,7 @@ class IndicadorService
             ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
             ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', 'clinica'))
             ->count();
-        $interaccionesContactadasDentroDe48Horas = Interaccion::query()
-            ->where('contactado', true)
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
-            ->whereHas('alerta', function (Builder $query) {
-                $query->where('tipo', 'clinica')
-                    ->whereRaw('TIMESTAMP(interacciones.fecha, interacciones.hora) >= alertas.created_at')
-                    ->whereRaw('TIMESTAMP(interacciones.fecha, interacciones.hora) <= DATE_ADD(alertas.created_at, INTERVAL 48 HOUR)');
-            })
-            ->count();
+        $interaccionesContactadasDentroDe48Horas = $this->contarInteraccionesEnPlazo($usuario, 'clinica', 48);
 
         return [
             'interacciones_alertas_clinicas_contactadas' => $interaccionesContactadas,
@@ -177,15 +171,7 @@ class IndicadorService
             ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
             ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', 'operativa'))
             ->count();
-        $interaccionesContactadasDentroDe72Horas = Interaccion::query()
-            ->where('contactado', true)
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
-            ->whereHas('alerta', function (Builder $query) {
-                $query->where('tipo', 'operativa')
-                    ->whereRaw('TIMESTAMP(interacciones.fecha, interacciones.hora) >= alertas.created_at')
-                    ->whereRaw('TIMESTAMP(interacciones.fecha, interacciones.hora) <= DATE_ADD(alertas.created_at, INTERVAL 72 HOUR)');
-            })
-            ->count();
+        $interaccionesContactadasDentroDe72Horas = $this->contarInteraccionesEnPlazo($usuario, 'operativa', 72);
 
         return [
             'interacciones_alertas_operativas_contactadas' => $interaccionesContactadas,
@@ -226,6 +212,42 @@ class IndicadorService
                 ? 0
                 : round(($participantesAdherentes / $totalParticipantesActivos) * 100, 2),
         ];
+    }
+
+    /**
+     * Cuenta interacciones locales dentro de una ventana UTC desde la alerta.
+     * Las interacciones se modelan como fecha y hora locales del paciente, por
+     * lo cual no pueden compararse directamente contra un timestamp UTC en SQL.
+     */
+    private function contarInteraccionesEnPlazo(User $usuario, string $tipoAlerta, int $horas): int
+    {
+        return Interaccion::query()
+            ->where('contactado', true)
+            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', $tipoAlerta))
+            ->with(['alerta', 'paciente.centroSalud.pais'])
+            ->get()
+            ->filter(function (Interaccion $interaccion) use ($horas): bool {
+                $alerta = $interaccion->alerta;
+                $paciente = $interaccion->paciente;
+
+                if (! $alerta || ! $alerta->created_at || ! $interaccion->fecha || ! $interaccion->hora) {
+                    return false;
+                }
+
+                $timezone = $paciente->centroSalud?->pais?->codigo === 'PE'
+                    ? UserTimezone::PERU
+                    : UserTimezone::ARGENTINA;
+
+                $fechaHora = Carbon::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $interaccion->fecha->format('Y-m-d').' '.$interaccion->hora->format('H:i:s'),
+                    $timezone,
+                )->utc();
+
+                return $fechaHora->betweenIncluded($alerta->created_at, $alerta->created_at->copy()->addHours($horas));
+            })
+            ->count();
     }
 
     /**

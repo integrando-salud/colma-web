@@ -192,10 +192,6 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
     });
 
     const verFilaFechaProximoContacto = computed(() => {
-        if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
-            return false;
-        }
-
         return formContacto.contactado === 0
             || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
             || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL;
@@ -284,11 +280,6 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
         setVentanasContacto,
     }) => {
         const setFechaProximoContacto = () => {
-            if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
-                formContacto.nueva_fecha_contacto = null;
-                return;
-            }
-
             if (esCitaEntrenamientoContactado()) {
                 formContacto.nueva_fecha_contacto = formContacto.fecha_cita_final && isValidDate(formContacto.fecha_cita_final)
                     ? getFechaMasDias(14, formContacto.fecha_cita_final)

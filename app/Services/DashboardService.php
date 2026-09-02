@@ -227,6 +227,7 @@ class DashboardService
                     ->latest(),
                 'proximosContactosProgramados' => fn ($query) => $query
                     ->whereNotNull('nueva_fecha_contacto')
+                    ->withoutDuplicatedPendingAlertSchedule()
                     ->whereNotExists(function ($query) {
                         $query->selectRaw('1')
                             ->from('interacciones AS subquery')
@@ -237,7 +238,7 @@ class DashboardService
                     })
                     ->orderBy('nueva_fecha_contacto')
                     ->limit(3)
-                    ->selectRaw('id, paciente_id, motivo, nueva_fecha_contacto AS fecha'),
+                    ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha'),
                 'proximosContactosAlertas' => fn ($query) => $query
                     ->whereNotNull('fecha_contacto')
                     ->whereNull('revisado')
@@ -261,7 +262,7 @@ class DashboardService
                     })
                     ->orderBy('fecha_cita')
                     ->limit(3)
-                    ->selectRaw('id, paciente_id, motivo, fecha_cita AS fecha'),
+                    ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, fecha_cita AS fecha'),
             ])
             ->paginate(config('app.rpp'))
             ->withQueryString();
