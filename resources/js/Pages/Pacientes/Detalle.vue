@@ -37,6 +37,10 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    origenInteraccion: {
+        type: String,
+        default: 'contactos',
+    },
     datosClinicos: {
         type: Object,
         default: () => [],
@@ -234,7 +238,7 @@ const hideModalConfirmar = () => {
                             <FormInteraccionesPaciente ref="formContacto" :id-paciente="paciente.id" :alerta :interaccion />
                         </template>
                         <template v-else-if="tab === 'historial-interacciones'">
-                            <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones :interaccion />
+                            <HistorialInteraccionesPaciente :id-paciente="paciente.id" :interacciones :interaccion :origen-interaccion />
                         </template>
                     </div>
                 </div>
