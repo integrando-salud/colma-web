@@ -15,7 +15,11 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    interaccion: null
+    interaccion: null,
+    origenInteraccion: {
+        type: String,
+        default: 'contactos',
+    },
 });
 
 const page = usePage();
@@ -133,7 +137,7 @@ onMounted(() => {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" class="text-center small border-top">
-                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos realizados
+                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -148,14 +152,14 @@ onMounted(() => {
     <div class="row" v-else>
         <div class="col-12 mb-2">
             <Link
-                :href="interaccionSelected.alerta
+                :href="origenInteraccion === 'alertas'
                     ? route('dashboard.pacientes.alertas.historial', idPaciente)
                     : route('dashboard.pacientes.interacciones', idPaciente)"
                 class="btn btn-secondary text-white text-decoration-none"
                 @click="interaccionSelected = null"
             >
                 <i class="fa fa-arrow-left"></i>
-                {{ interaccionSelected.alerta ? 'Volver al historial de alertas' : 'Volver al historial de contactos' }}
+                {{ origenInteraccion === 'alertas' ? 'Volver al historial de alertas' : 'Volver al historial de contactos' }}
             </Link>
         </div>
 
