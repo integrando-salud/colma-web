@@ -85,6 +85,7 @@ const eliminarInteraccion = () => {
                         :href="route('dashboard.pacientes.interacciones', {
                             paciente: alerta.paciente.id,
                             contacto: alerta.interaccion_id,
+                            origen: 'alertas',
                         })"
                         class="btn btn-secondary btn-sm text-white m-1"
                     >
@@ -146,6 +147,7 @@ const eliminarInteraccion = () => {
                         :href="route('dashboard.pacientes.interacciones', {
                             paciente: alerta.paciente.id,
                             contacto: alerta.interaccion_id,
+                            origen: 'alertas',
                         })"
                         class="btn btn-secondary btn-sm text-white m-1"
                     >
