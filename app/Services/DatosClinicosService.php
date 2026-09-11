@@ -13,6 +13,7 @@ use App\Models\Entrenamiento;
 use App\Models\TratamientoMultimedia;
 use App\Models\PresionArterial;
 use App\Models\User;
+use App\Support\UserTimezone;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Carbon;
@@ -33,9 +34,10 @@ class DatosClinicosService
      */
     public function syncDatosApp(array $data): bool
     {
-        $usuario = User::query()->findOrFail($data['userId']);
+        $usuario = User::query()->with('pais')->findOrFail($data['userId']);
         $paciente = $usuario->paciente()->firstOrFail();
         $idPaciente = $paciente->id;
+        $data = $this->normalizarFechasUtc($data, UserTimezone::forUser($usuario));
 
         return DB::transaction(function () use ($data, $paciente, $idPaciente): bool {
             if (!empty($data['glucosa'])) {
@@ -78,6 +80,36 @@ class DatosClinicosService
 
             return true;
         });
+    }
+
+    /**
+     * La app móvil envía fechas sin offset. Se interpretan en el país del
+     * paciente y se persisten como instantes UTC.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function normalizarFechasUtc(array $data, string $timezone): array
+    {
+        $campos = [
+            'fecha_registro',
+            'fecha_usuario',
+            'fecha_sincronizacion',
+            'fecha_edicion',
+            'fecha_objetivo',
+        ];
+
+        array_walk_recursive($data, function (mixed &$value, string $key) use ($campos, $timezone): void {
+            if (! in_array($key, $campos, true) || ! is_string($value) || $value === '') {
+                return;
+            }
+
+            $value = Carbon::createFromFormat('Y-m-d H:i:s', $value, $timezone)
+                ->utc()
+                ->format('Y-m-d H:i:s');
+        });
+
+        return $data;
     }
 
     /**

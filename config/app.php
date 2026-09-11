@@ -17,6 +17,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Piloto de seguimientos
+    |--------------------------------------------------------------------------
+    |
+    | Durante el piloto los nuevos entrenamientos tienen tres seguimientos
+    | mensuales. El valor se copia al entrenamiento al crearlo para que un
+    | cambio posterior de esta variable no modifique circuitos ya iniciados.
+    |
+    */
+
+    'piloto' => (bool) env('PILOTO', false),
+
+    'seguimientos_mensuales_nuevos' => env('PILOTO', false) ? 3 : 5,
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
@@ -65,7 +80,9 @@ return [
     |
     */
 
-    'timezone' => 'America/Argentina/Buenos_Aires',
+    // Los instantes se persisten siempre en UTC. El huso que se presenta al
+    // usuario se determina a partir de su país en cada petición autenticada.
+    'timezone' => 'UTC',
 
     /*
     |--------------------------------------------------------------------------

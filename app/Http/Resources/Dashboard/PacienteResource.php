@@ -4,6 +4,7 @@ namespace App\Http\Resources\Dashboard;
 
 use App\Services\PacienteService;
 use App\Services\TratamientoService;
+use App\Support\UserTimezone;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
@@ -78,7 +79,9 @@ class PacienteResource extends JsonResource
             'metas_cumplidas' => $metasCumplidas,
             'activo' => $this->activo,
             'estado' => $this->activo ? 'Activo' : 'Inactivo',
-            'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion?->format('d/m/Y H:i') ?? '-',
+            'fecha_ultima_sincronizacion' => $this->fecha_ultima_sincronizacion
+                ?->setTimezone(UserTimezone::forRequest($request))
+                ->format('d/m/Y H:i') ?? '-',
             'alertas_pendientes' => $this->numero_alertas ?? $this->alertas()->whereNull('revisado')->count(),
             'proximos_contactos' => $proximosContactos,
             'fecha_proximo_contacto' => $fechaProximoContacto?->format('d/m/Y'),

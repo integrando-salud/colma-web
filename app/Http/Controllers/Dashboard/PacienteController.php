@@ -115,24 +115,38 @@ class PacienteController extends Controller
     }
 
     /**
-     * Muestra las interacciones manuales del paciente, ordenadas desde la más reciente.
+     * Muestra todas las interacciones del paciente, ordenadas desde la más reciente.
      *
      * Las relaciones requeridas por InteraccionResource se cargan por adelantado para
      * evitar consultas adicionales por cada elemento de la página.
      */
     public function interacciones(Request $request, Paciente $paciente): Response
     {
-        // TODO: agregar una opción para filtrar por rango de fechas de la interacción
+        $origenInteraccion = $request->query('origen') === 'alertas' ? 'alertas' : 'contactos';
         $interacciones = $paciente->interacciones()
-            ->with(['paciente', 'user'])
-            ->whereNull('alerta_id')
+            ->with(['paciente', 'user', 'alerta'])
             ->orderByDesc('fecha')
             ->orderByDesc('hora')
             ->paginate(10);
 
+        $interaccionSeleccionada = null;
+        if ($request->filled('contacto')) {
+            $interaccionSeleccionada = Interaccion::query()
+                ->with(['paciente', 'user', 'alerta.paciente', 'alerta.user'])
+                ->whereKey($request->integer('contacto'))
+                ->where('paciente_id', $paciente->id)
+                ->first();
+
+            if ($interaccionSeleccionada?->alerta) {
+                $alertaService = app(AlertaService::class);
+                $alertaService->cargarEntidades(collect([$interaccionSeleccionada->alerta]));
+            }
+        }
+
         return $this->renderDetalle($paciente, 'historial-interacciones', [
             'interacciones' => InteraccionResource::collection($interacciones),
-            'interaccion' => $request->contacto ?? null,
+            'interaccion' => $interaccionSeleccionada ? new InteraccionResource($interaccionSeleccionada) : null,
+            'origenInteraccion' => $origenInteraccion,
         ]);
     }
 

@@ -15,7 +15,11 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    interaccion: null
+    interaccion: null,
+    origenInteraccion: {
+        type: String,
+        default: 'contactos',
+    },
 });
 
 const page = usePage();
@@ -69,7 +73,9 @@ const eliminarInteraccion = async () => {
 
 onMounted(() => {
     if (props.interaccion) {
-        interaccionSelected.value = props.interacciones.data.find((item) => item.id == props.interaccion);
+        interaccionSelected.value = props.interaccion.id
+            ? props.interaccion
+            : props.interacciones.data.find((item) => item.id == props.interaccion);
     }
 });
 </script>
@@ -77,10 +83,10 @@ onMounted(() => {
 <template>
     <div class="row" v-if="interaccionSelected === null">
         <div class="col-12">
-            <h4 class="fs-5 text-primary-emphasis">Historial de interacciones</h4>
+            <h4 class="fs-5 text-primary-emphasis">Historial de contactos</h4>
         </div>
         <div class="col-12">
-            <div class="alert alert-secondary" v-if="interacciones?.data?.length === 0">No se encontraron interacciones</div>
+            <div class="alert alert-secondary" v-if="interacciones?.data?.length === 0">No se encontraron contactos</div>
             <template v-else-if="interacciones?.data?.length > 0">
                 <div class="row">
                     <div class="col-12">
@@ -131,7 +137,7 @@ onMounted(() => {
                                 <tfoot>
                                     <tr>
                                         <td colspan="7" class="text-center small border-top">
-                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos realizados
+                                            Viendo {{ interacciones.meta.from }} a {{ interacciones.meta.to }} de {{ interacciones.meta.total }} contactos
                                         </td>
                                     </tr>
                                 </tfoot>
@@ -145,9 +151,15 @@ onMounted(() => {
     </div>
     <div class="row" v-else>
         <div class="col-12 mb-2">
-            <Link :href="route('dashboard.pacientes.interacciones', idPaciente)" class="btn btn-secondary text-white text-decoration-none" @click="interaccionSelected = null">
+            <Link
+                :href="origenInteraccion === 'alertas'
+                    ? route('dashboard.pacientes.alertas.historial', idPaciente)
+                    : route('dashboard.pacientes.interacciones', idPaciente)"
+                class="btn btn-secondary text-white text-decoration-none"
+                @click="interaccionSelected = null"
+            >
                 <i class="fa fa-arrow-left"></i>
-                Volver al historial de interacciones
+                {{ origenInteraccion === 'alertas' ? 'Volver al historial de alertas' : 'Volver al historial de contactos' }}
             </Link>
         </div>
 

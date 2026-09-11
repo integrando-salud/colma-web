@@ -1,6 +1,10 @@
 <script setup>
-import { Head } from "@inertiajs/vue3";
+import { computed } from "vue";
+import { Head, usePage } from "@inertiajs/vue3";
 import Dashboard from '@/Components/Layouts/Dashboard.vue';
+
+const page = usePage();
+const mostrarSeguimientoCuartoMes = computed(() => page.props.app.seguimientosMensualesNuevos > 3);
 
 defineProps({
     indicadoresGenerales: {
@@ -118,7 +122,7 @@ defineProps({
                             <td>Proporción de participantes que fueron contactados exitosamente para el seguimiento a los 90 días.</td>
                             <td>{{ indicadoresInteraccionesProgramadas.porcentaje_seguimiento_3_meses_realizado }}%</td>
                         </tr>
-                        <tr>
+                        <tr v-if="mostrarSeguimientoCuartoMes">
                             <td>% de participantes con seguimiento a los 4 meses realizado</td>
                             <td>Proporción de participantes que fueron contactados exitosamente para el seguimiento a los 120 días.</td>
                             <td>{{ indicadoresInteraccionesProgramadas.porcentaje_seguimiento_4_meses_realizado }}%</td>

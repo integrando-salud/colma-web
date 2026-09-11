@@ -1,6 +1,6 @@
 <script setup>
 import { toRef } from 'vue';
-import { VENTANA_CONTACTO_KEYS, VENTANA_CONTACTO_LABELS } from '@/Constants/ventanaContacto';
+import { VENTANA_CONTACTO_LABELS } from '@/Constants/ventanaContacto';
 
 const props = defineProps({
     ventanaContacto: {
@@ -9,6 +9,10 @@ const props = defineProps({
     },
     colorFechaEntrenamiento: {
         type: String,
+        required: true,
+    },
+    ventanaContactoKeys: {
+        type: Array,
         required: true,
     },
 });
@@ -38,7 +42,7 @@ const ventanaContacto = toRef(props, 'ventanaContacto');
                 </tr>
 
                 <tr
-                    v-for="key in VENTANA_CONTACTO_KEYS"
+                    v-for="key in ventanaContactoKeys"
                     :key="key"
                 >
                     <td>{{ VENTANA_CONTACTO_LABELS[key] }}</td>

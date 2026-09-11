@@ -20,6 +20,7 @@ class EntrenamientoResource extends JsonResource
             'paciente_id' => $this->paciente_id,
             'fecha' => $this->fecha->format('d/m/Y'),
             'sesiones' => $this->sesiones,
+            'seguimientos_mensuales' => $this->seguimientos_mensuales,
             'sesiones_completadas' => app(TratamientoService::class)->getCantidadSesionesCompletadas($this->resource),
             'seguimiento_dos_semanas_inicio' => $this->seguimiento_dos_semanas_inicio->format('d/m/Y'),
             'seguimiento_dos_semanas_fin' => $this->seguimiento_dos_semanas_fin->format('d/m/Y'),
