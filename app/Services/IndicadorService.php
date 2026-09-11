@@ -9,7 +9,6 @@ use App\Models\Paciente;
 use App\Models\User;
 use App\Support\UserTimezone;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
 
 class IndicadorService
