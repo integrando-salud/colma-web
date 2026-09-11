@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Entrenamiento;
+use App\Models\MultimediaRead;
 use App\Models\Paciente;
 use App\Models\TratamientoMultimedia;
 use App\Models\TratamientoSesion;
@@ -105,6 +106,70 @@ class ApiPacienteControllerTest extends TestCase
     }
 
     /**
+     * Verifica que la aplicación recupere solo los contenidos completados del
+     * entrenamiento activo, para restaurar su avance en otro dispositivo.
+     */
+    public function test_paciente_puede_obtener_los_multimedia_completados_del_entrenamiento_actual(): void
+    {
+        [$user, $paciente] = $this->crearPaciente();
+        $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('a', 64)]);
+        $sesion = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
+        $multimediaCompletado = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesion->id, 'ruta' => 'video.mp4', 'tipo' => 'VIDEO', 'checksum' => str_repeat('b', 64)]);
+        $multimediaRepetido = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesion->id, 'ruta' => 'guia.pdf', 'tipo' => 'ARCHIVO', 'checksum' => str_repeat('c', 64)]);
+        $entrenamientoAnterior = $this->crearEntrenamiento($paciente, $version);
+        $entrenamientoActual = $this->crearEntrenamiento($paciente, $version);
+        $entrenamientoAnterior->update(['activo' => false]);
+        $entrenamientoActual->created_at = now()->addSecond();
+        $entrenamientoActual->save();
+
+        MultimediaRead::create([
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamientoAnterior->id,
+            'tratamiento_multimedia_id' => $multimediaCompletado->id,
+            'tratamiento' => 'HTA',
+            'semana' => 1,
+            'sesion' => 1,
+            'tipo' => 'VIDEO',
+            'key' => 'lectura-anterior',
+            'fecha_registro' => now(),
+            'fecha_sincronizacion' => now(),
+        ]);
+        foreach ([101, 102] as $idApp) {
+            MultimediaRead::create([
+                'id_app' => $idApp,
+                'paciente_id' => $paciente->id,
+                'entrenamiento_id' => $entrenamientoActual->id,
+                'tratamiento_multimedia_id' => $multimediaRepetido->id,
+                'tratamiento' => 'HTA',
+                'semana' => 1,
+                'sesion' => 1,
+                'tipo' => 'ARCHIVO',
+                'key' => "lectura-$idApp",
+                'fecha_registro' => now(),
+                'fecha_sincronizacion' => now(),
+            ]);
+        }
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/multimedia-completados')
+            ->assertOk()
+            ->assertExactJson([
+                'multimedia_completados' => [$multimediaRepetido->id],
+            ]);
+    }
+
+    /** Verifica que un paciente sin entrenamiento activo reciba un avance vacío. */
+    public function test_paciente_sin_entrenamiento_actual_recibe_multimedia_completados_vacio(): void
+    {
+        [$user] = $this->crearPaciente();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/multimedia-completados')
+            ->assertOk()
+            ->assertExactJson(['multimedia_completados' => []]);
+    }
+
+    /**
      * Verifica que las metas se registren con el entrenamiento activo del paciente.
      */
     public function test_paciente_puede_sincronizar_metas_con_su_entrenamiento(): void
@@ -182,6 +247,10 @@ class ApiPacienteControllerTest extends TestCase
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/pedido-ayuda')
+            ->assertForbidden();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/multimedia-completados')
             ->assertForbidden();
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Requests\API\Paciente\SyncDataRequest;
 use App\Services\AlertaService;
 use App\Services\DatosClinicosService;
+use App\Services\PacienteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Throwable;
@@ -72,5 +73,33 @@ class PacienteController extends PacienteAutenticadoController
                 'message' => 'Error al registrar el pedido de ayuda.',
             ], 500);
         }
+    }
+
+    /**
+     * Obtiene los contenidos multimedia completados del entrenamiento vigente.
+     *
+     * La aplicación usa los identificadores retornados para restaurar el avance
+     * luego de una reinstalación o un cambio de dispositivo. Solo se consideran
+     * las lecturas asociadas al último entrenamiento activo del paciente.
+     *
+     * @param  Request  $request  Solicitud autenticada de la aplicación móvil.
+     * @param  PacienteService  $pacienteService  Servicio que resuelve el entrenamiento actual.
+     * @return JsonResponse Respuesta con los identificadores del contenido completado.
+     */
+    public function multimediaCompletados(Request $request, PacienteService $pacienteService): JsonResponse
+    {
+        $entrenamiento = $pacienteService->getEntrenamientoActual($this->pacienteAutenticado($request));
+
+        return response()->json([
+            'multimedia_completados' => $entrenamiento
+                ? $entrenamiento->multimediaReads()
+                    ->whereNotNull('tratamiento_multimedia_id')
+                    ->orderBy('tratamiento_multimedia_id')
+                    ->pluck('tratamiento_multimedia_id')
+                    ->unique()
+                    ->values()
+                    ->all()
+                : [],
+        ]);
     }
 }
