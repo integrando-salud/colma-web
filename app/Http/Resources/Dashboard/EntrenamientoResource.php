@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Services\TratamientoService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,7 +21,7 @@ class EntrenamientoResource extends JsonResource
             'fecha' => $this->fecha->format('d/m/Y'),
             'sesiones' => $this->sesiones,
             'seguimientos_mensuales' => $this->seguimientos_mensuales,
-            'sesiones_completadas' => 0,
+            'sesiones_completadas' => app(TratamientoService::class)->getCantidadSesionesCompletadas($this->resource),
             'seguimiento_dos_semanas_inicio' => $this->seguimiento_dos_semanas_inicio->format('d/m/Y'),
             'seguimiento_dos_semanas_fin' => $this->seguimiento_dos_semanas_fin->format('d/m/Y'),
             'llamada_mensual_1_inicio' => $this->llamada_mensual_1_inicio->format('d/m/Y'),

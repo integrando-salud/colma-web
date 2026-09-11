@@ -100,6 +100,7 @@ class SyncDataRequest extends FormRequest
             'multimedia_read' => ['nullable', 'array'],
             'multimedia_read.*.id_multimedia_read' => ['required', 'numeric'],
             'multimedia_read.*.id_usuario' => ['required', 'numeric', 'same:userId'],
+            'multimedia_read.*.tratamiento_multimedia_id' => ['required', 'integer', 'exists:tratamiento_multimedia,id'],
             'multimedia_read.*.treatment_id' => ['required', 'string'],
             'multimedia_read.*.week_id' => ['required', 'numeric'],
             'multimedia_read.*.session_id' => ['required', 'numeric'],
