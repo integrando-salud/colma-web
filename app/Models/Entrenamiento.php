@@ -8,6 +8,7 @@ class Entrenamiento extends Model
 {
     protected $fillable = [
         'paciente_id',
+        'tratamiento_version_id',
         'fecha',
         'sesiones',
         'seguimientos_mensuales',
@@ -93,5 +94,15 @@ class Entrenamiento extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tratamientoVersion()
+    {
+        return $this->belongsTo(TratamientoVersion::class);
+    }
+
+    public function multimediaReads()
+    {
+        return $this->hasMany(MultimediaRead::class);
     }
 }

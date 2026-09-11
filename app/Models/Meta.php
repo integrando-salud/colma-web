@@ -9,6 +9,7 @@ class Meta extends Model
     protected $fillable = [
         'id_app',
         'paciente_id',
+        'entrenamiento_id',
         'semana',
         'sesion',
         'tipo_actividad',
@@ -37,5 +38,10 @@ class Meta extends Model
     public function paciente()
     {
         return $this->belongsTo(Paciente::class);
+    }
+
+    public function entrenamiento()
+    {
+        return $this->belongsTo(Entrenamiento::class);
     }
 }

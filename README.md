@@ -26,6 +26,18 @@ docker compose -f docker-compose.prod.yml exec php84 php artisan colma:crear-pac
 docker compose -f docker-compose.prod.yml exec php84 php artisan migrate --step
 docker compose -f docker-compose.prod.yml exec php84 php artisan db:seed
 ````
+9. Importar el catálogo de tratamientos desde `storage/app/private/tratamientos`
+````bash
+docker compose -f docker-compose.prod.yml exec --user www-data php84 php artisan tratamientos:sincronizar-catalogo
+````
+
+El comando es idempotente: reutiliza una versión existente cuando el contenido no
+cambió y crea una nueva cuando detecta cambios. Para importar un subconjunto se
+pueden indicar uno o más países y tipos de tratamiento:
+
+````bash
+docker compose -f docker-compose.prod.yml exec --user www-data php84 php artisan tratamientos:sincronizar-catalogo --pais=AR --tipo=HTA
+````
 
 ## Comandos producción
 

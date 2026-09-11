@@ -11,6 +11,7 @@ use App\Models\Entrenamiento;
 use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\Interaccion;
+use App\Models\Meta;
 use App\Models\Paciente;
 use App\Models\PresionArterial;
 use App\Models\User;
@@ -295,6 +296,22 @@ class PacienteServiceTest extends TestCase
         $this->assertSame('clave-visible-en-modal', $listado['clave']);
     }
 
+    public function test_resource_cuenta_solo_las_metas_cumplidas_del_entrenamiento_activo(): void
+    {
+        $paciente = $this->crearPaciente();
+        $entrenamientoActivo = $this->crearEntrenamiento($paciente);
+        $entrenamientoInactivo = $this->crearEntrenamiento($paciente, ['activo' => false]);
+
+        $this->crearMeta($paciente, $entrenamientoActivo, true);
+        $this->crearMeta($paciente, $entrenamientoActivo, false);
+        $this->crearMeta($paciente, $entrenamientoInactivo, true);
+
+        $this->service->cargarRelacionesParaResource($paciente);
+        $detalle = (new PacienteResource($paciente))->resolve();
+
+        $this->assertSame(1, $detalle['metas_cumplidas']);
+    }
+
     public function test_get_fecha_proximo_contacto_programado_devuelve_la_primera_pendiente(): void
     {
         $paciente = $this->crearPaciente();
@@ -392,6 +409,24 @@ class PacienteServiceTest extends TestCase
         }
 
         return $entrenamiento;
+    }
+
+    private function crearMeta(Paciente $paciente, Entrenamiento $entrenamiento, bool $metaCumplida): Meta
+    {
+        return Meta::create([
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamiento->id,
+            'semana' => 1,
+            'sesion' => 1,
+            'tipo_actividad' => 'Caminata',
+            'actividad' => 'Caminar 30 minutos',
+            'lugar' => 'Parque',
+            'meta_cumplida' => $metaCumplida,
+            'fecha_registro' => '2026-01-01 08:00:00',
+            'fecha_usuario' => '2026-01-01 08:00:00',
+            'fecha_sincronizacion' => '2026-01-01 08:00:00',
+            'fecha_objetivo' => '2026-01-02 08:00:00',
+        ]);
     }
 
     private function datosGlucosa(Paciente $paciente, string $fecha): array
