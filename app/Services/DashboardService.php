@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\MotivoInteraccion;
 use App\Http\Resources\Dashboard\CentroSaludResource;
 use App\Http\Resources\Dashboard\PacienteListResource;
 use App\Http\Resources\Dashboard\PaisResource;
@@ -226,16 +225,7 @@ class DashboardService
                     ->where('activo', true)
                     ->latest(),
                 'proximosContactosProgramados' => fn ($query) => $query
-                    ->whereNotNull('nueva_fecha_contacto')
-                    ->withoutDuplicatedPendingAlertSchedule()
-                    ->whereNotExists(function ($query) {
-                        $query->selectRaw('1')
-                            ->from('interacciones AS subquery')
-                            ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
-                            ->where('subquery.contactado', true)
-                            ->whereColumn('subquery.fecha', '>=', 'interacciones.nueva_fecha_contacto')
-                            ->whereNull('subquery.deleted_at');
-                    })
+                    ->pendingAsNextContact()
                     ->orderBy('nueva_fecha_contacto')
                     ->limit(3)
                     ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha'),
@@ -249,20 +239,6 @@ class DashboardService
                         WHEN tipo = 'clinica' THEN 'Alerta clínica'
                         ELSE ''
                     END AS motivo"),
-                'proximasCitasEntrenamiento' => fn ($query) => $query
-                    ->where('motivo', MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO)
-                    ->whereNotNull('fecha_cita')
-                    ->whereNotExists(function ($query) {
-                        $query->selectRaw('1')
-                            ->from('interacciones AS subquery')
-                            ->whereColumn('interacciones.paciente_id', 'subquery.paciente_id')
-                            ->where('subquery.contactado', true)
-                            ->whereColumn('subquery.fecha', '>=', 'interacciones.fecha_cita')
-                            ->whereNull('subquery.deleted_at');
-                    })
-                    ->orderBy('fecha_cita')
-                    ->limit(3)
-                    ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, fecha_cita AS fecha'),
             ])
             ->paginate(config('app.rpp'))
             ->withQueryString();

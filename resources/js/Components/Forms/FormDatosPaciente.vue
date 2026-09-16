@@ -24,12 +24,12 @@ const cargandoPromotores = ref(false);
 const cargandoDiagnosticos = ref(false);
 const blockSelectPromotor = ref(false);
 
-const soloLectura = computed(() => {
-    return props.paciente?.activo === false || page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo === 'PE';
+const esPromotorPeru = computed(() => {
+    return page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo === 'PE';
 });
 
-const verUsuarioPassword = computed(() => {
-    return page.props.usuario.rol?.nombre !== 'promotor' || (page.props.usuario.rol?.nombre === 'promotor' && page.props.usuario.pais?.codigo !== 'PE');
+const soloLectura = computed(() => {
+    return props.paciente?.activo === false || esPromotorPeru.value;
 });
 
 const labelPassword = computed(() => props.paciente ? 'Nueva contraseña' : 'Contraseña');
@@ -479,7 +479,7 @@ camposSoloLetras.forEach(campo => {
                 </div>
             </div>
         </div>
-        <template v-if="verUsuarioPassword">
+        <template v-if="!esPromotorPeru">
             <div class="col-12 mt-3 mt-sm-0">
                 <h4 class="fs-5 text-primary-emphasis">Asignar usuario y contraseña</h4>
             </div>

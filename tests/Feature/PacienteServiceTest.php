@@ -54,6 +54,24 @@ class PacienteServiceTest extends TestCase
         );
     }
 
+    public function test_query_get_pacientes_busca_por_nombre_completo_e_id_externo(): void
+    {
+        $usuario = $this->crearUsuario('operador');
+        $usuario->assign(User::ROL_SUPERUSUARIO);
+        $this->actingAs($usuario);
+        $paciente = $this->crearPaciente([
+            'nombre' => 'Ana María',
+            'apellido' => 'Paz Gómez',
+            'id_externo' => 'RED-CAP-123',
+        ]);
+
+        $porNombreCompleto = $this->service->queryGetPacientes(['nombre' => 'Ana María Paz Gómez'])->get();
+        $porIdExterno = $this->service->queryGetPacientes(['nombre' => 'RED-CAP-123'])->get();
+
+        $this->assertSame([$paciente->id], $porNombreCompleto->pluck('id')->all());
+        $this->assertSame([$paciente->id], $porIdExterno->pluck('id')->all());
+    }
+
     public function test_store_paciente_crea_y_actualiza_el_paciente_usuario_y_diagnosticos(): void
     {
         $diagnostico = Diagnostico::create(['nombre' => 'Diabetes', 'activo' => true]);
@@ -120,6 +138,7 @@ class PacienteServiceTest extends TestCase
             'fecha' => '2026-01-01',
             'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO,
             'fecha_cita' => '2026-03-01',
+            'nueva_fecha_contacto' => '2026-03-01',
         ]);
         $this->crearInteraccion($paciente, [
             'fecha' => '2026-01-02',
@@ -208,7 +227,7 @@ class PacienteServiceTest extends TestCase
             'fecha' => '2026-07-08',
             'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO,
             'fecha_cita' => '2026-07-09',
-            'nueva_fecha_contacto' => '2026-07-22',
+            'nueva_fecha_contacto' => '2026-07-09',
         ]);
 
         $this->assertSame('2026-07-09', substr((string) $this->service->getFechaProximoContacto($paciente), 0, 10));
@@ -219,7 +238,7 @@ class PacienteServiceTest extends TestCase
 
         $this->assertSame('09/07/2026', $detalle['fecha_proximo_contacto']);
         $this->assertSame('09/07/2026', $detalle['proximos_contactos'][0]['fecha']);
-        $this->assertSame('22/07/2026', $detalle['proximos_contactos'][1]['fecha']);
+        $this->assertCount(1, $detalle['proximos_contactos']);
     }
 
     public function test_get_fechas_proximos_contactos_programados_excluye_las_ya_contactadas(): void

@@ -298,9 +298,12 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             }
 
             if (
-                formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO ||
-                formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
+                formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO
             ) {
+                formContacto.nueva_fecha_contacto = formContacto.fecha_cita && isValidDate(formContacto.fecha_cita)
+                    ? formContacto.fecha_cita
+                    : null;
+            } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS) {
                 formContacto.nueva_fecha_contacto = getFechaMasDias(14);
             } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
                 formContacto.nueva_fecha_contacto = getFechaMasDias(30);
@@ -450,6 +453,11 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                 if (esCitaEntrenamientoContactado()) {
                     setFechaProximoContacto();
                     actualizarVentanasContacto();
+                }
+            },
+            fecha_cita: () => {
+                if (formContacto.motivo === MOTIVO_CONTACTO.AGENDAR_CITA_ENTRENAMIENTO) {
+                    setFechaProximoContacto();
                 }
             },
             razon_contacto_participante: () => {
