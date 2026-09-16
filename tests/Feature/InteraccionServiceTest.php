@@ -194,6 +194,23 @@ class InteraccionServiceTest extends TestCase
         ]);
     }
 
+    public function test_usa_la_fecha_de_la_cita_como_proximo_contacto_al_agendar_entrenamiento(): void
+    {
+        $paciente = $this->crearPaciente();
+
+        $this->service->storeInteraccion($this->datosInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO->value,
+            'fecha' => '14/09/2026',
+            'fecha_cita' => '17/09/2026',
+            'nueva_fecha_contacto' => '28/09/2026',
+        ]));
+
+        $this->assertSame(
+            '2026-09-17',
+            Interaccion::firstOrFail()->nueva_fecha_contacto?->toDateString(),
+        );
+    }
+
     public function test_no_crea_el_entrenamiento_al_registrar_una_cita_de_entrenamiento_no_contactada(): void
     {
         $paciente = $this->crearPaciente();

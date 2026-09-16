@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\MotivoInteraccion;
 use App\Models\CentroSalud;
+use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\Pais;
 use App\Models\User;
@@ -118,6 +120,19 @@ class DashboardServiceTest extends TestCase
         $promotorAjeno = $this->crearUsuario($pais, $centro, User::ROL_PROMOTOR);
         $pacientePropio = $this->crearPaciente($centro, $promotorPropio, 'Propio');
         $this->crearPaciente($centro, $promotorAjeno, 'Ajeno');
+        Interaccion::create([
+            'paciente_id' => $pacientePropio->id,
+            'user_id' => $promotorPropio->id,
+            'contactado' => true,
+            'fecha' => '2026-01-01',
+            'hora' => '09:00',
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO,
+            'fecha_cita' => '2026-03-01',
+            'hora_cita' => '09:00',
+            'lugar_cita' => 'Domicilio',
+            'nueva_fecha_contacto' => '2026-03-01',
+        ]);
         $this->actingAs($supervisor);
 
         $datos = $this->service->getDataForPacientesPage(['orderDir' => 'asc']);
@@ -128,6 +143,10 @@ class DashboardServiceTest extends TestCase
         foreach (['centroSalud', 'promotor', 'usuario', 'diagnosticos', 'entrenamientos', 'proximosContactosProgramados', 'proximosContactosAlertas'] as $relacion) {
             $this->assertTrue($pacientes->first()->relationLoaded($relacion));
         }
+        $paciente = (new \App\Http\Resources\Dashboard\PacienteListResource($pacientes->first()))->resolve();
+        $this->assertSame([
+            ['fecha' => '01/03/2026', 'motivo' => 'Cita de entrenamiento'],
+        ], $paciente['proximos_contactos']);
     }
 
     private function crearPais(string $nombre): Pais
