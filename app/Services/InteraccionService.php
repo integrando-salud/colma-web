@@ -76,7 +76,7 @@ class InteraccionService
                 'razon_contacto_participante' => data_get($data, 'razon_contacto_participante'),
                 'razon_contacto_participante_otro' => data_get($data, 'razon_contacto_participante_otro'),
                 'contacto_participante_acciones' => data_get($data, 'contacto_participante_acciones'),
-                'nueva_fecha_contacto' => $this->fechaDatabase(data_get($data, 'nueva_fecha_contacto')),
+                'nueva_fecha_contacto' => $this->nuevaFechaContacto($data),
                 'no_adherencia_pregunta_a' => data_get($data, 'no_adherencia_pregunta_a'),
                 'no_adherencia_otro' => data_get($data, 'no_adherencia_otro'),
                 'no_adherencia_pregunta_b' => data_get($data, 'no_adherencia_pregunta_b'),
@@ -265,6 +265,25 @@ class InteraccionService
     {
         return data_get($data, 'contactado')
             && MotivoInteraccion::tryFrom(data_get($data, 'motivo'))?->esCitaRealizada() === true;
+    }
+
+    /**
+     * La cita de entrenamiento programada es el próximo contacto de esa interacción.
+     * Así se evita que una fecha calculada desde el día del registro la desplace.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function nuevaFechaContacto(array $data): ?string
+    {
+        if (
+            data_get($data, 'contactado')
+            && MotivoInteraccion::tryFrom(data_get($data, 'motivo')) === MotivoInteraccion::AGENDAR_CITA_ENTRENAMIENTO
+            && data_get($data, 'fecha_cita')
+        ) {
+            return $this->fechaDatabase(data_get($data, 'fecha_cita'));
+        }
+
+        return $this->fechaDatabase(data_get($data, 'nueva_fecha_contacto'));
     }
 
     /**

@@ -143,14 +143,6 @@ class Paciente extends Model
         return $this->hasMany(Interaccion::class);
     }
 
-    /**
-     * Citas de entrenamiento agendadas que también constituyen un próximo contacto.
-     */
-    public function proximasCitasEntrenamiento()
-    {
-        return $this->hasMany(Interaccion::class);
-    }
-
     public function alertas()
     {
         return $this->hasMany(Alerta::class);

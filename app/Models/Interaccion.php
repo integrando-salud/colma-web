@@ -147,4 +147,26 @@ class Interaccion extends Model
                 ->whereNull('alerta_programada.deleted_at');
         });
     }
+
+    /**
+     * Interacciones que son el próximo contacto pendiente de un paciente.
+     * La fecha canónica para este propósito es nueva_fecha_contacto.
+     *
+     * @param  Builder<Interaccion>  $query
+     * @return Builder<Interaccion>
+     */
+    public function scopePendingAsNextContact(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('nueva_fecha_contacto')
+            ->withoutDuplicatedPendingAlertSchedule()
+            ->whereNotExists(function ($subquery) {
+                $subquery->selectRaw('1')
+                    ->from('interacciones AS contactada')
+                    ->whereColumn('interacciones.paciente_id', 'contactada.paciente_id')
+                    ->where('contactada.contactado', true)
+                    ->whereColumn('contactada.fecha', '>=', 'interacciones.nueva_fecha_contacto')
+                    ->whereNull('contactada.deleted_at');
+            });
+    }
 }

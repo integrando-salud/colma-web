@@ -4,6 +4,7 @@ namespace App\Http\Requests\Dashboard\Paciente;
 
 use App\Models\Diagnostico;
 use App\Models\Paciente;
+use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +12,9 @@ use Illuminate\Validation\Rule;
 
 class StorePacienteRequest extends FormRequest
 {
+    /** @var array<string, mixed>|null */
+    private ?array $datosProtegidos = null;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,12 +34,81 @@ class StorePacienteRequest extends FormRequest
     }
 
     /**
+     * Los promotores de Perú sólo pueden modificar los datos de contacto. Se
+     * restauran los demás valores desde la base para que esta restricción no
+     * dependa de los campos bloqueados en la interfaz. Esos valores no se
+     * validan: el promotor no puede corregir datos heredados que estén vacíos.
+     */
+    protected function prepareForValidation(): void
+    {
+        $usuario = auth()->user();
+
+        if (! $this->filled('id')
+            || ! $usuario?->isA(User::ROL_PROMOTOR)
+            || $usuario->pais?->codigo !== 'PE') {
+            return;
+        }
+
+        $paciente = Paciente::query()
+            ->with('diagnosticos:id')
+            ->find($this->input('id'));
+
+        if (! $paciente) {
+            return;
+        }
+
+        $this->datosProtegidos = [
+            'id' => $paciente->id,
+            'id_externo' => $paciente->id_externo,
+            'nombre' => $paciente->nombre,
+            'apellido' => $paciente->apellido,
+            'fecha_nacimiento' => $paciente->fecha_nacimiento?->format('d/m/Y'),
+            'sexo' => $paciente->sexo,
+            'documento' => $paciente->documento,
+            'centro_salud_id' => $paciente->centro_salud_id,
+            'promotor_id' => $paciente->promotor_id,
+            'fecha_enrolamiento' => $paciente->fecha_enrolamiento?->format('d/m/Y'),
+            'password' => null,
+            'diagnosticos' => $paciente->diagnosticos->modelKeys(),
+        ];
+    }
+
+    /**
+     * Combina los campos de contacto validados con los datos protegidos que se
+     * conservarán al guardar la edición.
+     *
+     * @return array<string, mixed>|mixed
+     */
+    public function validated($key = null, $default = null): mixed
+    {
+        $validated = parent::validated();
+
+        if ($this->datosProtegidos !== null) {
+            $validated = array_replace($this->datosProtegidos, $validated);
+        }
+
+        return $key === null ? $validated : data_get($validated, $key, $default);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
+        if ($this->datosProtegidos !== null) {
+            return [
+                'id' => ['required', 'exists:pacientes,id'],
+                'telefono' => ['required', 'max:30'],
+                'telefono2' => ['nullable', 'max:30'],
+                'email' => ['nullable', 'email', 'max:100', Rule::unique('pacientes', 'email')->ignore($this->id)],
+                'direccion' => ['required', 'string', 'max:255'],
+                'referencia' => ['nullable', 'string', 'max:255'],
+                'observaciones' => ['nullable'],
+            ];
+        }
+
         return [
             'id' => ['nullable', 'exists:pacientes,id'],
             'id_externo' => ['required', 'string', 'max:50', Rule::unique('pacientes', 'id_externo')->ignore($this->id)],
