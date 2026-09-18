@@ -277,11 +277,7 @@ onMounted(() => {
                                 }" @click="orderBy('promotor')"></i>
                             </th>
                             <th>
-                                <span class="me-3">Sesiones</span>
-                                <i class="fa order" :class="{
-                                    'fa-chevron-down': formFiltros.orderBy !== 'sesiones' || formFiltros.orderBy === 'sesiones' && formFiltros.orderDir === 'asc',
-                                    'fa-chevron-up': formFiltros.orderBy === 'sesiones' && formFiltros.orderDir === 'desc'
-                                }" @click="orderBy('sesiones')"></i>
+                                <span>Sesiones</span>
                             </th>
                             <th>
                                 <span class="me-3">Alertas</span>

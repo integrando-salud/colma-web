@@ -32,9 +32,9 @@ class PacienteResource extends JsonResource
                 ->where('meta_cumplida', true)
                 ->count()
             : 0;
-        $sesionesCompletadas = $entrenamientoActual
-            ? app(TratamientoService::class)->getCantidadSesionesCompletadas($entrenamientoActual)
-            : 0;
+        $resumenProgreso = $entrenamientoActual
+            ? app(TratamientoService::class)->getResumenProgresoEntrenamiento($entrenamientoActual)
+            : null;
         // El selectSub del listado devuelve una cadena, mientras que el cast del
         // modelo puede devolver Carbon. Se normaliza antes de calcular los días.
         $fechaProximoContactoRaw = $this->nueva_fecha_contacto
@@ -73,8 +73,8 @@ class PacienteResource extends JsonResource
             'diagnosticos' => DiagnosticoResource::collection($this->diagnosticos),
             'usuario' => new UserResource($this->usuario),
             'sesiones' => $entrenamientoActual ? [
-                'total' => $entrenamientoActual->sesiones,
-                'completadas' => $sesionesCompletadas,
+                'total' => $resumenProgreso['sesiones_totales'],
+                'completadas' => $resumenProgreso['sesiones_completadas'],
             ] : null,
             'metas_cumplidas' => $metasCumplidas,
             'activo' => $this->activo,

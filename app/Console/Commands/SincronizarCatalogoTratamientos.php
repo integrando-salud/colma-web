@@ -10,9 +10,9 @@ class SincronizarCatalogoTratamientos extends Command
 {
     protected $signature = 'tratamientos:sincronizar-catalogo
                             {--pais=* : Código de país a importar; se pueden indicar varios}
-                            {--tipo=* : Directorio de tratamiento a importar; se pueden indicar varios}';
+                            {--tipo=* : Tipo lógico de tratamiento a importar; se pueden indicar varios}';
 
-    protected $description = 'Importa al catálogo los tratamientos, sesiones y archivos disponibles en storage.';
+    protected $description = 'Importa el catálogo lógico y los recursos declarados en content.json.';
 
     public function handle(TratamientoService $tratamientoService): int
     {

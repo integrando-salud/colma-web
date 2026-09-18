@@ -108,14 +108,12 @@ class PacienteService
 
         $query->orderByDesc('pacientes.activo');
         $orderBy = data_get($filters, 'orderBy', 'id_externo');
-        $orderBy = in_array($orderBy, ['id_externo', 'sesiones', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
+        $orderBy = in_array($orderBy, ['id_externo', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
             ? $orderBy
             : 'id_externo';
         $orderDir = strtolower((string) data_get($filters, 'orderDir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         switch ($orderBy) {
-            case 'sesiones':
-                break;
             case 'ingresos':
                 $query->leftJoin('users', 'pacientes.user_id', '=', 'users.id')
                     ->orderBy('users.accesos', $orderDir);
@@ -386,7 +384,10 @@ class PacienteService
             'promotor',
             'usuario',
             'diagnosticos',
-            'entrenamientos' => fn ($query) => $query->where('activo', true)->latest(),
+            'entrenamientos' => fn ($query) => $query
+                ->where('activo', true)
+                ->latest()
+                ->with(['tratamientoVersion.sesiones.elementos', 'progresoElementos']),
             'proximosContactosProgramados' => fn ($query) => $query
                 ->pendingAsNextContact()
                 ->orderBy('nueva_fecha_contacto')

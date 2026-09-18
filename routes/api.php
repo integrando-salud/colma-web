@@ -21,8 +21,11 @@ Route::middleware(['auth:sanctum', SetUserTimezone::class])->group(function () {
     Route::post('pedido-ayuda', [PacienteController::class, 'pedidoAyuda'])
         ->name('pedido-ayuda');
 
-    Route::get('multimedia-completados', [PacienteController::class, 'multimediaCompletados'])
-        ->name('multimedia-completados');
+    Route::get('elementos-completados', [PacienteController::class, 'elementosCompletados'])
+        ->name('elementos-completados');
+
+    Route::get('datos-funcionales-tratamiento', [PacienteController::class, 'datosFuncionalesTratamiento'])
+        ->name('datos-funcionales-tratamiento');
 
     Route::get('tratamiento', [TratamientoController::class, 'getTratamiento'])
         ->name('tratamiento');

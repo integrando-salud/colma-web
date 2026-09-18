@@ -26,7 +26,6 @@ class InteraccionServiceTest extends TestCase
         parent::setUp();
 
         $tratamientoService = Mockery::mock(TratamientoService::class);
-        $tratamientoService->shouldReceive('getCantidadSesionesPaciente')->andReturn(12);
         $tratamientoService->shouldReceive('getVersionTratamientoPaciente')->andReturn(null);
         $this->service = new InteraccionService($tratamientoService);
         $this->actingAs($this->crearUsuario());
@@ -140,7 +139,6 @@ class InteraccionServiceTest extends TestCase
         $this->assertTrue($this->service->guardarEntrenamiento($paciente->id, '2026-08-01'));
         $entrenamiento = Entrenamiento::firstOrFail();
 
-        $this->assertSame(12, $entrenamiento->sesiones);
         $this->assertSame('2026-08-15', $entrenamiento->seguimiento_dos_semanas_inicio->toDateString());
         $this->assertSame('2027-01-30', $entrenamiento->agendar_cita_final_fin->toDateString());
 
@@ -159,7 +157,6 @@ class InteraccionServiceTest extends TestCase
         $entrenamiento = Entrenamiento::firstOrFail();
 
         $this->assertSame(3, $entrenamiento->seguimientos_mensuales);
-        $this->assertSame(12, $entrenamiento->sesiones);
         $this->assertSame('2026-11-21', $entrenamiento->agendar_cita_final_inicio->toDateString());
         $this->assertSame('2026-12-05', $entrenamiento->agendar_cita_final_fin->toDateString());
 

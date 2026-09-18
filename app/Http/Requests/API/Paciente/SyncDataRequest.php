@@ -64,9 +64,7 @@ class SyncDataRequest extends FormRequest
             'estado_animo.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
 
             'quiz' => ['nullable', 'array'],
-            'quiz.*.id_quiz' => ['required', 'numeric'],
-            'quiz.*.id_usuario' => ['required', 'numeric', 'same:userId'],
-            'quiz.*.quiz_type' => ['required', 'in:hta,diabetes'],
+            'quiz.*.tratamiento_elemento_id' => ['required', 'integer', 'exists:tratamiento_elementos,id'],
             'quiz.*.fecha_registro' => ['required', 'date_format:Y-m-d H:i:s'],
             'quiz.*.fecha_usuario' => ['required', 'date_format:Y-m-d H:i:s'],
             'quiz.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
@@ -82,9 +80,7 @@ class SyncDataRequest extends FormRequest
 
             'metas' => ['nullable', 'array'],
             'metas.*.id_meta' => ['required', 'numeric'],
-            'metas.*.id_usuario' => ['required', 'numeric', 'same:userId'],
-            'metas.*.semana' => ['required', 'numeric'],
-            'metas.*.sesion' => ['required', 'numeric'],
+            'metas.*.tratamiento_elemento_id' => ['required', 'integer', 'exists:tratamiento_elementos,id'],
             'metas.*.tipo_actividad' => ['required', 'string'],
             'metas.*.actividad' => ['required', 'string'],
             'metas.*.lugar' => ['nullable', 'string'],
@@ -97,17 +93,11 @@ class SyncDataRequest extends FormRequest
             'metas.*.fecha_edicion' => ['nullable', 'date_format:Y-m-d H:i:s'],
             'metas.*.fecha_objetivo' => ['required', 'date_format:Y-m-d H:i:s'],
 
-            'multimedia_read' => ['nullable', 'array'],
-            'multimedia_read.*.id_multimedia_read' => ['required', 'numeric'],
-            'multimedia_read.*.id_usuario' => ['required', 'numeric', 'same:userId'],
-            'multimedia_read.*.tratamiento_multimedia_id' => ['required', 'integer', 'exists:tratamiento_multimedia,id'],
-            'multimedia_read.*.treatment_id' => ['required', 'string'],
-            'multimedia_read.*.week_id' => ['required', 'numeric'],
-            'multimedia_read.*.session_id' => ['required', 'numeric'],
-            'multimedia_read.*.multimedia_type' => ['required', 'string'],
-            'multimedia_read.*.multimedia_unique_key' => ['required', 'string'],
-            'multimedia_read.*.fecha_registro' => ['required', 'date_format:Y-m-d H:i:s'],
-            'multimedia_read.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
+            'progreso_elementos' => ['nullable', 'array'],
+            'progreso_elementos.*.tratamiento_elemento_id' => ['required', 'integer', 'exists:tratamiento_elementos,id'],
+            'progreso_elementos.*.completado' => ['required', 'boolean'],
+            'progreso_elementos.*.fecha_estado' => ['required', 'date_format:Y-m-d H:i:s'],
+            'progreso_elementos.*.fecha_sincronizacion' => ['required', 'date_format:Y-m-d H:i:s'],
         ];
     }
 }

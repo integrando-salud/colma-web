@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Cuestionario;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('cuestionarios_preguntas', function (Blueprint $table) {
             $table->id();
-            $table->foreignIdFor(Cuestionario::class)
-                ->constrained()
+            $table->foreignId('cuestionario_id')
+                ->constrained('cuestionarios')
                 ->onUpdate('cascade')
                 ->onDelete('cascade');
             $table->unsignedInteger('pregunta_index');

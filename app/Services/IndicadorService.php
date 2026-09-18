@@ -194,8 +194,8 @@ class IndicadorService
                 'entrenamientos' => fn ($query) => $query
                     ->where('activo', true)
                     ->latest()
-                    ->with('tratamientoVersion.sesiones.multimedia'),
-                'multimediaReads',
+                    ->with('tratamientoVersion.sesiones.elementos'),
+                'entrenamientos.progresoElementos',
             ])
             ->get();
         $totalParticipantesActivos = $participantesActivos->count();
@@ -247,8 +247,8 @@ class IndicadorService
     }
 
     /**
-     * Verifica que el participante haya leído todos los archivos de cada sesión
-     * habilitada de la versión asignada a su entrenamiento activo.
+     * Verifica el progreso lógico de cada sesión habilitada de la versión
+     * asignada al entrenamiento activo.
      */
     private function completoTodasLasSesionesHabilitadas(Paciente $paciente): bool
     {
@@ -262,20 +262,18 @@ class IndicadorService
         $semanasHabilitadas = intdiv($fechaInicio->diffInDays(now()->startOfDay()), 7) + 1;
         $sesionesHabilitadas = $entrenamiento->tratamientoVersion->sesiones
             ->filter(fn ($sesion) => $sesion->semana <= $semanasHabilitadas)
-            ->filter(fn ($sesion) => $sesion->multimedia->isNotEmpty());
+            ->filter(fn ($sesion) => $sesion->elementos->isNotEmpty());
 
         if ($sesionesHabilitadas->isEmpty()) {
             return false;
         }
 
-        $multimediaLeidaIds = $paciente->multimediaReads
-            ->where('entrenamiento_id', $entrenamiento->id)
-            ->pluck('tratamiento_multimedia_id')
-            ->filter()
-            ->unique();
+        $elementosCompletados = $entrenamiento->progresoElementos
+            ->where('completado', true)
+            ->pluck('tratamiento_elemento_id');
 
         return $sesionesHabilitadas->every(
-            fn ($sesion) => $sesion->multimedia->pluck('id')->diff($multimediaLeidaIds)->isEmpty()
+            fn ($sesion) => $sesion->elementos->pluck('id')->diff($elementosCompletados)->isEmpty()
         );
     }
 }

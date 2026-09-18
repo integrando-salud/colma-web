@@ -3,11 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\CentroSalud;
-use App\Models\Cuestionario;
 use App\Models\Meta;
-use App\Models\MultimediaRead;
 use App\Models\Paciente;
 use App\Models\Pais;
+use App\Models\ProgresoElemento;
 use App\Models\User;
 use Tests\TestCase;
 
@@ -28,8 +27,7 @@ class ModelRelationshipsTest extends TestCase
     {
         $paciente = new Paciente();
 
-        $this->assertInstanceOf(Cuestionario::class, $paciente->cuestionarios()->getRelated());
         $this->assertInstanceOf(Meta::class, $paciente->metas()->getRelated());
-        $this->assertInstanceOf(MultimediaRead::class, $paciente->multimediaReads()->getRelated());
+        $this->assertInstanceOf(ProgresoElemento::class, $paciente->progresoElementos()->getRelated());
     }
 }

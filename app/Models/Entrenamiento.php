@@ -10,7 +10,6 @@ class Entrenamiento extends Model
         'paciente_id',
         'tratamiento_version_id',
         'fecha',
-        'sesiones',
         'seguimientos_mensuales',
         'seguimiento_dos_semanas_inicio',
         'seguimiento_dos_semanas_fin',
@@ -32,7 +31,6 @@ class Entrenamiento extends Model
 
     protected $casts = [
         'activo' => 'boolean',
-        'sesiones' => 'integer',
         'seguimientos_mensuales' => 'integer',
         'fecha' => 'date',
         'seguimiento_dos_semanas_inicio' => 'date',
@@ -101,8 +99,18 @@ class Entrenamiento extends Model
         return $this->belongsTo(TratamientoVersion::class);
     }
 
-    public function multimediaReads()
+    public function progresoElementos()
     {
-        return $this->hasMany(MultimediaRead::class);
+        return $this->hasMany(ProgresoElemento::class);
+    }
+
+    public function metas()
+    {
+        return $this->hasMany(Meta::class);
+    }
+
+    public function respuestasQuiz()
+    {
+        return $this->hasMany(RespuestaQuiz::class);
     }
 }
