@@ -3,13 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Entrenamiento;
-use App\Models\MultimediaRead;
 use App\Models\Paciente;
-use App\Models\TratamientoMultimedia;
+use App\Models\ProgresoElemento;
+use App\Models\TratamientoElemento;
 use App\Models\TratamientoSesion;
 use App\Models\TratamientoVersion;
 use App\Models\User;
-use App\Services\TratamientoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,140 +32,150 @@ class ApiPacienteControllerTest extends TestCase
     }
 
     /**
-     * Verifica que las sesiones completadas se registren con sus datos de contexto.
+     * Verifica que el progreso se registre contra el elemento lógico.
      */
-    public function test_paciente_puede_sincronizar_las_sesiones_multimedia_completadas(): void
+    public function test_paciente_puede_sincronizar_elementos_completados(): void
     {
         [$user, $paciente] = $this->crearPaciente();
         $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('a', 64)]);
         $sesionUno = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
-        $sesionDos = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 2]);
-        $multimediaUno = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-1/video.mp4', 'tipo' => 'VIDEO', 'checksum' => str_repeat('b', 64)]);
-        TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-1/guia.pdf', 'tipo' => 'ARCHIVO', 'checksum' => str_repeat('d', 64)]);
-        $multimediaDos = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionDos->id, 'ruta' => 'tratamientos/AR/HTA/semana-1/sesion-2/audio.mp3', 'tipo' => 'AUDIO', 'checksum' => str_repeat('c', 64)]);
+        $video = TratamientoElemento::create(['tratamiento_sesion_id' => $sesionUno->id, 'tipo' => 'VIDEO', 'orden' => 0, 'contenido' => ['type' => 'VIDEO']]);
+        $quiz = TratamientoElemento::create(['tratamiento_sesion_id' => $sesionUno->id, 'tipo' => 'QUIZ', 'orden' => 1, 'contenido' => ['type' => 'QUIZ']]);
         $entrenamiento = $this->crearEntrenamiento($paciente, $version);
         $fecha = '2026-08-20 10:30:00';
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/sync-data-paciente', [
                 'userId' => $user->id,
-                'multimedia_read' => [
+                'progreso_elementos' => [
                     [
-                        'id_multimedia_read' => 101,
-                        'id_usuario' => $user->id,
-                        'tratamiento_multimedia_id' => $multimediaUno->id,
-                        'treatment_id' => 'hta',
-                        'week_id' => 1,
-                        'session_id' => 1,
-                        'multimedia_type' => 'video',
-                        'multimedia_unique_key' => 'hta-semana-1-sesion-1',
-                        'fecha_registro' => $fecha,
+                        'tratamiento_elemento_id' => $video->id,
+                        'completado' => true,
+                        'fecha_estado' => $fecha,
                         'fecha_sincronizacion' => $fecha,
                     ],
                     [
-                        'id_multimedia_read' => 102,
-                        'id_usuario' => $user->id,
-                        'tratamiento_multimedia_id' => $multimediaDos->id,
-                        'treatment_id' => 'hta',
-                        'week_id' => 1,
-                        'session_id' => 2,
-                        'multimedia_type' => 'audio',
-                        'multimedia_unique_key' => 'hta-semana-1-sesion-2',
-                        'fecha_registro' => $fecha,
+                        'tratamiento_elemento_id' => $quiz->id,
+                        'completado' => true,
+                        'fecha_estado' => $fecha,
                         'fecha_sincronizacion' => $fecha,
                     ],
                 ],
             ])
             ->assertOk();
 
-        $this->assertDatabaseCount('multimedia_read', 2);
-        $this->assertDatabaseHas('multimedia_read', [
+        $this->assertDatabaseCount('progreso_elementos', 2);
+        $this->assertDatabaseHas('progreso_elementos', [
             'paciente_id' => $paciente->id,
             'entrenamiento_id' => $entrenamiento->id,
-            'tratamiento_multimedia_id' => $multimediaUno->id,
-            'id_app' => 101,
-            'tratamiento' => 'HTA',
-            'semana' => 1,
-            'sesion' => 1,
-            'tipo' => 'VIDEO',
-            'key' => 'hta-semana-1-sesion-1',
+            'tratamiento_elemento_id' => $video->id,
+            'completado' => 1,
         ]);
-        $this->assertDatabaseHas('multimedia_read', [
+        $this->assertDatabaseHas('progreso_elementos', [
             'paciente_id' => $paciente->id,
             'entrenamiento_id' => $entrenamiento->id,
-            'tratamiento_multimedia_id' => $multimediaDos->id,
-            'id_app' => 102,
-            'tratamiento' => 'HTA',
-            'semana' => 1,
-            'sesion' => 2,
-            'tipo' => 'AUDIO',
-            'key' => 'hta-semana-1-sesion-2',
+            'tratamiento_elemento_id' => $quiz->id,
+            'completado' => 1,
         ]);
-        $this->assertSame(1, app(TratamientoService::class)->getCantidadSesionesCompletadas($entrenamiento));
     }
 
     /**
      * Verifica que la aplicación recupere solo los contenidos completados del
      * entrenamiento activo, para restaurar su avance en otro dispositivo.
      */
-    public function test_paciente_puede_obtener_los_multimedia_completados_del_entrenamiento_actual(): void
+    public function test_paciente_puede_obtener_los_elementos_completados_del_entrenamiento_actual(): void
     {
         [$user, $paciente] = $this->crearPaciente();
         $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('a', 64)]);
         $sesion = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
-        $multimediaCompletado = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesion->id, 'ruta' => 'video.mp4', 'tipo' => 'VIDEO', 'checksum' => str_repeat('b', 64)]);
-        $multimediaRepetido = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesion->id, 'ruta' => 'guia.pdf', 'tipo' => 'ARCHIVO', 'checksum' => str_repeat('c', 64)]);
+        $elementoAnterior = TratamientoElemento::create(['tratamiento_sesion_id' => $sesion->id, 'tipo' => 'VIDEO', 'orden' => 0, 'contenido' => ['type' => 'VIDEO']]);
+        $elementoCompletado = TratamientoElemento::create(['tratamiento_sesion_id' => $sesion->id, 'tipo' => 'QUIZ', 'orden' => 1, 'contenido' => ['type' => 'QUIZ']]);
+        $elementoRevertido = TratamientoElemento::create(['tratamiento_sesion_id' => $sesion->id, 'tipo' => 'METAS', 'orden' => 2, 'contenido' => ['type' => 'METAS']]);
         $entrenamientoAnterior = $this->crearEntrenamiento($paciente, $version);
         $entrenamientoActual = $this->crearEntrenamiento($paciente, $version);
         $entrenamientoAnterior->update(['activo' => false]);
         $entrenamientoActual->created_at = now()->addSecond();
         $entrenamientoActual->save();
 
-        MultimediaRead::create([
+        ProgresoElemento::create([
             'paciente_id' => $paciente->id,
             'entrenamiento_id' => $entrenamientoAnterior->id,
-            'tratamiento_multimedia_id' => $multimediaCompletado->id,
-            'tratamiento' => 'HTA',
-            'semana' => 1,
-            'sesion' => 1,
-            'tipo' => 'VIDEO',
-            'key' => 'lectura-anterior',
-            'fecha_registro' => now(),
+            'tratamiento_elemento_id' => $elementoAnterior->id,
+            'completado' => true,
+            'fecha_estado' => now(),
             'fecha_sincronizacion' => now(),
         ]);
-        foreach ([101, 102] as $idApp) {
-            MultimediaRead::create([
-                'id_app' => $idApp,
-                'paciente_id' => $paciente->id,
-                'entrenamiento_id' => $entrenamientoActual->id,
-                'tratamiento_multimedia_id' => $multimediaRepetido->id,
-                'tratamiento' => 'HTA',
-                'semana' => 1,
-                'sesion' => 1,
-                'tipo' => 'ARCHIVO',
-                'key' => "lectura-$idApp",
-                'fecha_registro' => now(),
-                'fecha_sincronizacion' => now(),
-            ]);
-        }
+        ProgresoElemento::create([
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamientoActual->id,
+            'tratamiento_elemento_id' => $elementoCompletado->id,
+            'completado' => true,
+            'fecha_estado' => now(),
+            'fecha_sincronizacion' => now(),
+        ]);
+        ProgresoElemento::create([
+            'paciente_id' => $paciente->id,
+            'entrenamiento_id' => $entrenamientoActual->id,
+            'tratamiento_elemento_id' => $elementoRevertido->id,
+            'completado' => false,
+            'fecha_estado' => now(),
+            'fecha_sincronizacion' => now(),
+        ]);
 
         $this->actingAs($user, 'sanctum')
-            ->getJson('/api/multimedia-completados')
+            ->getJson('/api/elementos-completados')
             ->assertOk()
             ->assertExactJson([
-                'multimedia_completados' => [$multimediaRepetido->id],
+                'elementos_completados' => [$elementoCompletado->id],
             ]);
+
+        ProgresoElemento::query()
+            ->where('entrenamiento_id', $entrenamientoActual->id)
+            ->where('tratamiento_elemento_id', $elementoCompletado->id)
+            ->update(['completado' => false]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/elementos-completados')
+            ->assertExactJson(['elementos_completados' => []]);
+
+        ProgresoElemento::query()
+            ->where('entrenamiento_id', $entrenamientoActual->id)
+            ->where('tratamiento_elemento_id', $elementoRevertido->id)
+            ->update(['completado' => true]);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/elementos-completados')
+            ->assertExactJson(['elementos_completados' => [$elementoRevertido->id]]);
     }
 
     /** Verifica que un paciente sin entrenamiento activo reciba un avance vacío. */
-    public function test_paciente_sin_entrenamiento_actual_recibe_multimedia_completados_vacio(): void
+    public function test_paciente_sin_entrenamiento_actual_recibe_elementos_completados_vacio(): void
+    {
+        [$user] = $this->crearPaciente();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/elementos-completados')
+            ->assertOk()
+            ->assertExactJson(['elementos_completados' => []]);
+    }
+
+    public function test_paciente_sin_entrenamiento_actual_recibe_datos_funcionales_vacios(): void
+    {
+        [$user] = $this->crearPaciente();
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/datos-funcionales-tratamiento')
+            ->assertOk()
+            ->assertExactJson(['quiz' => [], 'metas' => []]);
+    }
+
+    public function test_la_ruta_legacy_de_multimedia_completados_no_existe(): void
     {
         [$user] = $this->crearPaciente();
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/multimedia-completados')
-            ->assertOk()
-            ->assertExactJson(['multimedia_completados' => []]);
+            ->assertNotFound();
     }
 
     /**
@@ -175,7 +184,10 @@ class ApiPacienteControllerTest extends TestCase
     public function test_paciente_puede_sincronizar_metas_con_su_entrenamiento(): void
     {
         [$user, $paciente] = $this->crearPaciente();
-        $entrenamiento = $this->crearEntrenamiento($paciente);
+        $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('c', 64)]);
+        $sesion = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
+        $elementoMetas = TratamientoElemento::create(['tratamiento_sesion_id' => $sesion->id, 'tipo' => 'METAS', 'orden' => 0, 'contenido' => ['type' => 'METAS']]);
+        $entrenamiento = $this->crearEntrenamiento($paciente, $version);
         $fecha = '2026-08-20 10:30:00';
 
         $this->actingAs($user, 'sanctum')
@@ -183,9 +195,7 @@ class ApiPacienteControllerTest extends TestCase
                 'userId' => $user->id,
                 'metas' => [[
                     'id_meta' => 201,
-                    'id_usuario' => $user->id,
-                    'semana' => 1,
-                    'sesion' => 1,
+                    'tratamiento_elemento_id' => $elementoMetas->id,
                     'tipo_actividad' => 'Caminar',
                     'actividad' => '30 minutos',
                     'lugar' => 'Parque',
@@ -204,7 +214,8 @@ class ApiPacienteControllerTest extends TestCase
         $this->assertDatabaseHas('metas', [
             'paciente_id' => $paciente->id,
             'entrenamiento_id' => $entrenamiento->id,
-            'id_app' => 201,
+            'tratamiento_elemento_id' => $elementoMetas->id,
+            'id_meta' => 201,
             'actividad' => '30 minutos',
         ]);
     }
@@ -250,7 +261,7 @@ class ApiPacienteControllerTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($user, 'sanctum')
-            ->getJson('/api/multimedia-completados')
+            ->getJson('/api/elementos-completados')
             ->assertForbidden();
     }
 

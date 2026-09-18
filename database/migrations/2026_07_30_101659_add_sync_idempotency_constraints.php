@@ -64,6 +64,13 @@ return new class extends Migration
      */
     private function deleteDuplicates(string $table, array $columns): void
     {
+        // Las pruebas usan SQLite en memoria y llegan a esta migración sobre
+        // tablas recién creadas, por lo que no hay registros que depurar. La
+        // sintaxis DELETE ... JOIN que se usa debajo es propia de MySQL.
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         $matches = implode(' AND ', array_map(
             fn (string $column) => "newer.`{$column}` = older.`{$column}`",
             $columns,

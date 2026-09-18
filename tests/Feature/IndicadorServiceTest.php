@@ -7,10 +7,10 @@ use App\Models\Alerta;
 use App\Models\CentroSalud;
 use App\Models\Entrenamiento;
 use App\Models\Interaccion;
-use App\Models\MultimediaRead;
 use App\Models\Paciente;
 use App\Models\Pais;
-use App\Models\TratamientoMultimedia;
+use App\Models\ProgresoElemento;
+use App\Models\TratamientoElemento;
 use App\Models\TratamientoSesion;
 use App\Models\TratamientoVersion;
 use App\Models\User;
@@ -156,7 +156,7 @@ class IndicadorServiceTest extends TestCase
         ], $service->getIndicadoresAlertasOperativas($superusuario));
     }
 
-    public function test_adherencia_de_sesiones_usa_el_catalogo_y_lecturas_del_entrenamiento_activo(): void
+    public function test_adherencia_de_sesiones_usa_elementos_y_progreso_del_entrenamiento_activo(): void
     {
         $this->seed(RolesSeeder::class);
         $pais = $this->crearPais('Argentina');
@@ -166,30 +166,21 @@ class IndicadorServiceTest extends TestCase
         $version = TratamientoVersion::create(['pais' => 'AR', 'tipo' => 'HTA', 'hash' => str_repeat('a', 64)]);
         $sesionUno = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 1, 'sesion' => 1]);
         $sesionDos = TratamientoSesion::create(['tratamiento_version_id' => $version->id, 'semana' => 2, 'sesion' => 1]);
-        $video = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'video.mp4', 'tipo' => 'VIDEO', 'checksum' => str_repeat('b', 64)]);
-        $guia = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionUno->id, 'ruta' => 'guia.pdf', 'tipo' => 'ARCHIVO', 'checksum' => str_repeat('c', 64)]);
-        $audio = TratamientoMultimedia::create(['tratamiento_sesion_id' => $sesionDos->id, 'ruta' => 'audio.mp3', 'tipo' => 'AUDIO', 'checksum' => str_repeat('d', 64)]);
+        $descripcion = TratamientoElemento::create(['tratamiento_sesion_id' => $sesionUno->id, 'tipo' => 'DESCRIPTION', 'orden' => 0, 'contenido' => ['type' => 'DESCRIPTION']]);
+        $video = TratamientoElemento::create(['tratamiento_sesion_id' => $sesionUno->id, 'tipo' => 'VIDEO', 'orden' => 1, 'contenido' => ['type' => 'VIDEO']]);
+        $metas = TratamientoElemento::create(['tratamiento_sesion_id' => $sesionDos->id, 'tipo' => 'METAS', 'orden' => 0, 'contenido' => ['type' => 'METAS']]);
         $entrenamientoAnterior = $this->crearEntrenamiento($paciente, $version, false);
         $entrenamientoActivo = $this->crearEntrenamiento($paciente, $version);
 
-        foreach ([$video, $guia, $audio] as $indice => $multimedia) {
-            $lectura = MultimediaRead::create([
-                'id_app' => $indice + 1,
+        foreach ([$descripcion, $video, $metas] as $elemento) {
+            ProgresoElemento::create([
                 'paciente_id' => $paciente->id,
                 'entrenamiento_id' => $entrenamientoActivo->id,
-                'tratamiento_multimedia_id' => $multimedia->id,
-                'tratamiento' => 'HTA',
-                'semana' => $multimedia->sesion->semana,
-                'sesion' => $multimedia->sesion->sesion,
-                'tipo' => $multimedia->tipo,
-                'key' => pathinfo($multimedia->ruta, PATHINFO_FILENAME),
-                'fecha_registro' => now(),
+                'tratamiento_elemento_id' => $elemento->id,
+                'completado' => true,
+                'fecha_estado' => now(),
                 'fecha_sincronizacion' => now(),
             ]);
-
-            if ($multimedia->is($audio)) {
-                $lecturaAudio = $lectura;
-            }
         }
 
         $this->assertSame(
@@ -197,7 +188,10 @@ class IndicadorServiceTest extends TestCase
             app(IndicadorService::class)->getIndicadoresApp($promotor),
         );
 
-        $lecturaAudio->update(['entrenamiento_id' => $entrenamientoAnterior->id]);
+        ProgresoElemento::query()
+            ->where('entrenamiento_id', $entrenamientoActivo->id)
+            ->where('tratamiento_elemento_id', $metas->id)
+            ->update(['completado' => false]);
 
         $this->assertSame(
             ['porcentaje_adherencia_sesiones' => 0.0],

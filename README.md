@@ -39,6 +39,9 @@ pueden indicar uno o más países y tipos de tratamiento:
 docker compose -f docker-compose.prod.yml exec --user www-data php84 php artisan tratamientos:sincronizar-catalogo --pais=AR --tipo=HTA
 ````
 
+La estructura, versionado, progreso y contrato móvil del catálogo están
+documentados en [docs/tratamientos-y-progreso.md](docs/tratamientos-y-progreso.md).
+
 ## Comandos producción
 
 Levantar contenedores

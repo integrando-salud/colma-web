@@ -8,7 +8,12 @@ class TratamientoSesion extends Model
 {
     protected $table = 'tratamiento_sesiones';
 
-    protected $fillable = ['tratamiento_version_id', 'semana', 'sesion'];
+    protected $fillable = ['tratamiento_version_id', 'semana', 'sesion', 'contenido'];
+
+    protected function casts(): array
+    {
+        return ['contenido' => 'array'];
+    }
 
     public function version()
     {
@@ -18,5 +23,10 @@ class TratamientoSesion extends Model
     public function multimedia()
     {
         return $this->hasMany(TratamientoMultimedia::class);
+    }
+
+    public function elementos()
+    {
+        return $this->hasMany(TratamientoElemento::class);
     }
 }

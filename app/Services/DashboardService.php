@@ -223,7 +223,8 @@ class DashboardService
                 'diagnosticos',
                 'entrenamientos' => fn ($query) => $query
                     ->where('activo', true)
-                    ->latest(),
+                    ->latest()
+                    ->with(['tratamientoVersion.sesiones.elementos', 'progresoElementos']),
                 'proximosContactosProgramados' => fn ($query) => $query
                     ->pendingAsNextContact()
                     ->orderBy('nueva_fecha_contacto')

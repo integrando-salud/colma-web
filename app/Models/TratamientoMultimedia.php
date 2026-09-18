@@ -8,15 +8,11 @@ class TratamientoMultimedia extends Model
 {
     protected $table = 'tratamiento_multimedia';
 
-    protected $fillable = ['tratamiento_sesion_id', 'ruta', 'tipo', 'checksum'];
+    protected $fillable = ['tratamiento_elemento_id', 'ruta', 'tipo', 'checksum'];
 
-    public function sesion()
+    public function elemento()
     {
-        return $this->belongsTo(TratamientoSesion::class, 'tratamiento_sesion_id');
+        return $this->belongsTo(TratamientoElemento::class, 'tratamiento_elemento_id');
     }
 
-    public function lecturas()
-    {
-        return $this->hasMany(MultimediaRead::class);
-    }
 }

@@ -9,56 +9,36 @@ use App\Models\TratamientoMultimedia;
 use App\Models\TratamientoSesion;
 use App\Models\TratamientoVersion;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use RuntimeException;
 
 class TratamientoService
 {
     /**
-     * Obtiene el tratamiento multimedia que corresponde al diagnóstico del paciente.
+     * Obtiene el catálogo exclusivamente desde la versión del entrenamiento activo.
      *
-     * Retorna `null` cuando el paciente no posee un diagnóstico con tratamiento
-     * configurado.
-     *
-     * @throws Exception Cuando el paciente no tiene un país asociado.
+     * Retorna `null` si el paciente no tiene un entrenamiento activo con una
+     * versión persistida. No infiere ni adopta versiones por diagnóstico.
      */
     public function getTratamientoPaciente(Paciente $paciente): ?array
     {
-        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+        $entrenamiento = $paciente->entrenamientos()
+            ->where('activo', true)
+            ->latest()
+            ->with('tratamientoVersion')
+            ->first();
 
-        if (! $tratamiento) {
+        if (! $entrenamiento?->tratamiento_version_id || ! $entrenamiento->tratamientoVersion) {
             return null;
         }
 
-        [, , $tipo, $nombre] = $tratamiento;
-        $entrenamiento = $paciente->entrenamientos()->where('activo', true)->latest()->first();
-        $version = $entrenamiento?->tratamientoVersion
-            ?? $this->getVersionTratamientoPaciente($paciente);
+        $version = $entrenamiento->tratamientoVersion;
+        $nombre = is_array($version->contenido)
+            ? ($version->contenido['name'] ?? $version->tipo)
+            : $version->tipo;
 
-        // Los entrenamientos previos a este catálogo adoptan la versión vigente
-        // la primera vez que la aplicación consulta su tratamiento.
-        if ($entrenamiento && ! $entrenamiento->tratamiento_version_id && $version) {
-            $entrenamiento->update(['tratamiento_version_id' => $version->id]);
-        }
-
-        return $this->getTratamiento($tipo, $nombre, $version);
-    }
-
-    /**
-     * Cuenta las sesiones válidas disponibles para el tratamiento del paciente.
-     *
-     * Solo se consideran directorios con el formato `semana-N/sesion-N`.
-     *
-     * @throws Exception Cuando el paciente no tiene un país asociado.
-     */
-    public function getCantidadSesionesPaciente(Paciente $paciente): int
-    {
-        $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
-
-        if (! $tratamiento) {
-            return 0;
-        }
-
-        return $this->getVersionTratamientoPaciente($paciente)?->sesiones()->count() ?? 0;
+        return $this->getTratamiento($version->tipo, (string) $nombre, $version);
     }
 
     /** Obtiene o crea la versión vigente del catálogo asignado al paciente. */
@@ -70,39 +50,41 @@ class TratamientoService
             return null;
         }
 
-        [$pais, $diagnosticoDirname] = $tratamiento;
+        [$pais, , $tipo] = $tratamiento;
 
-        return $this->sincronizarCatalogo($pais, $diagnosticoDirname);
+        return $this->sincronizarCatalogo($pais, $tipo);
     }
 
     /**
-     * Sincroniza en el catálogo todos los tratamientos existentes en disco.
+     * Sincroniza el catálogo declarado en content.json.
      *
      * @param array<int, string>|null $paises Códigos de país a importar; `null` importa todos.
-     * @param array<int, string>|null $tipos Directorios de tratamiento a importar; `null` importa todos.
+     * @param array<int, string>|null $tipos Tipos lógicos de tratamiento a importar; `null` importa todos.
      * @return array<int, array{pais: string, tipo: string, version_id: int, creada: bool}>
      */
     public function sincronizarCatalogos(?array $paises = null, ?array $tipos = null): array
     {
-        $dirname = config('filesystems.multimedia.tratamientos_dirname');
-        $basePath = storage_path("app/private/$dirname");
-
-        if (! File::isDirectory($basePath)) {
-            return [];
+        $catalogo = $this->leerCatalogo();
+        $seleccionados = [];
+        $rutasUsadas = [];
+        foreach ($catalogo['countries'] as $pais => $tratamientos) {
+            if ($paises !== null && ! in_array($pais, $paises, true)) {
+                continue;
+            }
+            foreach ($tratamientos as $tratamiento) {
+                if (! is_array($tratamiento) || ! isset($tratamiento['id']) || ! is_string($tratamiento['id'])) {
+                    throw new RuntimeException("$pais/tratamiento: id debe ser un string no vacío.");
+                }
+                if ($tipos !== null && ! in_array($tratamiento['id'], $tipos, true)) {
+                    continue;
+                }
+                $this->validarYNormalizarTratamiento($pais, $tratamiento, $rutasUsadas);
+                $seleccionados[] = ['pais' => $pais, 'tipo' => $tratamiento['id']];
+            }
         }
-
-        $paisesDisponibles = array_map('basename', File::directories($basePath));
-        $paises = $paises === null ? $paisesDisponibles : array_intersect($paisesDisponibles, $paises);
-        $tiposDisponibles = array_filter(array_unique([
-            config('filesystems.multimedia.tratamientos_diabetes_dirname'),
-            config('filesystems.multimedia.tratamientos_hipertension_dirname'),
-            config('filesystems.multimedia.tratamientos_diabetes_hipertension_dirname'),
-        ]));
-        $tipos = $tipos === null ? $tiposDisponibles : array_intersect($tiposDisponibles, $tipos);
         $resultado = [];
 
-        foreach ($paises as $pais) {
-            foreach ($tipos as $tipo) {
+        foreach ($seleccionados as ['pais' => $pais, 'tipo' => $tipo]) {
                 $version = $this->sincronizarCatalogo($pais, $tipo);
 
                 if (! $version) {
@@ -115,30 +97,97 @@ class TratamientoService
                     'version_id' => $version->id,
                     'creada' => $version->wasRecentlyCreated,
                 ];
-            }
         }
 
         return $resultado;
     }
 
-    /** Cuenta sesiones cuyo conjunto completo de archivos fue leído en el entrenamiento. */
+    /** Cuenta las sesiones con elementos cuyo progreso está completamente marcado. */
     public function getCantidadSesionesCompletadas(Entrenamiento $entrenamiento): int
     {
+        return $this->getSesionesConProgreso($entrenamiento)
+            ->filter(fn (TratamientoSesion $sesion) => $this->sesionEstaCompleta($sesion))
+            ->count();
+    }
+
+    /** Cuenta semanas cuyas sesiones reales con contenido están completas. */
+    public function getCantidadSemanasCompletadas(Entrenamiento $entrenamiento): int
+    {
+        return $this->getSesionesConProgreso($entrenamiento)
+            ->groupBy('semana')
+            ->filter(fn ($sesiones) => $sesiones->isNotEmpty() && $sesiones->every(
+                fn (TratamientoSesion $sesion) => $this->sesionEstaCompleta($sesion)
+            ))
+            ->count();
+    }
+
+    /**
+     * Resume el estado derivado del entrenamiento, sin persistir resultados
+     * que podrían quedar obsoletos tras una reversión.
+     *
+     * @return array{sesiones_totales: int, sesiones_completadas: int, semanas_totales: int, semanas_completadas: int}
+     */
+    public function getResumenProgresoEntrenamiento(Entrenamiento $entrenamiento): array
+    {
+        $sesiones = $this->getSesionesConProgreso($entrenamiento);
+        $sesionesCompletadas = $sesiones->filter(fn (TratamientoSesion $sesion) => $this->sesionEstaCompleta($sesion));
+
+        return [
+            'sesiones_totales' => $sesiones->count(),
+            'sesiones_completadas' => $sesionesCompletadas->count(),
+            'semanas_totales' => $sesiones->pluck('semana')->unique()->count(),
+            'semanas_completadas' => $sesiones->groupBy('semana')
+                ->filter(fn ($sesionesSemana) => $sesionesSemana->isNotEmpty() && $sesionesSemana->every(
+                    fn (TratamientoSesion $sesion) => $this->sesionEstaCompleta($sesion)
+                ))
+                ->count(),
+        ];
+    }
+
+    /** @return \Illuminate\Support\Collection<int, TratamientoSesion> */
+    private function getSesionesConProgreso(Entrenamiento $entrenamiento)
+    {
         if (! $entrenamiento->tratamiento_version_id) {
-            return 0;
+            return collect();
+        }
+
+        if ($entrenamiento->relationLoaded('tratamientoVersion')
+            && $entrenamiento->tratamientoVersion?->relationLoaded('sesiones')
+            && $entrenamiento->relationLoaded('progresoElementos')) {
+            $completados = $entrenamiento->progresoElementos
+                ->where('completado', true)
+                ->pluck('tratamiento_elemento_id');
+
+            return $entrenamiento->tratamientoVersion->sesiones
+                ->filter(fn (TratamientoSesion $sesion) => $sesion->relationLoaded('elementos') && $sesion->elementos->isNotEmpty())
+                ->map(function (TratamientoSesion $sesion) use ($completados) {
+                    $sesion->setAttribute('elementos_count', $sesion->elementos->count());
+                    $sesion->setAttribute('elementos_completados_count', $sesion->elementos->pluck('id')->intersect($completados)->count());
+
+                    return $sesion;
+                })->values();
         }
 
         return TratamientoSesion::query()
             ->where('tratamiento_version_id', $entrenamiento->tratamiento_version_id)
-            ->has('multimedia')
-            ->withCount('multimedia')
-            ->withCount(['multimedia as multimedia_leida_count' => fn ($query) => $query->whereHas(
-                'lecturas',
-                fn ($lecturas) => $lecturas->where('entrenamiento_id', $entrenamiento->id),
+            ->has('elementos')
+            ->withCount('elementos')
+            ->withCount(['elementos as elementos_completados_count' => fn ($query) => $query->whereHas(
+                'progresos',
+                fn ($progresos) => $progresos
+                    ->where('paciente_id', $entrenamiento->paciente_id)
+                    ->where('entrenamiento_id', $entrenamiento->id)
+                    ->where('completado', true),
             )])
-            ->get()
-            ->filter(fn (TratamientoSesion $sesion) => $sesion->multimedia_count === $sesion->multimedia_leida_count)
-            ->count();
+            ->orderBy('semana')
+            ->orderBy('sesion')
+            ->get();
+    }
+
+    private function sesionEstaCompleta(TratamientoSesion $sesion): bool
+    {
+        return $sesion->elementos_count > 0
+            && $sesion->elementos_count === $sesion->elementos_completados_count;
     }
 
     /**
@@ -206,30 +255,43 @@ class TratamientoService
         return null;
     }
 
-    /**
-     * Construye la estructura de respuesta del tratamiento a partir de su configuración.
-     */
+    /** Construye la respuesta desde la versión inmutable ya persistida. */
     private function getTratamiento(string $tipo, string $nombre, ?TratamientoVersion $version): array
     {
         $sesiones = $version
-            ? $version->sesiones()->with('multimedia')->orderBy('semana')->orderBy('sesion')->get()
+            ? $version->sesiones()
+                ->with([
+                    'elementos' => fn ($query) => $query->orderBy('orden'),
+                    'elementos.multimedia',
+                ])
+                ->orderBy('semana')
+                ->orderBy('sesion')
+                ->get()
             : collect();
-        $semanas = $sesiones->groupBy('semana')->map(fn ($sesionesSemana, $semana) => [
-            'id' => (int) $semana,
-            'title' => "Semana $semana",
-            'sesiones' => $sesionesSemana->map(fn (TratamientoSesion $sesion) => [
-                'id' => $sesion->sesion,
-                'title' => "Sesión {$sesion->sesion}",
-                'content' => $sesion->multimedia
-                    ->sortBy('ruta', SORT_NATURAL | SORT_FLAG_CASE)
-                    ->map(fn (TratamientoMultimedia $multimedia) => [
-                        'tratamiento_multimedia_id' => $multimedia->id,
-                        'type' => $multimedia->tipo,
-                        'title' => basename($multimedia->ruta),
-                        'link' => route('multimedia', ['path' => $multimedia->ruta]),
-                    ])->values()->all(),
-            ])->values()->all(),
-        ])->values()->all();
+        $semanasContenido = $version?->contenido['sessions'] ?? [];
+        $semanas = $sesiones->groupBy('semana')->map(function ($sesionesSemana, $semana) use ($semanasContenido) {
+            $semanaContenido = $semanasContenido[$semana - 1] ?? [];
+            unset($semanaContenido['subSessions']);
+
+            return array_merge($semanaContenido, [
+                // La semana se identifica por la posición persistida, no por Session.id.
+                'id' => (int) $semana,
+                'title' => $semanaContenido['title'] ?? "Semana $semana",
+                'sesiones' => $sesionesSemana->map(function (TratamientoSesion $sesion) {
+                    $sesionContenido = $sesion->contenido;
+                    unset($sesionContenido['multimedia']);
+
+                    return array_merge($sesionContenido, [
+                        'id' => $sesion->sesion,
+                        'title' => $sesionContenido['title'] ?? "Sesión {$sesion->sesion}",
+                        'content' => $sesion->elementos
+                            ->map(fn ($elemento) => $this->transformarElementoParaApi($elemento))
+                            ->values()
+                            ->all(),
+                    ]);
+                })->values()->all(),
+            ]);
+        })->values()->all();
 
         return [
             'tratamiento' => [
@@ -241,103 +303,242 @@ class TratamientoService
     }
 
     /**
-     * Importa la estructura de archivos y retorna una versión inmutable.
-     * Un cambio en nombre, contenido o ubicación crea una nueva versión.
+     * Conserva el contenido lógico del elemento y reemplaza únicamente sus
+     * referencias de recursos por enlaces construidos desde las asociaciones
+     * persistidas.
+     *
+     * @return array<string, mixed>
+     */
+    private function transformarElementoParaApi($elemento): array
+    {
+        $contenido = $elemento->contenido;
+        $recursos = $elemento->multimedia->keyBy('tipo');
+        $resultado = array_merge($contenido, [
+            'tratamiento_elemento_id' => $elemento->id,
+        ]);
+
+        foreach (['AUDIO' => 'audio', 'IMAGE' => 'image', 'VIDEO' => 'video'] as $tipo => $campo) {
+            /** @var TratamientoMultimedia|null $recurso */
+            $recurso = $recursos->get($tipo);
+            if ($recurso) {
+                $resultado[$campo] = $this->linkMultimedia($recurso);
+            }
+        }
+
+        if ($elemento->tipo === 'VIDEO' && ($video = $recursos->get('VIDEO'))) {
+            $resultado['link'] = $this->linkMultimedia($video);
+        }
+
+        return $resultado;
+    }
+
+    private function linkMultimedia(TratamientoMultimedia $multimedia): string
+    {
+        $dirname = trim((string) config('filesystems.multimedia.tratamientos_dirname'), '/');
+
+        return route('multimedia', ['path' => "$dirname/{$multimedia->ruta}"]);
+    }
+
+    /**
+     * Importa el tratamiento lógico y sus recursos explícitamente declarados.
+     * Cualquier cambio de contenido lógico, ruta o bytes de un recurso crea una versión.
      */
     private function sincronizarCatalogo(string $pais, string $tipo): ?TratamientoVersion
     {
-        $dirname = config('filesystems.multimedia.tratamientos_dirname');
-        $basePath = storage_path("app/private/$dirname/$pais/$tipo");
-
-        if (! File::isDirectory($basePath)) {
+        $catalogo = $this->leerCatalogo();
+        $tratamiento = collect($catalogo['countries'][$pais] ?? [])->firstWhere('id', $tipo);
+        if ($tratamiento === null) {
             return null;
         }
 
-        $contenido = [];
-        $sesiones = [];
-        foreach ($this->getDirectoriosConNombre($basePath, 'semana-') as $semanaPath) {
-            $semana = $this->getNumeroDesdeNombre(basename($semanaPath));
-            foreach ($this->getDirectoriosConNombre($semanaPath, 'sesion-') as $sesionPath) {
-                $sesion = $this->getNumeroDesdeNombre(basename($sesionPath));
-                $sesiones[] = ['semana' => $semana, 'sesion' => $sesion];
-                foreach (File::files($sesionPath) as $archivo) {
-                    $ruta = $this->getPathRelativoStorage($archivo->getPathname());
-                    $mime = File::mimeType($archivo->getPathname()) ?: 'application/octet-stream';
-                    $contenido[] = [
-                        'semana' => $semana,
-                        'sesion' => $sesion,
-                        'ruta' => $ruta,
-                        'tipo' => $this->getTipoContenido($mime),
-                        'checksum' => hash_file('sha256', $archivo->getPathname()),
-                    ];
-                }
-            }
-        }
-
-        usort($contenido, fn (array $a, array $b) => [$a['semana'], $a['sesion'], $a['ruta']] <=> [$b['semana'], $b['sesion'], $b['ruta']]);
-        usort($sesiones, fn (array $a, array $b) => [$a['semana'], $a['sesion']] <=> [$b['semana'], $b['sesion']]);
-        $hash = hash('sha256', json_encode(['sesiones' => $sesiones, 'contenido' => $contenido], JSON_THROW_ON_ERROR));
-        $version = TratamientoVersion::query()->firstOrCreate(['pais' => $pais, 'tipo' => $tipo, 'hash' => $hash]);
+        $normalizado = $this->validarYNormalizarTratamiento($pais, $tratamiento);
+        $hash = hash('sha256', json_encode([
+            'tratamiento' => $tratamiento,
+            'recursos' => $normalizado['recursos'],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
+        $version = TratamientoVersion::query()->firstOrCreate([
+            'pais' => $pais, 'tipo' => $tipo, 'hash' => $hash,
+        ], ['contenido' => $tratamiento]);
 
         if ($version->wasRecentlyCreated) {
-            foreach ($sesiones as $datosSesion) {
-                $archivos = collect($contenido)->where('semana', $datosSesion['semana'])->where('sesion', $datosSesion['sesion']);
-                $sesion = $version->sesiones()->create($datosSesion);
-                $sesion->multimedia()->createMany($archivos->map(fn (array $archivo) => [
-                    'ruta' => $archivo['ruta'], 'tipo' => $archivo['tipo'], 'checksum' => $archivo['checksum'],
-                ])->all());
-            }
+            DB::transaction(function () use ($version, $normalizado): void {
+                foreach ($normalizado['sesiones'] as $datosSesion) {
+                    $sesion = $version->sesiones()->create([
+                        'semana' => $datosSesion['semana'],
+                        'sesion' => $datosSesion['sesion'],
+                        'contenido' => $datosSesion['contenido'],
+                    ]);
+                    foreach ($datosSesion['elementos'] as $datosElemento) {
+                        $elemento = $sesion->elementos()->create([
+                            'tipo' => $datosElemento['tipo'],
+                            'orden' => $datosElemento['orden'],
+                            'contenido' => $datosElemento['contenido'],
+                        ]);
+                        $elemento->multimedia()->createMany($datosElemento['recursos']);
+                    }
+                }
+            });
         }
 
         return $version;
     }
 
-    /**
-     * Filtra los subdirectorios cuyo nombre cumple el formato "{prefijo}N".
-     */
-    private function getDirectoriosConNombre(string $path, string $prefijo): array
+    /** @return array{countries: array<string, array<int, array<string, mixed>>>} */
+    private function leerCatalogo(): array
     {
-        return array_values(array_filter(
-            File::directories($path),
-            fn (string $directory) => preg_match('/^'.preg_quote($prefijo, '/').'\\d+$/', basename($directory)) === 1
-        ));
+        $dirname = trim((string) config('filesystems.multimedia.tratamientos_dirname'), '/');
+        $path = storage_path("app/private/$dirname/content.json");
+        if (! File::isFile($path)) {
+            throw new RuntimeException("No se encontró content.json en $path.");
+        }
+
+        try {
+            $catalogo = json_decode(File::get($path), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new RuntimeException("content.json no contiene JSON válido: {$exception->getMessage()}", previous: $exception);
+        }
+
+        if (! is_array($catalogo) || ! isset($catalogo['countries']) || ! is_array($catalogo['countries'])) {
+            throw new RuntimeException('content.json: falta la estructura obligatoria countries.');
+        }
+
+        return $catalogo;
     }
 
     /**
-     * Extrae el primer número incluido en el nombre de un directorio.
+     * Valida el contrato y prepara los datos persistibles sin usar el filesystem
+     * para deducir ninguna asociación lógica.
+     *
+     * @param array<string, mixed> $tratamiento
+     * @return array{sesiones: array<int, array<string, mixed>>, recursos: array<int, array{ruta: string, checksum: string}>}
      */
-    private function getNumeroDesdeNombre(string $nombre): int
+    private function validarYNormalizarTratamiento(string $pais, array $tratamiento, ?array &$rutasGlobales = null): array
     {
-        preg_match('/\d+/', $nombre, $matches);
+        $contexto = "$pais/tratamiento";
+        $this->requerirString($tratamiento, 'id', $contexto);
+        $this->requerirString($tratamiento, 'name', $contexto);
+        if (! isset($tratamiento['sessions']) || ! is_array($tratamiento['sessions'])) {
+            throw new RuntimeException("$contexto: sessions debe ser un array.");
+        }
 
-        return (int) ($matches[0] ?? 0);
+        $sesiones = [];
+        $recursosHash = [];
+        $rutasUsadas = &$rutasGlobales;
+        if ($rutasUsadas === null) {
+            $rutasUsadas = [];
+        }
+        foreach ($tratamiento['sessions'] as $indiceSemana => $semanaContenido) {
+            $contextoSemana = "$contexto/semana[$indiceSemana]";
+            if (! is_array($semanaContenido)) {
+                throw new RuntimeException("$contextoSemana debe ser un objeto.");
+            }
+            $this->requerirEntero($semanaContenido, 'id', $contextoSemana);
+            if (! isset($semanaContenido['subSessions']) || ! is_array($semanaContenido['subSessions'])) {
+                throw new RuntimeException("$contextoSemana: subSessions debe ser un array.");
+            }
+            foreach ($semanaContenido['subSessions'] as $indiceSubSesion => $subSesion) {
+                $contextoSesion = "$contextoSemana/subSession[$indiceSubSesion]";
+                if (! is_array($subSesion)) {
+                    throw new RuntimeException("$contextoSesion debe ser un objeto.");
+                }
+                $numeroSesion = $this->requerirEntero($subSesion, 'id', $contextoSesion);
+                if (! isset($subSesion['multimedia']) || ! is_array($subSesion['multimedia'])) {
+                    throw new RuntimeException("$contextoSesion: multimedia debe ser un array.");
+                }
+
+                $elementos = [];
+                foreach ($subSesion['multimedia'] as $orden => $elemento) {
+                    $contextoElemento = "$contextoSesion/multimedia[$orden]";
+                    if (! is_array($elemento)) {
+                        throw new RuntimeException("$contextoElemento debe ser un objeto.");
+                    }
+                    $tipo = $this->requerirString($elemento, 'type', $contextoElemento);
+                    $recursos = $this->validarRecursosElemento($tipo, $elemento, $contextoElemento, $rutasUsadas, $recursosHash);
+                    $elementos[] = ['tipo' => $tipo, 'orden' => $orden, 'contenido' => $elemento, 'recursos' => $recursos];
+                }
+                $sesiones[] = [
+                    'semana' => $indiceSemana + 1,
+                    'sesion' => $numeroSesion,
+                    'contenido' => $subSesion,
+                    'elementos' => $elementos,
+                ];
+            }
+        }
+
+        return ['sesiones' => $sesiones, 'recursos' => $recursosHash];
     }
 
     /**
-     * Convierte un tipo MIME en una categoría consumible por el cliente.
+     * @param array<string, mixed> $elemento
+     * @param array<string, true> $rutasUsadas
+     * @param array<int, array{ruta: string, checksum: string}> $recursosHash
+     * @return array<int, array{ruta: string, tipo: string, checksum: string}>
      */
-    private function getTipoContenido(string $mime): string
+    private function validarRecursosElemento(string $tipo, array $elemento, string $contexto, array &$rutasUsadas, array &$recursosHash): array
     {
-        if (str_starts_with($mime, 'image/')) {
-            return 'IMAGEN';
+        $campos = ['video', 'audio', 'image'];
+        if (! in_array($tipo, ['DESCRIPTION', 'VIDEO', 'QUIZ', 'METAS'], true)) {
+            throw new RuntimeException("$contexto: tipo de contenido desconocido '$tipo'.");
         }
 
-        if (str_starts_with($mime, 'video/')) {
-            return 'VIDEO';
+        $permitidos = match ($tipo) {
+            'DESCRIPTION' => ['audio' => 'AUDIO', 'image' => 'IMAGE'],
+            'VIDEO' => ['video' => 'VIDEO'],
+            'QUIZ', 'METAS' => [],
+        };
+        foreach ($campos as $campo) {
+            if (array_key_exists($campo, $elemento) && ! array_key_exists($campo, $permitidos)) {
+                throw new RuntimeException("$contexto: $tipo no puede tener recurso $campo.");
+            }
+        }
+        if ($tipo === 'VIDEO' && (! array_key_exists('video', $elemento) || ! is_string($elemento['video']) || trim($elemento['video']) === '')) {
+            throw new RuntimeException("$contexto: VIDEO debe tener un video no vacío.");
         }
 
-        if (str_starts_with($mime, 'audio/')) {
-            return 'AUDIO';
+        $recursos = [];
+        foreach ($permitidos as $campo => $tipoRecurso) {
+            if (! array_key_exists($campo, $elemento)) {
+                continue;
+            }
+            $ruta = $elemento[$campo];
+            if (! is_string($ruta) || trim($ruta) === '') {
+                throw new RuntimeException("$contexto: el path $campo debe ser un string no vacío.");
+            }
+            $ruta = trim($ruta);
+            if (str_starts_with($ruta, '/') || str_contains($ruta, '\\') || in_array('..', explode('/', $ruta), true)) {
+                throw new RuntimeException("$contexto: el path $campo no es relativo y seguro.");
+            }
+            if (isset($rutasUsadas[$ruta])) {
+                throw new RuntimeException("$contexto: el path multimedia '$ruta' está repetido.");
+            }
+            $pathFisico = storage_path('app/private/'.trim((string) config('filesystems.multimedia.tratamientos_dirname'), '/')."/$ruta");
+            if (! File::isFile($pathFisico)) {
+                throw new RuntimeException("$contexto: no existe el recurso físico '$ruta'.");
+            }
+            $rutasUsadas[$ruta] = true;
+            $checksum = hash_file('sha256', $pathFisico);
+            $recursosHash[] = ['ruta' => $ruta, 'checksum' => $checksum];
+            $recursos[] = ['ruta' => $ruta, 'tipo' => $tipoRecurso, 'checksum' => $checksum];
         }
 
-        return 'ARCHIVO';
+        return $recursos;
     }
 
-    /**
-     * Convierte una ruta absoluta dentro del almacenamiento privado en una ruta relativa.
-     */
-    private function getPathRelativoStorage(string $path): string
+    /** @param array<string, mixed> $datos */
+    private function requerirString(array $datos, string $campo, string $contexto): string
     {
-        return str_replace(storage_path('app/private/'), '', $path);
+        if (! isset($datos[$campo]) || ! is_string($datos[$campo]) || trim($datos[$campo]) === '') {
+            throw new RuntimeException("$contexto: $campo debe ser un string no vacío.");
+        }
+        return $datos[$campo];
+    }
+
+    /** @param array<string, mixed> $datos */
+    private function requerirEntero(array $datos, string $campo, string $contexto): int
+    {
+        if (! isset($datos[$campo]) || ! is_int($datos[$campo])) {
+            throw new RuntimeException("$contexto: $campo debe ser un entero.");
+        }
+        return $datos[$campo];
     }
 }

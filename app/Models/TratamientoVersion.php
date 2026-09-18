@@ -8,7 +8,12 @@ class TratamientoVersion extends Model
 {
     protected $table = 'tratamiento_versiones';
 
-    protected $fillable = ['pais', 'tipo', 'hash'];
+    protected $fillable = ['pais', 'tipo', 'hash', 'contenido'];
+
+    protected function casts(): array
+    {
+        return ['contenido' => 'array'];
+    }
 
     public function sesiones()
     {

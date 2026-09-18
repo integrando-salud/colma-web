@@ -2,15 +2,13 @@
 
 namespace Tests\Unit;
 
-use App\Models\CentroSalud;
-use App\Models\Diagnostico;
-use App\Models\Paciente;
-use App\Models\Pais;
+use App\Models\TratamientoElemento;
+use App\Models\TratamientoVersion;
 use App\Services\TratamientoService;
-use Exception;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use Tests\TestCase;
 
 class TratamientoServiceTest extends TestCase
@@ -22,165 +20,114 @@ class TratamientoServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         config()->set('filesystems.multimedia.tratamientos_dirname', $this->tratamientosDirname);
-        config()->set('filesystems.multimedia.tratamientos_diabetes_dirname', 'DBT');
-        config()->set('filesystems.multimedia.tratamientos_hipertension_dirname', 'HTA');
-        config()->set('filesystems.multimedia.tratamientos_diabetes_hipertension_dirname', 'DBT_HTA');
     }
 
     protected function tearDown(): void
     {
         File::deleteDirectory(storage_path("app/private/$this->tratamientosDirname"));
-
         parent::tearDown();
     }
 
-    public function test_obtiene_el_tratamiento_de_diabetes_con_semanas_sesiones_y_archivos_ordenados(): void
+    public function test_importa_elementos_logicos_y_asocia_solo_los_recursos_declarados(): void
     {
-        $basePath = storage_path("app/private/$this->tratamientosDirname/AR/DBT");
-        File::makeDirectory("$basePath/semana-10/sesion-2", 0755, true);
-        File::makeDirectory("$basePath/semana-2/sesion-10", 0755, true);
-        File::makeDirectory("$basePath/semana-2/sesion-1", 0755, true);
-        File::makeDirectory("$basePath/semana-borrador/sesion-3", 0755, true);
-        File::makeDirectory("$basePath/semana-2/material-adicional", 0755, true);
-        File::put("$basePath/semana-2/sesion-1/zeta.pdf", 'pdf');
-        File::put("$basePath/semana-2/sesion-1/Foto.png", base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL2WQAAAABJRU5ErkJggg=='
-        ));
+        $this->crearCatalogo([
+            ['type' => 'DESCRIPTION', 'title' => 'Sin recurso'],
+            ['type' => 'DESCRIPTION', 'title' => 'Con audio e imagen', 'audio' => 'AR/DBT/audio.m4a', 'image' => 'AR/DBT/imagen.png'],
+            ['type' => 'VIDEO', 'title' => 'Video', 'video' => 'AR/DBT/video.mp4'],
+            ['type' => 'QUIZ', 'title' => 'Quiz', 'questions' => []],
+            ['type' => 'METAS', 'title' => 'Metas', 'metas' => []],
+        ]);
+        $this->crearRecurso('AR/DBT/audio.m4a');
+        $this->crearRecurso('AR/DBT/imagen.png');
+        $this->crearRecurso('AR/DBT/video.mp4');
 
-        $tratamiento = app(TratamientoService::class)->getTratamientoPaciente(
-            $this->pacienteConDiagnosticos([Diagnostico::DIABETES])
-        );
+        $resultado = app(TratamientoService::class)->sincronizarCatalogos();
 
-        $this->assertSame('DIABETES', $tratamiento['tratamiento']['tipo']);
-        $this->assertSame('Diabetes', $tratamiento['tratamiento']['nombre']);
-        $this->assertSame([2, 10], array_column($tratamiento['tratamiento']['semanas'], 'id'));
-        $this->assertSame([1, 10], array_column($tratamiento['tratamiento']['semanas'][0]['sesiones'], 'id'));
-        $this->assertSame(
-            ['Foto.png', 'zeta.pdf'],
-            array_column($tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'], 'title')
-        );
-        $this->assertSame(
-            ['IMAGEN', 'ARCHIVO'],
-            array_column($tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'], 'type')
-        );
-        $this->assertSame(
-            route('multimedia', ['path' => "$this->tratamientosDirname/AR/DBT/semana-2/sesion-1/Foto.png"]),
-            $tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'][0]['link']
-        );
-        $this->assertIsInt($tratamiento['tratamiento']['semanas'][0]['sesiones'][0]['content'][0]['tratamiento_multimedia_id']);
+        $this->assertCount(1, $resultado);
+        $version = TratamientoVersion::with('sesiones.elementos.multimedia')->sole();
+        $this->assertSame('DIABETES', $version->tipo);
+        $this->assertSame('DIABETES', $version->contenido['id']);
+        $this->assertSame(1, $version->sesiones->count());
+        $this->assertSame(5, TratamientoElemento::count());
+        $this->assertSame([0, 1, 2, 3, 4], $version->sesiones->sole()->elementos->sortBy('orden')->pluck('orden')->all());
+        $this->assertSame(3, $version->sesiones->sole()->elementos->flatMap->multimedia->count());
+        $this->assertSame(['AUDIO', 'IMAGE', 'VIDEO'], $version->sesiones->sole()->elementos->flatMap->multimedia->sortBy('tipo')->pluck('tipo')->values()->all());
+        $this->assertSame(0, $version->sesiones->sole()->elementos->firstWhere('tipo', 'QUIZ')->multimedia->count());
+        $this->assertSame(0, $version->sesiones->sole()->elementos->firstWhere('tipo', 'METAS')->multimedia->count());
+        $this->assertSame('AR/DBT/video.mp4', $version->sesiones->sole()->elementos->firstWhere('tipo', 'VIDEO')->multimedia->sole()->ruta);
     }
 
-    public function test_obtiene_el_tratamiento_de_hipertension_y_el_combinado(): void
+    public function test_reutiliza_la_version_si_el_contenido_y_los_recursos_no_cambian_y_crea_otra_si_cambian_los_bytes(): void
     {
-        File::makeDirectory(storage_path("app/private/$this->tratamientosDirname/AR/HTA"), 0755, true);
-        File::makeDirectory(storage_path("app/private/$this->tratamientosDirname/AR/DBT_HTA"), 0755, true);
+        $this->crearCatalogo([['type' => 'VIDEO', 'video' => 'AR/DBT/video.mp4']]);
+        $this->crearRecurso('AR/DBT/video.mp4', 'primera version');
 
         $service = app(TratamientoService::class);
+        $service->sincronizarCatalogos();
+        $service->sincronizarCatalogos();
+        $this->assertSame(1, TratamientoVersion::count());
 
-        $this->assertSame('HTA', $service->getTratamientoPaciente(
-            $this->pacienteConDiagnosticos([Diagnostico::HIPERTENSION_ARTERIAL])
-        )['tratamiento']['tipo']);
-        $this->assertSame('DBT_HTA', $service->getTratamientoPaciente(
-            $this->pacienteConDiagnosticos([Diagnostico::DIABETES, Diagnostico::HIPERTENSION_ARTERIAL])
-        )['tratamiento']['tipo']);
+        $this->crearRecurso('AR/DBT/video.mp4', 'segunda version');
+        $service->sincronizarCatalogos();
+        $this->assertSame(2, TratamientoVersion::count());
     }
 
-    public function test_no_retorna_tratamiento_ni_sesiones_para_diagnosticos_sin_configuracion(): void
+    #[DataProvider('elementosInvalidos')]
+    public function test_rechaza_contrato_multimedia_invalido(array $elemento, string $mensaje): void
     {
-        $paciente = $this->pacienteConDiagnosticos([Diagnostico::DEPRESION]);
-        $service = app(TratamientoService::class);
+        $this->crearCatalogo([$elemento]);
 
-        $this->assertNull($service->getTratamientoPaciente($paciente));
-        $this->assertSame(0, $service->getCantidadSesionesPaciente($paciente));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage($mensaje);
+        app(TratamientoService::class)->sincronizarCatalogos();
     }
 
-    public function test_retorna_un_tratamiento_sin_semanas_y_cero_sesiones_si_no_hay_material(): void
+    public static function elementosInvalidos(): array
     {
-        $paciente = $this->pacienteConDiagnosticos([Diagnostico::DIABETES]);
-        $service = app(TratamientoService::class);
-
-        $this->assertSame([], $service->getTratamientoPaciente($paciente)['tratamiento']['semanas']);
-        $this->assertSame(0, $service->getCantidadSesionesPaciente($paciente));
+        return [
+            'video sin video' => [['type' => 'VIDEO'], 'VIDEO debe tener un video no vacío'],
+            'video con audio' => [['type' => 'VIDEO', 'video' => 'AR/DBT/video.mp4', 'audio' => 'AR/DBT/audio.m4a'], 'VIDEO no puede tener recurso audio'],
+            'description con video' => [['type' => 'DESCRIPTION', 'video' => 'AR/DBT/video.mp4'], 'DESCRIPTION no puede tener recurso video'],
+            'quiz con imagen' => [['type' => 'QUIZ', 'image' => 'AR/DBT/imagen.png'], 'QUIZ no puede tener recurso image'],
+            'metas con audio' => [['type' => 'METAS', 'audio' => 'AR/DBT/audio.m4a'], 'METAS no puede tener recurso audio'],
+            'tipo desconocido' => [['type' => 'PDF'], "tipo de contenido desconocido 'PDF'"],
+            'recurso vacio' => [['type' => 'DESCRIPTION', 'audio' => ''], 'path audio debe ser un string no vacío'],
+            'recurso inexistente' => [['type' => 'DESCRIPTION', 'audio' => 'AR/DBT/no-existe.m4a'], "no existe el recurso físico 'AR/DBT/no-existe.m4a'"],
+        ];
     }
 
-    public function test_solo_autoriza_multimedia_del_tratamiento_asignado_al_paciente(): void
+    public function test_rechaza_un_path_repetido_entre_elementos(): void
     {
-        $service = app(TratamientoService::class);
-        $paciente = $this->pacienteConDiagnosticos([Diagnostico::DIABETES]);
+        $this->crearCatalogo([
+            ['type' => 'DESCRIPTION', 'audio' => 'AR/DBT/audio.m4a'],
+            ['type' => 'DESCRIPTION', 'audio' => 'AR/DBT/audio.m4a'],
+        ]);
+        $this->crearRecurso('AR/DBT/audio.m4a');
 
-        $this->assertTrue($service->puedeAccederAMultimedia(
-            $paciente,
-            "$this->tratamientosDirname/AR/DBT/semana-1/sesion-1/video.mp4",
-        ));
-        $this->assertFalse($service->puedeAccederAMultimedia(
-            $paciente,
-            "$this->tratamientosDirname/AR/HTA/semana-1/sesion-1/video.mp4",
-        ));
-        $this->assertFalse($service->puedeAccederAMultimedia(
-            $paciente,
-            "$this->tratamientosDirname/BO/DBT/semana-1/sesion-1/video.mp4",
-        ));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("path multimedia 'AR/DBT/audio.m4a' está repetido");
+        app(TratamientoService::class)->sincronizarCatalogos();
     }
 
-    public function test_cuenta_solo_las_sesiones_dentro_de_las_semanas_del_tratamiento(): void
+    /** @param array<int, array<string, mixed>> $elementos */
+    private function crearCatalogo(array $elementos): void
     {
-        $basePath = storage_path("app/private/$this->tratamientosDirname/AR/DBT");
-        File::makeDirectory("$basePath/semana-1/sesion-1", 0755, true);
-        File::makeDirectory("$basePath/semana-1/sesion-2", 0755, true);
-        File::makeDirectory("$basePath/semana-2/sesion-1", 0755, true);
-        File::makeDirectory("$basePath/semana-borrador/sesion-3", 0755, true);
-        File::makeDirectory("$basePath/semana-1/material-adicional", 0755, true);
-
-        $cantidad = app(TratamientoService::class)->getCantidadSesionesPaciente(
-            $this->pacienteConDiagnosticos([Diagnostico::DIABETES])
-        );
-
-        $this->assertSame(3, $cantidad);
+        $contenido = ['countries' => ['AR' => [[
+            'id' => 'DIABETES', 'name' => 'Diabetes', 'sessions' => [[
+                'id' => 99, 'title' => 'Semana declarada', 'subSessions' => [[
+                    'id' => 7, 'title' => 'Sesión declarada', 'multimedia' => $elementos,
+                ]],
+            ]],
+        ]]]];
+        File::ensureDirectoryExists(storage_path("app/private/$this->tratamientosDirname"));
+        File::put(storage_path("app/private/$this->tratamientosDirname/content.json"), json_encode($contenido, JSON_THROW_ON_ERROR));
     }
 
-    public function test_lanza_una_excepcion_si_no_se_puede_determinar_el_pais_del_paciente(): void
+    private function crearRecurso(string $ruta, string $contenido = 'recurso'): void
     {
-        $paciente = new Paciente();
-        $paciente->setRelation('diagnosticos', new Collection());
-
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No se pudo determinar el país del paciente');
-
-        app(TratamientoService::class)->getTratamientoPaciente($paciente);
-    }
-
-    public function test_no_cuenta_sesiones_si_no_se_puede_determinar_el_pais_del_paciente(): void
-    {
-        $paciente = new Paciente();
-        $paciente->setRelation('diagnosticos', new Collection());
-
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No se pudo determinar el país del paciente');
-
-        app(TratamientoService::class)->getCantidadSesionesPaciente($paciente);
-    }
-
-    /**
-     * Crea un paciente en memoria con los diagnósticos y país requeridos por el servicio.
-     *
-     * @param array<int> $diagnosticosIds
-     */
-    private function pacienteConDiagnosticos(array $diagnosticosIds): Paciente
-    {
-        $diagnosticos = collect($diagnosticosIds)->map(function (int $id) {
-            $diagnostico = new Diagnostico();
-            $diagnostico->id = $id;
-
-            return $diagnostico;
-        });
-
-        $paciente = new Paciente();
-        $paciente->setRelation('diagnosticos', $diagnosticos);
-        $paciente->setRelation('centroSalud', new CentroSalud(['pais_id' => 1]));
-        $paciente->centroSalud->setRelation('pais', new Pais(['codigo' => 'AR']));
-
-        return $paciente;
+        $path = storage_path("app/private/$this->tratamientosDirname/$ruta");
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, $contenido);
     }
 }
