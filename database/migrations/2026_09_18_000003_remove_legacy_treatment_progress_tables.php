@@ -17,14 +17,27 @@ return new class extends Migration
         Schema::dropIfExists('cuestionarios_preguntas');
         Schema::dropIfExists('cuestionarios');
 
-        Schema::table('tratamiento_multimedia', function (Blueprint $table) {
-            // Las claves foráneas existentes usan los índices compuestos
-            // transitorios. Se crean índices simples antes de eliminarlos.
-            $table->index('tratamiento_sesion_id');
-            $table->dropForeign(['tratamiento_sesion_id']);
-            $table->dropUnique('tratamiento_multimedia_ruta_unica');
-            $table->dropIndex(['tratamiento_sesion_id']);
-            $table->dropColumn('tratamiento_sesion_id');
+        $hasLegacySession = Schema::hasColumn('tratamiento_multimedia', 'tratamiento_sesion_id');
+        $foreignKeys = collect(Schema::getForeignKeys('tratamiento_multimedia'));
+        $indexes = collect(Schema::getIndexes('tratamiento_multimedia'));
+
+        Schema::table('tratamiento_multimedia', function (Blueprint $table) use ($hasLegacySession, $foreignKeys, $indexes) {
+            if ($hasLegacySession) {
+                $foreignKey = $foreignKeys->first(
+                    fn (array $foreignKey) => $foreignKey['columns'] === ['tratamiento_sesion_id']
+                );
+
+                if ($foreignKey) {
+                    $table->dropForeign($foreignKey['name']);
+                }
+
+                if ($indexes->contains('name', 'tratamiento_multimedia_ruta_unica')) {
+                    $table->dropUnique('tratamiento_multimedia_ruta_unica');
+                }
+
+                $table->dropColumn('tratamiento_sesion_id');
+            }
+
             $table->foreignId('tratamiento_elemento_id')->nullable(false)->change();
         });
 
