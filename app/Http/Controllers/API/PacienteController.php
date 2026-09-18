@@ -8,6 +8,7 @@ use App\Services\DatosClinicosService;
 use App\Services\PacienteService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -40,6 +41,11 @@ class PacienteController extends PacienteAutenticadoController
             return response()->json([
                 'message' => 'Datos sincronizados con éxito.',
             ]);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'message' => 'Los datos de progreso no son válidos.',
+                'errors' => $exception->errors(),
+            ], 422);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -76,30 +82,74 @@ class PacienteController extends PacienteAutenticadoController
     }
 
     /**
-     * Obtiene los contenidos multimedia completados del entrenamiento vigente.
+     * Obtiene los elementos lógicos completados del entrenamiento vigente.
      *
      * La aplicación usa los identificadores retornados para restaurar el avance
      * luego de una reinstalación o un cambio de dispositivo. Solo se consideran
-     * las lecturas asociadas al último entrenamiento activo del paciente.
+     * los estados actuales asociados al último entrenamiento activo del paciente.
      *
      * @param  Request  $request  Solicitud autenticada de la aplicación móvil.
      * @param  PacienteService  $pacienteService  Servicio que resuelve el entrenamiento actual.
-     * @return JsonResponse Respuesta con los identificadores del contenido completado.
+     * @return JsonResponse Respuesta con los identificadores de elementos completados.
      */
-    public function multimediaCompletados(Request $request, PacienteService $pacienteService): JsonResponse
+    public function elementosCompletados(Request $request, PacienteService $pacienteService): JsonResponse
     {
         $entrenamiento = $pacienteService->getEntrenamientoActual($this->pacienteAutenticado($request));
 
         return response()->json([
-            'multimedia_completados' => $entrenamiento
-                ? $entrenamiento->multimediaReads()
-                    ->whereNotNull('tratamiento_multimedia_id')
-                    ->orderBy('tratamiento_multimedia_id')
-                    ->pluck('tratamiento_multimedia_id')
-                    ->unique()
+            'elementos_completados' => $entrenamiento
+                ? $entrenamiento->progresoElementos()
+                    ->where('completado', true)
+                    ->orderBy('tratamiento_elemento_id')
+                    ->pluck('tratamiento_elemento_id')
                     ->values()
                     ->all()
                 : [],
+        ]);
+    }
+
+    /**
+     * Restaura datos funcionales de QUIZ y METAS sin mezclar su contenido con
+     * el estado pedagógico de progreso_elementos.
+     */
+    public function datosFuncionalesTratamiento(Request $request, PacienteService $pacienteService): JsonResponse
+    {
+        $entrenamiento = $pacienteService->getEntrenamientoActual($this->pacienteAutenticado($request));
+
+        if (! $entrenamiento) {
+            return response()->json(['quiz' => [], 'metas' => []]);
+        }
+
+        return response()->json([
+            'quiz' => $entrenamiento->respuestasQuiz()
+                ->orderBy('tratamiento_elemento_id')
+                ->get()
+                ->map(fn ($respuesta) => [
+                    'tratamiento_elemento_id' => $respuesta->tratamiento_elemento_id,
+                    'fecha_registro' => $respuesta->fecha_registro->format('Y-m-d H:i:s'),
+                    'fecha_usuario' => $respuesta->fecha_usuario->format('Y-m-d H:i:s'),
+                    'fecha_sincronizacion' => $respuesta->fecha_sincronizacion->format('Y-m-d H:i:s'),
+                    'preguntas' => $respuesta->preguntas,
+                ])->values(),
+            'metas' => $entrenamiento->metas()
+                ->orderBy('tratamiento_elemento_id')
+                ->orderBy('id_meta')
+                ->get()
+                ->map(fn ($meta) => [
+                    'id_meta' => $meta->id_meta,
+                    'tratamiento_elemento_id' => $meta->tratamiento_elemento_id,
+                    'tipo_actividad' => $meta->tipo_actividad,
+                    'actividad' => $meta->actividad,
+                    'lugar' => $meta->lugar,
+                    'acompaniante' => $meta->acompaniante,
+                    'meta_cumplida' => $meta->meta_cumplida,
+                    'motivo_incumplimiento' => $meta->motivo_incumplimiento,
+                    'fecha_registro' => $meta->fecha_registro->format('Y-m-d H:i:s'),
+                    'fecha_usuario' => $meta->fecha_usuario->format('Y-m-d H:i:s'),
+                    'fecha_sincronizacion' => $meta->fecha_sincronizacion->format('Y-m-d H:i:s'),
+                    'fecha_edicion' => $meta->fecha_edicion?->format('Y-m-d H:i:s'),
+                    'fecha_objetivo' => $meta->fecha_objetivo->format('Y-m-d H:i:s'),
+                ])->values(),
         ]);
     }
 }

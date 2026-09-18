@@ -15,13 +15,15 @@ class EntrenamientoResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $resumenProgreso = app(TratamientoService::class)->getResumenProgresoEntrenamiento($this->resource);
+
         return [
             'id' => $this->id,
             'paciente_id' => $this->paciente_id,
             'fecha' => $this->fecha->format('d/m/Y'),
-            'sesiones' => $this->sesiones,
+            'sesiones' => $resumenProgreso['sesiones_totales'],
             'seguimientos_mensuales' => $this->seguimientos_mensuales,
-            'sesiones_completadas' => app(TratamientoService::class)->getCantidadSesionesCompletadas($this->resource),
+            'sesiones_completadas' => $resumenProgreso['sesiones_completadas'],
             'seguimiento_dos_semanas_inicio' => $this->seguimiento_dos_semanas_inicio->format('d/m/Y'),
             'seguimiento_dos_semanas_fin' => $this->seguimiento_dos_semanas_fin->format('d/m/Y'),
             'llamada_mensual_1_inicio' => $this->llamada_mensual_1_inicio->format('d/m/Y'),

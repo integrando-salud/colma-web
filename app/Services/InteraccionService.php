@@ -16,9 +16,7 @@ use Throwable;
 
 class InteraccionService
 {
-    /**
-     * Crea el servicio con la dependencia que determina las sesiones del tratamiento.
-     */
+    /** Crea el servicio con la dependencia que asigna la versión del tratamiento. */
     public function __construct(private readonly TratamientoService $tratamientoService)
     {
     }
@@ -199,10 +197,6 @@ class InteraccionService
             $entrenamiento->tratamiento_version_id = $this->tratamientoService
                 ->getVersionTratamientoPaciente($paciente)?->id;
         }
-        $entrenamiento->sesiones = $entrenamiento->tratamiento_version_id
-            ? $entrenamiento->tratamientoVersion->sesiones()->count()
-            : $this->tratamientoService->getCantidadSesionesPaciente($paciente);
-
         if ($esNuevo) {
             $entrenamiento->seguimientos_mensuales = config('app.seguimientos_mensuales_nuevos');
         }

@@ -4,14 +4,14 @@ namespace App\Services;
 
 use App\Enums\AdvertenciaClinica;
 use App\Models\Alerta;
-use App\Models\Cuestionario;
 use App\Models\EstadoAnimo;
 use App\Models\Glucosa;
 use App\Models\Meta;
-use App\Models\MultimediaRead;
 use App\Models\Entrenamiento;
-use App\Models\TratamientoMultimedia;
+use App\Models\ProgresoElemento;
+use App\Models\TratamientoElemento;
 use App\Models\PresionArterial;
+use App\Models\RespuestaQuiz;
 use App\Models\User;
 use App\Support\UserTimezone;
 use Illuminate\Database\Eloquent\Collection;
@@ -52,12 +52,8 @@ class DatosClinicosService
                 $this->saveDatosEstadoAnimo($idPaciente, $data['estado_animo']);
             }
 
-            if (!empty($data['quiz'])) {
-                $this->saveDatosCuestionario($idPaciente, $data['quiz']);
-            }
-
             $idEntrenamiento = null;
-            if (!empty($data['metas']) || !empty($data['multimedia_read'])) {
+            if (!empty($data['quiz']) || !empty($data['metas']) || !empty($data['progreso_elementos'])) {
                 // Se conserva el mismo criterio de negocio usado para obtener el
                 // entrenamiento actual: el último entrenamiento activo del paciente.
                 $idEntrenamiento = $paciente->entrenamientos()
@@ -66,12 +62,16 @@ class DatosClinicosService
                     ->value('id');
             }
 
+            if (!empty($data['quiz'])) {
+                $this->saveRespuestasQuiz($idPaciente, $idEntrenamiento, $data['quiz']);
+            }
+
             if (!empty($data['metas'])) {
                 $this->saveDatosMetas($idPaciente, $idEntrenamiento, $data['metas']);
             }
 
-            if (!empty($data['multimedia_read'])) {
-                $this->saveDatosMultimediaRead($idPaciente, $idEntrenamiento, $data['multimedia_read']);
+            if (!empty($data['progreso_elementos'])) {
+                $this->saveProgresoElementos($idPaciente, $idEntrenamiento, $data['progreso_elementos']);
             }
 
             $paciente->update([
@@ -97,6 +97,7 @@ class DatosClinicosService
             'fecha_sincronizacion',
             'fecha_edicion',
             'fecha_objetivo',
+            'fecha_estado',
         ];
 
         array_walk_recursive($data, function (mixed &$value, string $key) use ($campos, $timezone): void {
@@ -379,54 +380,28 @@ class DatosClinicosService
     }
 
     /**
-     * Guarda cuestionarios y sus respuestas, identificándolos por el id de la aplicación móvil.
-     *
-     * @param array<int, array<string, mixed>> $data
-     */
-    protected function saveDatosCuestionario(int $idPaciente, array $data): void
-    {
-        foreach ($data as $d) {
-            $cuestionario = Cuestionario::updateOrCreate([
-                'paciente_id' => $idPaciente,
-                'id_app' => $d['id_quiz'],
-            ], [
-                'quiz_type' => $d['quiz_type'],
-                'fecha_registro' => $d['fecha_registro'],
-                'fecha_usuario' => $d['fecha_usuario'],
-                'fecha_sincronizacion' => $d['fecha_sincronizacion'],
-            ]);
-
-            foreach ($d['preguntas'] as $p) {
-                $cuestionario->preguntas()->updateOrCreate([
-                    'pregunta_index' => $p['pregunta_index'],
-                ], [
-                    'pregunta_texto' => $p['pregunta_texto'],
-                    'respuesta_usuario' => $p['respuesta_usuario'],
-                    'respuesta_usuario_texto' => $p['respuesta_usuario_texto'],
-                    'respuesta_correcta' => $p['respuesta_correcta'],
-                    'respuesta_correcta_texto' => $p['respuesta_correcta_texto'],
-                    'es_correcta' => $p['es_correcta'],
-                    'respuestas_posibles' => $p['posibles_respuestas'],
-                ]);
-            }
-        }
-    }
-
-    /**
      * Guarda o actualiza las metas enviadas por la aplicación móvil.
      *
      * @param array<int, array<string, mixed>> $data
      */
     protected function saveDatosMetas(int $idPaciente, ?int $idEntrenamiento, array $data): void
     {
+        $elementos = $this->elementosDelEntrenamiento($idEntrenamiento, $data, 'metas', 'METAS');
+
         foreach ($data as $d) {
-            Meta::updateOrCreate([
+            $meta = Meta::query()->where([
                 'paciente_id' => $idPaciente,
-                'id_app' => $d['id_meta'],
-            ], [
                 'entrenamiento_id' => $idEntrenamiento,
-                'semana' => $d['semana'],
-                'sesion' => $d['sesion'],
+                'tratamiento_elemento_id' => $d['tratamiento_elemento_id'],
+                'id_meta' => $d['id_meta'],
+            ])->first();
+            $fechaEstado = $d['fecha_edicion'] ?? $d['fecha_usuario'];
+
+            if ($meta && $fechaEstado <= ($meta->fecha_edicion ?? $meta->fecha_usuario)->format('Y-m-d H:i:s')) {
+                continue;
+            }
+
+            $atributos = [
                 'tipo_actividad' => $d['tipo_actividad'],
                 'actividad' => $d['actividad'],
                 'lugar' => data_get($d, 'lugar'),
@@ -438,52 +413,168 @@ class DatosClinicosService
                 'fecha_sincronizacion' => $d['fecha_sincronizacion'],
                 'fecha_edicion' => data_get($d, 'fecha_edicion'),
                 'fecha_objetivo' => $d['fecha_objetivo'],
+            ];
+
+            if ($meta) {
+                $meta->update($atributos);
+                continue;
+            }
+
+            Meta::create([
+                'paciente_id' => $idPaciente,
+                'entrenamiento_id' => $idEntrenamiento,
+                'tratamiento_elemento_id' => $elementos->get($d['tratamiento_elemento_id'])->id,
+                'id_meta' => $d['id_meta'],
+                ...$atributos,
             ]);
         }
     }
 
     /**
-     * Guarda o actualiza los contenidos multimedia que el paciente marcó como leídos.
+     * Persiste la respuesta funcional de cada bloque QUIZ sin alterar su
+     * progreso pedagógico. El JSON conserva el payload de preguntas completo.
      *
      * @param array<int, array<string, mixed>> $data
      */
-    protected function saveDatosMultimediaRead(int $idPaciente, ?int $idEntrenamiento, array $data): void
+    protected function saveRespuestasQuiz(int $idPaciente, ?int $idEntrenamiento, array $data): void
+    {
+        $elementos = $this->elementosDelEntrenamiento($idEntrenamiento, $data, 'quiz', 'QUIZ');
+
+        foreach ($data as $dato) {
+            $respuesta = RespuestaQuiz::query()->where([
+                'paciente_id' => $idPaciente,
+                'entrenamiento_id' => $idEntrenamiento,
+                'tratamiento_elemento_id' => $dato['tratamiento_elemento_id'],
+            ])->first();
+
+            if ($respuesta && $dato['fecha_usuario'] <= $respuesta->fecha_usuario->format('Y-m-d H:i:s')) {
+                continue;
+            }
+
+            $atributos = [
+                'preguntas' => $dato['preguntas'],
+                'fecha_registro' => $dato['fecha_registro'],
+                'fecha_usuario' => $dato['fecha_usuario'],
+                'fecha_sincronizacion' => $dato['fecha_sincronizacion'],
+            ];
+
+            if ($respuesta) {
+                $respuesta->update($atributos);
+                continue;
+            }
+
+            RespuestaQuiz::create([
+                'paciente_id' => $idPaciente,
+                'entrenamiento_id' => $idEntrenamiento,
+                'tratamiento_elemento_id' => $elementos->get($dato['tratamiento_elemento_id'])->id,
+                ...$atributos,
+            ]);
+        }
+    }
+
+    /**
+     * Resuelve y valida elementos de un único tipo para el entrenamiento activo.
+     *
+     * @param array<int, array<string, mixed>> $data
+     * @return Collection<int, TratamientoElemento>
+     */
+    private function elementosDelEntrenamiento(?int $idEntrenamiento, array $data, string $campo, string $tipo): Collection
     {
         if (! $idEntrenamiento) {
             throw ValidationException::withMessages([
-                'multimedia_read' => 'El paciente no tiene un entrenamiento activo para asociar el contenido leído.',
+                $campo => 'El paciente no tiene un entrenamiento activo para asociar los datos funcionales.',
             ]);
         }
 
         $entrenamiento = Entrenamiento::query()->findOrFail($idEntrenamiento);
-        $ids = collect($data)->pluck('tratamiento_multimedia_id')->unique();
-        $multimedia = TratamientoMultimedia::query()
+        $ids = collect($data)->pluck('tratamiento_elemento_id')->unique();
+        $elementos = TratamientoElemento::query()
             ->with('sesion.version')
             ->whereIn('id', $ids)
             ->get()
             ->keyBy('id');
 
-        foreach ($data as $d) {
-            $archivo = $multimedia->get($d['tratamiento_multimedia_id']);
-            if (! $archivo || $archivo->sesion->tratamiento_version_id !== $entrenamiento->tratamiento_version_id) {
+        foreach ($data as $dato) {
+            $elemento = $elementos->get($dato['tratamiento_elemento_id']);
+            if (! $elemento
+                || $elemento->tipo !== $tipo
+                || $elemento->sesion->tratamiento_version_id !== $entrenamiento->tratamiento_version_id) {
                 throw ValidationException::withMessages([
-                    'multimedia_read' => 'El contenido multimedia no pertenece al entrenamiento activo del paciente.',
+                    $campo => "El elemento debe ser $tipo y pertenecer al entrenamiento activo del paciente.",
                 ]);
             }
+        }
 
-            MultimediaRead::updateOrCreate([
-                'paciente_id' => $idPaciente,
-                'id_app' => $d['id_multimedia_read'],
-            ], [
-                'entrenamiento_id' => $idEntrenamiento,
-                'tratamiento_multimedia_id' => $archivo->id,
-                'tratamiento' => $archivo->sesion->version->tipo,
-                'semana' => $archivo->sesion->semana,
-                'sesion' => $archivo->sesion->sesion,
-                'tipo' => $archivo->tipo,
-                'key' => $d['multimedia_unique_key'],
-                'fecha_registro' => $d['fecha_registro'],
-                'fecha_sincronizacion' => $d['fecha_sincronizacion'],
+        return $elementos;
+    }
+
+    /**
+     * Sincroniza el estado genérico de los elementos que la aplicación marcó.
+     * El tipo, tratamiento, semana y sesión se derivan del elemento persistido.
+     *
+     * @param array<int, array<string, mixed>> $data
+     */
+    protected function saveProgresoElementos(int $idPaciente, ?int $idEntrenamiento, array $data): void
+    {
+        if (! $idEntrenamiento) {
+            throw ValidationException::withMessages([
+                'progreso_elementos' => 'El paciente no tiene un entrenamiento activo para asociar el progreso.',
+            ]);
+        }
+
+        $entrenamiento = Entrenamiento::query()->findOrFail($idEntrenamiento);
+        $ids = collect($data)->pluck('tratamiento_elemento_id')->unique();
+        $elementos = TratamientoElemento::query()
+            ->with('sesion.version')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        // Se valida el lote completo antes de efectuar cambios para conservar
+        // la atomicidad de la sincronización.
+        foreach ($data as $dato) {
+            $elemento = $elementos->get($dato['tratamiento_elemento_id']);
+            if (! $elemento
+                || ! in_array($elemento->tipo, ['DESCRIPTION', 'VIDEO', 'QUIZ', 'METAS'], true)
+                || $elemento->sesion->tratamiento_version_id !== $entrenamiento->tratamiento_version_id) {
+                throw ValidationException::withMessages([
+                    'progreso_elementos' => 'El elemento no pertenece al entrenamiento activo del paciente.',
+                ]);
+            }
+        }
+
+        foreach ($data as $dato) {
+            $elementoId = $dato['tratamiento_elemento_id'];
+            $porContexto = ProgresoElemento::query()
+                ->where('paciente_id', $idPaciente)
+                ->where('entrenamiento_id', $idEntrenamiento)
+                ->where('tratamiento_elemento_id', $elementoId)
+                ->first();
+
+            $progreso = $porContexto;
+            if (! $progreso) {
+                ProgresoElemento::create([
+                    'paciente_id' => $idPaciente,
+                    'entrenamiento_id' => $idEntrenamiento,
+                    'tratamiento_elemento_id' => $elementoId,
+                    'completado' => $dato['completado'],
+                    'fecha_estado' => $dato['fecha_estado'],
+                    'fecha_sincronizacion' => $dato['fecha_sincronizacion'],
+                ]);
+
+                continue;
+            }
+
+            // Los reintentos y eventos recibidos fuera de orden no reemplazan
+            // un estado conocido más reciente del mismo elemento.
+            if ($dato['fecha_estado'] <= $progreso->fecha_estado->format('Y-m-d H:i:s')) {
+                continue;
+            }
+
+            $progreso->update([
+                'completado' => $dato['completado'],
+                'fecha_estado' => $dato['fecha_estado'],
+                'fecha_sincronizacion' => $dato['fecha_sincronizacion'],
             ]);
         }
     }

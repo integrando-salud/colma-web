@@ -3,9 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\AdvertenciaClinica;
-use App\Models\Cuestionario;
 use App\Models\Paciente;
 use App\Models\PresionArterial;
+use App\Models\Entrenamiento;
+use App\Models\TratamientoVersion;
 use App\Models\User;
 use App\Services\DatosClinicosService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,20 +28,17 @@ class DatosClinicosServiceTest extends TestCase
     public function test_sincroniza_todos_los_tipos_de_datos_y_es_idempotente(): void
     {
         $paciente = $this->crearPacienteConUsuario();
-        $data = $this->datosSincronizacion($paciente->user_id);
+        $elementoMetas = $this->crearElementoMetasPara($paciente);
+        $data = $this->datosSincronizacion($paciente->user_id, $elementoMetas->id);
 
         $this->assertTrue($this->service->syncDatosApp($data));
         $this->assertDatabaseCount('glucosa', 1);
         $this->assertDatabaseCount('presion_arterial', 1);
         $this->assertDatabaseCount('estado_animo', 1);
-        $this->assertDatabaseCount('cuestionarios', 1);
-        $this->assertDatabaseCount('cuestionarios_preguntas', 2);
         $this->assertDatabaseCount('metas', 1);
-        $this->assertDatabaseCount('multimedia_read', 1);
         $this->assertDatabaseCount('alertas', 2);
         $this->assertDatabaseHas('glucosa', ['paciente_id' => $paciente->id, 'id_app' => 101, 'valor_mgdl' => 65]);
         $this->assertDatabaseHas('estado_animo', ['paciente_id' => $paciente->id, 'id_app' => 301, 'valor' => 18]);
-        $this->assertSame(2, Cuestionario::firstOrFail()->preguntas()->count());
         $this->assertNotNull($paciente->fresh()->fecha_ultima_sincronizacion);
 
         $data['glucosa'][0]['valor_mgdl'] = 68;
@@ -49,7 +47,7 @@ class DatosClinicosServiceTest extends TestCase
         $this->assertDatabaseCount('glucosa', 1);
         $this->assertDatabaseCount('alertas', 2);
         $this->assertDatabaseHas('glucosa', ['paciente_id' => $paciente->id, 'id_app' => 101, 'valor_mgdl' => 68]);
-        $this->assertDatabaseHas('metas', ['paciente_id' => $paciente->id, 'id_app' => 501, 'lugar' => null]);
+        $this->assertDatabaseHas('metas', ['paciente_id' => $paciente->id, 'id_meta' => 501, 'lugar' => null]);
     }
 
     public function test_devuelve_recomendaciones_de_glucosa_segun_el_umbral(): void
@@ -123,7 +121,31 @@ class DatosClinicosServiceTest extends TestCase
     }
 
     /** @return array<string, mixed> */
-    private function datosSincronizacion(int $userId): array
+    private function crearElementoMetasPara(Paciente $paciente)
+    {
+        $version = TratamientoVersion::create([
+            'pais' => 'AR',
+            'tipo' => 'HTA',
+            'hash' => hash('sha256', 'datos-clinicos-metas-'.$paciente->id),
+        ]);
+        $sesion = $version->sesiones()->create(['semana' => 1, 'sesion' => 1]);
+        $elemento = $sesion->elementos()->create([
+            'tipo' => 'METAS',
+            'orden' => 0,
+            'contenido' => ['type' => 'METAS'],
+        ]);
+
+        Entrenamiento::create(array_merge([
+            'paciente_id' => $paciente->id,
+            'tratamiento_version_id' => $version->id,
+            'fecha' => '2026-01-01',
+            'activo' => true,
+        ], array_fill_keys(array_keys(Entrenamiento::DIAS_SUMA), '2026-01-01')));
+
+        return $elemento;
+    }
+
+    private function datosSincronizacion(int $userId, int $elementoMetasId): array
     {
         $fecha = '2026-01-10 08:00:00';
 
@@ -140,21 +162,10 @@ class DatosClinicosServiceTest extends TestCase
             'estado_animo' => [array_merge([
                 'id_estado_animo' => 301, 'fecha_registro' => $fecha, 'fecha_usuario' => $fecha, 'fecha_sincronizacion' => $fecha,
             ], array_fill_keys(array_map(fn (int $n) => "pregunta_$n", range(1, 9)), 2))],
-            'quiz' => [[
-                'id_quiz' => 401, 'quiz_type' => 'hta', 'fecha_registro' => $fecha, 'fecha_usuario' => $fecha,
-                'fecha_sincronizacion' => $fecha, 'preguntas' => [
-                    ['pregunta_index' => 1, 'pregunta_texto' => 'Pregunta 1', 'respuesta_usuario' => 1, 'respuesta_usuario_texto' => 'Uno', 'respuesta_correcta' => 1, 'respuesta_correcta_texto' => 'Uno', 'es_correcta' => true, 'posibles_respuestas' => ['Uno', 'Dos']],
-                    ['pregunta_index' => 2, 'pregunta_texto' => 'Pregunta 2', 'respuesta_usuario' => 2, 'respuesta_usuario_texto' => 'Dos', 'respuesta_correcta' => 1, 'respuesta_correcta_texto' => 'Uno', 'es_correcta' => false, 'posibles_respuestas' => ['Uno', 'Dos']],
-                ],
-            ]],
             'metas' => [[
-                'id_meta' => 501, 'semana' => 1, 'sesion' => 2, 'tipo_actividad' => 'Caminar', 'actividad' => '30 minutos',
+                'id_meta' => 501, 'tratamiento_elemento_id' => $elementoMetasId, 'tipo_actividad' => 'Caminar', 'actividad' => '30 minutos',
                 'lugar' => null, 'acompaniante' => null, 'meta_cumplida' => false, 'motivo_incumplimiento' => null,
                 'fecha_registro' => $fecha, 'fecha_usuario' => $fecha, 'fecha_sincronizacion' => $fecha, 'fecha_edicion' => null, 'fecha_objetivo' => $fecha,
-            ]],
-            'multimedia_read' => [[
-                'id_multimedia_read' => 601, 'treatment_id' => 'hta', 'week_id' => 1, 'session_id' => 2,
-                'multimedia_type' => 'video', 'multimedia_unique_key' => 'video-1', 'fecha_registro' => $fecha, 'fecha_sincronizacion' => $fecha,
             ]],
         ];
     }

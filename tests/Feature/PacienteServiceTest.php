@@ -14,6 +14,7 @@ use App\Models\Interaccion;
 use App\Models\Meta;
 use App\Models\Paciente;
 use App\Models\PresionArterial;
+use App\Models\TratamientoVersion;
 use App\Models\User;
 use App\Services\PacienteService;
 use Database\Seeders\RolesSeeder;
@@ -318,12 +319,23 @@ class PacienteServiceTest extends TestCase
     public function test_resource_cuenta_solo_las_metas_cumplidas_del_entrenamiento_activo(): void
     {
         $paciente = $this->crearPaciente();
-        $entrenamientoActivo = $this->crearEntrenamiento($paciente);
-        $entrenamientoInactivo = $this->crearEntrenamiento($paciente, ['activo' => false]);
+        $version = TratamientoVersion::create([
+            'pais' => 'AR',
+            'tipo' => 'HTA',
+            'hash' => hash('sha256', 'metas-resource-'.$paciente->id),
+        ]);
+        $sesion = $version->sesiones()->create(['semana' => 1, 'sesion' => 1]);
+        $elementoMetas = $sesion->elementos()->create([
+            'tipo' => 'METAS',
+            'orden' => 0,
+            'contenido' => ['type' => 'METAS'],
+        ]);
+        $entrenamientoActivo = $this->crearEntrenamiento($paciente, ['tratamiento_version_id' => $version->id]);
+        $entrenamientoInactivo = $this->crearEntrenamiento($paciente, ['activo' => false, 'tratamiento_version_id' => $version->id]);
 
-        $this->crearMeta($paciente, $entrenamientoActivo, true);
-        $this->crearMeta($paciente, $entrenamientoActivo, false);
-        $this->crearMeta($paciente, $entrenamientoInactivo, true);
+        $this->crearMeta($paciente, $entrenamientoActivo, $elementoMetas->id, 1, true);
+        $this->crearMeta($paciente, $entrenamientoActivo, $elementoMetas->id, 2, false);
+        $this->crearMeta($paciente, $entrenamientoInactivo, $elementoMetas->id, 1, true);
 
         $this->service->cargarRelacionesParaResource($paciente);
         $detalle = (new PacienteResource($paciente))->resolve();
@@ -430,13 +442,13 @@ class PacienteServiceTest extends TestCase
         return $entrenamiento;
     }
 
-    private function crearMeta(Paciente $paciente, Entrenamiento $entrenamiento, bool $metaCumplida): Meta
+    private function crearMeta(Paciente $paciente, Entrenamiento $entrenamiento, int $tratamientoElementoId, int $idApp, bool $metaCumplida): Meta
     {
         return Meta::create([
             'paciente_id' => $paciente->id,
             'entrenamiento_id' => $entrenamiento->id,
-            'semana' => 1,
-            'sesion' => 1,
+            'tratamiento_elemento_id' => $tratamientoElementoId,
+            'id_meta' => $idApp,
             'tipo_actividad' => 'Caminata',
             'actividad' => 'Caminar 30 minutos',
             'lugar' => 'Parque',

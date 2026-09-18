@@ -4,19 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Cuestionario extends Model
+class RespuestaQuiz extends Model
 {
+    protected $table = 'respuestas_quiz';
+
     protected $fillable = [
-        'id_app',
         'paciente_id',
-        'quiz_type',
+        'entrenamiento_id',
+        'tratamiento_elemento_id',
+        'preguntas',
         'fecha_registro',
         'fecha_usuario',
         'fecha_sincronizacion',
     ];
 
     protected $casts = [
-        'id_app' => 'integer',
+        'preguntas' => 'array',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
         'fecha_sincronizacion' => 'datetime',
@@ -27,8 +30,13 @@ class Cuestionario extends Model
         return $this->belongsTo(Paciente::class);
     }
 
-    public function preguntas()
+    public function entrenamiento()
     {
-        return $this->hasMany(CuestionarioPregunta::class);
+        return $this->belongsTo(Entrenamiento::class);
+    }
+
+    public function tratamientoElemento()
+    {
+        return $this->belongsTo(TratamientoElemento::class);
     }
 }

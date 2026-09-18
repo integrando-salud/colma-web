@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Meta extends Model
 {
     protected $fillable = [
-        'id_app',
+        'id_meta',
         'paciente_id',
         'entrenamiento_id',
-        'semana',
-        'sesion',
+        'tratamiento_elemento_id',
         'tipo_actividad',
         'actividad',
         'lugar',
@@ -26,7 +25,7 @@ class Meta extends Model
     ];
 
     protected $casts = [
-        'id_app' => 'integer',
+        'id_meta' => 'integer',
         'meta_cumplida' => 'boolean',
         'fecha_registro' => 'datetime',
         'fecha_usuario' => 'datetime',
@@ -43,5 +42,10 @@ class Meta extends Model
     public function entrenamiento()
     {
         return $this->belongsTo(Entrenamiento::class);
+    }
+
+    public function tratamientoElemento()
+    {
+        return $this->belongsTo(TratamientoElemento::class);
     }
 }
