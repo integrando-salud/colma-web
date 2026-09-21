@@ -41,7 +41,7 @@ class AuthController extends Controller
         }
 
         $user = User::query()
-            ->with(['paciente', 'pais', 'centroSalud'])
+            ->with(['paciente.centroSalud.pais'])
             ->where('documento', $credentials['documento'])
             ->first();
 
