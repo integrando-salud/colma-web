@@ -59,6 +59,8 @@ class PacienteFactory extends Factory
                 'sexo' => $paciente->sexo,
                 'documento' => $paciente->documento,
                 'email' => $paciente->email,
+                'pais_id' => $paciente->centroSalud?->pais_id,
+                'centro_salud_id' => $paciente->centro_salud_id,
             ]);
             Bouncer::sync($user)->roles([User::ROL_PACIENTE]);
 
