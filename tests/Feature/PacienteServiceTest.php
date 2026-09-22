@@ -130,6 +130,42 @@ class PacienteServiceTest extends TestCase
         $this->assertSame('Seguimiento mensual 1', $fechas[1]['motivo']);
     }
 
+    public function test_los_proximos_contactos_de_entrenamientos_inactivos_no_se_muestran(): void
+    {
+        $usuario = $this->crearUsuario('operador-entrenamiento-inactivo');
+        $usuario->assign(User::ROL_SUPERUSUARIO);
+        $this->actingAs($usuario);
+        $paciente = $this->crearPaciente();
+        $entrenamientoInactivo = $this->crearEntrenamiento($paciente, ['activo' => false]);
+        $this->crearInteraccion($paciente, [
+            'entrenamiento_id' => $entrenamientoInactivo->id,
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            'nueva_fecha_contacto' => '2026-03-01',
+        ]);
+        $this->crearInteraccion($paciente, [
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            'nueva_fecha_contacto' => '2026-03-02',
+        ]);
+
+        $this->assertSame(
+            ['2026-03-02'],
+            $this->service->getFechasProximosContactosProgramados($paciente)
+                ->pluck('fecha')
+                ->map->toDateString()
+                ->all(),
+        );
+        $this->assertSame('2026-03-02', substr((string) $this->service->getFechaProximoContacto($paciente), 0, 10));
+        $this->assertSame('2026-03-02', substr((string) $this->service->queryGetPacientes()->firstOrFail()->nueva_fecha_contacto, 0, 10));
+
+        $this->service->cargarRelacionesParaResource($paciente);
+        $recurso = (new PacienteListResource($paciente))->resolve();
+
+        $this->assertSame('02/03/2026', $recurso['fecha_proximo_contacto']);
+        $this->assertSame([
+            ['fecha' => '02/03/2026', 'motivo' => 'Seguimiento mensual 1'],
+        ], $recurso['proximos_contactos']);
+    }
+
     public function test_los_proximos_contactos_de_entrenamiento_muestran_la_siguiente_etapa(): void
     {
         $paciente = $this->crearPaciente();
