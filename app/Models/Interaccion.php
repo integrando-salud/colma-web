@@ -159,6 +159,10 @@ class Interaccion extends Model
     {
         return $query
             ->whereNotNull('nueva_fecha_contacto')
+            ->where(function (Builder $query) {
+                $query->whereNull('entrenamiento_id')
+                    ->orWhereHas('entrenamiento', fn (Builder $query) => $query->where('activo', true));
+            })
             ->withoutDuplicatedPendingAlertSchedule()
             ->whereNotExists(function ($subquery) {
                 $subquery->selectRaw('1')
