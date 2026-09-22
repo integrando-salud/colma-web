@@ -46,6 +46,15 @@ class PacienteService
                     WHERE i_programada.paciente_id = pacientes.id
                         AND i_programada.nueva_fecha_contacto IS NOT NULL
                         AND i_programada.deleted_at IS NULL
+                        AND (
+                            i_programada.entrenamiento_id IS NULL
+                            OR EXISTS (
+                                SELECT 1
+                                FROM entrenamientos entrenamiento_programado
+                                WHERE entrenamiento_programado.id = i_programada.entrenamiento_id
+                                    AND entrenamiento_programado.activo = 1
+                            )
+                        )
                         AND NOT EXISTS (
                             SELECT 1
                             FROM interacciones i_contactado
