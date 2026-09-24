@@ -20,7 +20,8 @@ class TratamientoController extends PacienteAutenticadoController
      *
      * El paciente se determina exclusivamente a partir de la sesión para evitar
      * que un usuario autenticado consulte el tratamiento de otra persona. Un
-     * paciente sin diagnóstico con tratamiento configurado recibe `null`.
+     * paciente sin diagnóstico o sin versión de tratamiento compatible recibe
+     * `null`.
      *
      * @param  Request  $request  Solicitud autenticada de la aplicación móvil.
      * @param  TratamientoService  $tratamientoService  Servicio que construye el tratamiento y sus recursos.

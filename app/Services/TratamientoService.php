@@ -16,10 +16,11 @@ use RuntimeException;
 class TratamientoService
 {
     /**
-     * Obtiene el catálogo exclusivamente desde la versión del entrenamiento activo.
+     * Obtiene el catálogo desde la versión del entrenamiento activo.
      *
-     * Retorna `null` si el paciente no tiene un entrenamiento activo con una
-     * versión persistida. No infiere ni adopta versiones por diagnóstico.
+     * Si el paciente todavía no tiene un entrenamiento activo, usa la última
+     * versión persistida que corresponda a su país y diagnósticos. No crea ni
+     * sincroniza versiones durante esta consulta.
      */
     public function getTratamientoPaciente(Paciente $paciente): ?array
     {
@@ -29,16 +30,43 @@ class TratamientoService
             ->with('tratamientoVersion')
             ->first();
 
-        if (! $entrenamiento?->tratamiento_version_id || ! $entrenamiento->tratamientoVersion) {
+        if ($entrenamiento) {
+            if (! $entrenamiento->tratamiento_version_id || ! $entrenamiento->tratamientoVersion) {
+                return null;
+            }
+
+            $version = $entrenamiento->tratamientoVersion;
+        } else {
+            $tratamiento = $this->getConfiguracionTratamientoPaciente($paciente);
+
+            if (! $tratamiento) {
+                return null;
+            }
+
+            [$pais, , $tipo] = $tratamiento;
+            $version = $this->getUltimaVersionTratamiento($pais, $tipo);
+        }
+
+        if (! $version) {
             return null;
         }
 
-        $version = $entrenamiento->tratamientoVersion;
         $nombre = is_array($version->contenido)
             ? ($version->contenido['name'] ?? $version->tipo)
             : $version->tipo;
 
         return $this->getTratamiento($version->tipo, (string) $nombre, $version);
+    }
+
+    /** Obtiene la última versión persistida para un país y tipo de tratamiento. */
+    public function getUltimaVersionTratamiento(string $pais, string $tipo): ?TratamientoVersion
+    {
+        return TratamientoVersion::query()
+            ->where('pais', $pais)
+            ->where('tipo', $tipo)
+            ->latest('created_at')
+            ->latest('id')
+            ->first();
     }
 
     /** Obtiene o crea la versión vigente del catálogo asignado al paciente. */
