@@ -113,15 +113,21 @@ class ApiTratamientoControllerTest extends TestCase
             ->assertJsonPath('tratamiento.semanas.0.sesiones.0.content.0.tratamiento_elemento_id', $elementoB->id);
     }
 
-    public function test_paciente_sin_entrenamiento_activo_recibe_objeto_vacio_aunque_exista_un_catalogo_compatible(): void
+    public function test_paciente_sin_entrenamiento_activo_recibe_la_ultima_version_persistida_compatible(): void
     {
         [$user] = $this->crearPacienteDiabetes();
-        $this->crearVersion('catálogo que no debe usarse como fallback');
+        $versionAnterior = $this->crearVersion('version anterior');
+        $sesionAnterior = $versionAnterior->sesiones()->create(['semana' => 1, 'sesion' => 1, 'contenido' => ['id' => 1]]);
+        $this->crearElemento($sesionAnterior, 0, ['type' => 'QUIZ', 'title' => 'Versión anterior', 'questions' => []]);
+        $versionActual = $this->crearVersion('version actual');
+        $sesionActual = $versionActual->sesiones()->create(['semana' => 1, 'sesion' => 1, 'contenido' => ['id' => 1]]);
+        $elementoActual = $this->crearElemento($sesionActual, 0, ['type' => 'QUIZ', 'title' => 'Versión actual', 'questions' => []]);
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/tratamiento')
             ->assertOk()
-            ->assertContent('{}');
+            ->assertJsonPath('tratamiento.semanas.0.sesiones.0.content.0.title', 'Versión actual')
+            ->assertJsonPath('tratamiento.semanas.0.sesiones.0.content.0.tratamiento_elemento_id', $elementoActual->id);
     }
 
     private function crearVersion(string $hash): TratamientoVersion
