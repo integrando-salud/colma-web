@@ -55,6 +55,37 @@ class PacienteServiceTest extends TestCase
         );
     }
 
+    public function test_query_get_pacientes_ordena_por_fecha_de_inicio_en_ambos_sentidos(): void
+    {
+        $usuario = $this->crearUsuario('operador-fechas');
+        $usuario->assign(User::ROL_SUPERUSUARIO);
+        $this->actingAs($usuario);
+
+        $reciente = $this->crearPaciente(['fecha_enrolamiento' => '2026-08-11', 'id_externo' => '001']);
+        $antiguo = $this->crearPaciente(['fecha_enrolamiento' => '2025-10-24', 'id_externo' => '004']);
+        $intermedio = $this->crearPaciente(['fecha_enrolamiento' => '2025-11-30', 'id_externo' => '002']);
+        $mismaFecha = $this->crearPaciente(['fecha_enrolamiento' => '2025-11-30', 'id_externo' => '003']);
+
+        $ordenAscendente = [$antiguo->id, $intermedio->id, $mismaFecha->id, $reciente->id];
+
+        foreach (['asc', 'desc'] as $direccion) {
+            $ids = [];
+
+            foreach ([1, 2] as $pagina) {
+                $resultado = $this->service->queryGetPacientes([
+                    'orderBy' => 'fecha_enrolamiento', 'orderDir' => $direccion,
+                ])->paginate(2, ['*'], 'page', $pagina);
+
+                $ids = array_merge($ids, $resultado->getCollection()->pluck('id')->all());
+            }
+
+            $this->assertSame(
+                $direccion === 'asc' ? $ordenAscendente : array_reverse($ordenAscendente),
+                $ids,
+            );
+        }
+    }
+
     public function test_query_get_pacientes_busca_por_nombre_completo_e_id_externo(): void
     {
         $usuario = $this->crearUsuario('operador');
