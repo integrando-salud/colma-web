@@ -117,7 +117,7 @@ class PacienteService
 
         $query->orderByDesc('pacientes.activo');
         $orderBy = data_get($filters, 'orderBy', 'id_externo');
-        $orderBy = in_array($orderBy, ['id_externo', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
+        $orderBy = in_array($orderBy, ['id_externo', 'fecha_enrolamiento', 'ingresos', 'fecha_proximo_contacto', 'ultimo_ingreso', 'diagnostico', 'promotor'], true)
             ? $orderBy
             : 'id_externo';
         $orderDir = strtolower((string) data_get($filters, 'orderDir', 'desc')) === 'asc' ? 'asc' : 'desc';
