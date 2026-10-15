@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Paciente extends Model
 {
-    use SoftDeletes, HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -42,7 +42,20 @@ class Paciente extends Model
         'fecha_ultima_sincronizacion' => 'datetime',
         'fecha_primer_login_app' => 'datetime',
         'test' => 'boolean',
+        'oculto' => 'boolean',
     ];
+
+    /**
+     * Excluye pacientes ocultos de listados y estadísticas del panel.
+     * Se aplica explícitamente para conservar el acceso a la ficha y a la app.
+     *
+     * @param  Builder<Paciente>  $query
+     * @return Builder<Paciente>
+     */
+    public function scopeNoOcultos(Builder $query): Builder
+    {
+        return $query->where('pacientes.oculto', false);
+    }
 
     /**
      * Restringe una consulta al alcance asistencial del usuario del panel.

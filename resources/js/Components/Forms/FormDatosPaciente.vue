@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useForm, usePage } from "@inertiajs/vue3";
 import { FORM_PACIENTE } from "@/Constants/paciente";
 import Password from "@/Components/Form/Password.vue";
+import FormPasswordPaciente from "@/Components/Forms/FormPasswordPaciente.vue";
 import { useNotificationStore } from "@/Stores/notification";
 import { vMaska } from "maska/vue";
 
@@ -32,10 +33,8 @@ const soloLectura = computed(() => {
     return props.paciente?.activo === false || esPromotorPeru.value;
 });
 
-const labelPassword = computed(() => props.paciente ? 'Nueva contraseña' : 'Contraseña');
-
 const promotoresFiltered = computed(() => {
-    return promotores.value.filter(promotor => promotor.centro_salud.id === formPaciente.centro_salud_id);
+    return promotores.value.filter(promotor => promotor.centro_salud?.id === formPaciente.centro_salud_id);
 });
 
 const resetPromotor = () => {
@@ -120,8 +119,8 @@ const fillDataPaciente = () => {
     formPaciente.direccion = props.paciente.direccion;
     formPaciente.referencia = props.paciente.referencia;
     formPaciente.observaciones = props.paciente.observaciones;
-    formPaciente.centro_salud_id = props.paciente.centro_salud.id;
-    formPaciente.promotor_id = props.paciente.promotor.id;
+    formPaciente.centro_salud_id = props.paciente.centro_salud?.id ?? '';
+    formPaciente.promotor_id = props.paciente.promotor?.id ?? '';
     formPaciente.fecha_enrolamiento = props.paciente.fecha_enrolamiento_format;
     formPaciente.diagnosticos = props.paciente.diagnosticos.map(diagnostico => diagnostico.id);
 };
@@ -506,9 +505,9 @@ camposSoloLetras.forEach(campo => {
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div v-if="!paciente" class="col-12 col-md-6 col-lg-4">
                         <div class="row">
-                            <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">{{ labelPassword }}</label>
+                            <label for="paciente_password" class="col-12 col-sm-4 col-xl-4 col-form-label">Contraseña</label>
                             <div class="col-12 col-sm-8 col-xl-6">
                                 <Password
                                     name="paciente_password"
@@ -518,11 +517,11 @@ camposSoloLetras.forEach(campo => {
                                     :disabled="soloLectura"
                                     autocomplete="new-password"
                                 />
-                                <div class="form-text small" v-if="paciente">
-                                    Dejar en blanco para no cambiarla.
-                                </div>
                             </div>
                         </div>
+                    </div>
+                    <div v-else class="col-12 col-md-6 col-lg-8 mb-3">
+                        <FormPasswordPaciente :paciente-id="paciente.id" :disabled="soloLectura" />
                     </div>
                 </div>
             </div>
