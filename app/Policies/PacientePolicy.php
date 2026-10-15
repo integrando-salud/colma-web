@@ -32,6 +32,13 @@ class PacientePolicy
         return $this->view($usuario, $paciente);
     }
 
+    public function updatePassword(User $usuario, Paciente $paciente): bool
+    {
+        return $paciente->activo
+            && ! ($usuario->isA(User::ROL_PROMOTOR) && $usuario->pais?->codigo === 'PE')
+            && $this->update($usuario, $paciente);
+    }
+
     /** Solo superusuarios y supervisores pueden activar o desactivar pacientes. */
     public function changeStatus(User $usuario, Paciente $paciente): bool
     {

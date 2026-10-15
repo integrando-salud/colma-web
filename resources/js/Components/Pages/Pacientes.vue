@@ -331,7 +331,7 @@ onMounted(() => {
                             >
                                 {{ paciente.fecha_proximo_contacto ?? '-' }}
                             </td>
-                            <td>{{ paciente.usuario.ultimo_acceso }}</td>
+                            <td>{{ paciente.usuario?.ultimo_acceso ?? '-' }}</td>
                             <td>
                                 <span
                                     class="badge py-2 px-3"
@@ -477,7 +477,7 @@ onMounted(() => {
                 <div class="col-12 col-xl-8 align-content-center">
                     <div class="row">
                         <div class="col-12 col-md-4 col-lg-4 text-xl-end">
-                            <span class="fw-semibold">Usuario:</span> {{ pacienteSelected.usuario.documento }}
+                            <span class="fw-semibold">Usuario:</span> {{ pacienteSelected.usuario?.documento ?? 'Sin usuario asociado' }}
                         </div>
                         <div
                             v-if="$page.props.usuario.pais?.codigo === 'PE'"

@@ -126,7 +126,7 @@ class StorePacienteRequest extends FormRequest
             'centro_salud_id' => ['required', 'exists:centros_salud,id'],
             'promotor_id' => ['required', 'exists:users,id'],
             'fecha_enrolamiento' => ['required', 'date_format:d/m/Y'],
-            'password' => ['nullable', 'required_without:id', 'min:6'],
+            'password' => [Rule::excludeIf($this->filled('id')), 'nullable', 'required_without:id', 'min:6'],
             'diagnosticos' => [
                 'required',
                 'array',
