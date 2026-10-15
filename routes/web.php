@@ -53,6 +53,8 @@ Route::middleware(['auth', SetUserTimezone::class])->group(function () {
         Route::get('{paciente}/editar', [PacienteController::class, 'edit'])
             ->name('dashboard.pacientes.edit')
             ->can('update', 'paciente');
+        Route::put('{paciente}/contrasena', [PacienteController::class, 'updatePassword'])
+            ->name('dashboard.pacientes.updatePassword');
         Route::get('{paciente}/alertas', [PacienteController::class, 'alertas'])
             ->name('dashboard.pacientes.alertas')
             ->can('view', 'paciente');

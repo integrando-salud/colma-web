@@ -32,6 +32,7 @@ class PacienteService
         $usuario = auth()->user();
         $query = Paciente::query()
             ->select('pacientes.*')
+            ->noOcultos()
             ->visibleTo($usuario);
 
         $query->withCount(['alertas AS numero_alertas' => function (Builder $query) {
@@ -200,6 +201,19 @@ class PacienteService
             $this->syncDiagnosticos($paciente, $data['diagnosticos'] ?? []);
 
             return $paciente;
+        });
+    }
+
+    /** Actualiza ambas representaciones de la contraseña sin modificar otros datos. */
+    public function updatePassword(Paciente $paciente, string $password): void
+    {
+        DB::transaction(function () use ($paciente, $password): void {
+            $usuario = $paciente->usuario()->firstOrFail();
+            $usuario->password = $password;
+            $usuario->saveOrFail();
+
+            $paciente->clave = Crypt::encryptString($password);
+            $paciente->saveOrFail();
         });
     }
 

@@ -20,7 +20,7 @@ class IndicadorService
      */
     public function getIndicadoresGenerales(User $usuario): array
     {
-        $pacientes = Paciente::query()->visibleTo($usuario);
+        $pacientes = Paciente::query()->noOcultos()->visibleTo($usuario);
         $totalParticipantes = (clone $pacientes)->count();
         $totalParticipantesActivos = (clone $pacientes)->where('activo', true)->count();
 
@@ -44,6 +44,7 @@ class IndicadorService
     public function getIndicadoresEntrenamiento(User $usuario): array
     {
         $participantesEntrenados = Paciente::query()
+            ->noOcultos()
             ->visibleTo($usuario)
             ->where('activo', true)
             ->whereHas('interacciones', function ($query) {
@@ -64,7 +65,7 @@ class IndicadorService
      */
     public function getIndicadoresInteraccionesProgramadas(User $usuario): array
     {
-        $pacientes = Paciente::query()->visibleTo($usuario);
+        $pacientes = Paciente::query()->noOcultos()->visibleTo($usuario);
         $totalParticipantes = (clone $pacientes)->count();
         $participantesConSeguimiento15DiasRealizado = (clone $pacientes)
             ->whereHas('interacciones', function ($query) {
@@ -129,11 +130,11 @@ class IndicadorService
     {
         $totalAlertasClinicas = Alerta::query()
             ->where('tipo', 'clinica')
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('paciente', fn (Builder $query) => $query->noOcultos()->visibleTo($usuario))
             ->count();
         $interaccionesContactadas = Interaccion::query()
             ->where('contactado', true)
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('paciente', fn (Builder $query) => $query->noOcultos()->visibleTo($usuario))
             ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', 'clinica'))
             ->count();
         $interaccionesContactadasDentroDe48Horas = $this->contarInteraccionesEnPlazo($usuario, 'clinica', 48);
@@ -159,11 +160,11 @@ class IndicadorService
     {
         $totalAlertasOperativas = Alerta::query()
             ->where('tipo', 'operativa')
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('paciente', fn (Builder $query) => $query->noOcultos()->visibleTo($usuario))
             ->count();
         $interaccionesContactadas = Interaccion::query()
             ->where('contactado', true)
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('paciente', fn (Builder $query) => $query->noOcultos()->visibleTo($usuario))
             ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', 'operativa'))
             ->count();
         $interaccionesContactadasDentroDe72Horas = $this->contarInteraccionesEnPlazo($usuario, 'operativa', 72);
@@ -188,6 +189,7 @@ class IndicadorService
     public function getIndicadoresApp(User $usuario): array
     {
         $participantesActivos = Paciente::query()
+            ->noOcultos()
             ->visibleTo($usuario)
             ->where('activo', true)
             ->with([
@@ -219,7 +221,7 @@ class IndicadorService
     {
         return Interaccion::query()
             ->where('contactado', true)
-            ->whereHas('paciente', fn (Builder $query) => $query->visibleTo($usuario))
+            ->whereHas('paciente', fn (Builder $query) => $query->noOcultos()->visibleTo($usuario))
             ->whereHas('alerta', fn (Builder $query) => $query->where('tipo', $tipoAlerta))
             ->with(['alerta', 'paciente.centroSalud.pais'])
             ->get()

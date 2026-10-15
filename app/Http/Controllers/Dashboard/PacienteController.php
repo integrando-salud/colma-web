@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Dashboard\DatosClinicos\FilterDatosClinicosRequest;
 use App\Http\Requests\Dashboard\Paciente\FilterPacienteRequest;
 use App\Http\Requests\Dashboard\Paciente\StorePacienteRequest;
+use App\Http\Requests\Dashboard\Paciente\UpdatePasswordRequest;
 use App\Http\Resources\Dashboard\AlertaResource;
 use App\Http\Resources\Dashboard\InteraccionResource;
 use App\Http\Resources\Dashboard\PacienteResource;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\AlertaService;
 use App\Services\DashboardService;
 use App\Services\PacienteService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -73,6 +75,19 @@ class PacienteController extends Controller
             ]);
 
             return back()->with('error', 'Error al guardar el paciente.');
+        }
+    }
+
+    public function updatePassword(UpdatePasswordRequest $request, Paciente $paciente, PacienteService $pacienteService): JsonResponse
+    {
+        try {
+            $pacienteService->updatePassword($paciente, $request->validated('password'));
+
+            return response()->json(['message' => 'La contraseña se guardó con éxito.']);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json(['message' => 'Error al guardar la contraseña.'], 500);
         }
     }
 

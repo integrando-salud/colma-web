@@ -138,16 +138,16 @@ class UsuarioService
         $roles = [User::class, User::class, User::class, User::class];
 
         $query->selectRaw("CASE
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL)
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM pacientes p INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE p.deleted_at IS NULL AND cs.pais_id = users.pais_id)
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.promotor_id = users.id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.oculto = 0)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM pacientes p INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE p.deleted_at IS NULL AND p.oculto = 0 AND cs.pais_id = users.pais_id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.oculto = 0 AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM pacientes p WHERE p.deleted_at IS NULL AND p.oculto = 0 AND p.promotor_id = users.id)
             ELSE 0 END AS pacientes_count", $roles)
             ->selectRaw("CASE
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL)
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND cs.pais_id = users.pais_id)
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
-            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.promotor_id = users.id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'superusuario') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.oculto = 0)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor_pais') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id INNER JOIN centros_salud cs ON cs.id = p.centro_salud_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.oculto = 0 AND cs.pais_id = users.pais_id)
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'supervisor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.oculto = 0 AND p.promotor_id IN (SELECT up.id FROM users up WHERE up.supervisor_id = users.id AND up.deleted_at IS NULL))
+            WHEN EXISTS (SELECT 1 FROM assigned_roles ar INNER JOIN roles r ON r.id = ar.role_id WHERE ar.entity_id = users.id AND ar.entity_type = ? AND r.name = 'promotor') THEN (SELECT COUNT(*) FROM alertas a INNER JOIN pacientes p ON p.id = a.paciente_id WHERE a.revisado IS NULL AND a.deleted_at IS NULL AND p.deleted_at IS NULL AND p.oculto = 0 AND p.promotor_id = users.id)
             ELSE 0 END AS alertas_count", $roles);
     }
 
@@ -305,19 +305,19 @@ class UsuarioService
     private function queryPacientesActivosByUsuario(User $user): ?Builder
     {
         if ($user->isA('promotor')) {
-            return Paciente::query()
+            return Paciente::query()->noOcultos()
                 ->where('activo', true)
                 ->where('promotor_id', $user->id);
         }
 
         if ($user->isA('supervisor')) {
-            return Paciente::query()
+            return Paciente::query()->noOcultos()
                 ->where('activo', true)
                 ->whereIn('promotor_id', $user->promotores->pluck('id'));
         }
 
         if ($user->isA('supervisor_pais')) {
-            return Paciente::query()
+            return Paciente::query()->noOcultos()
                 ->where('activo', true)
                 ->whereHas('centroSalud', function ($query) use ($user) {
                     $query->where('pais_id', $user->pais_id);
@@ -325,7 +325,7 @@ class UsuarioService
         }
 
         if ($user->isA('superusuario')) {
-            return Paciente::query()->where('activo', true);
+            return Paciente::query()->noOcultos()->where('activo', true);
         }
 
         return null;
@@ -339,18 +339,18 @@ class UsuarioService
     private function queryPacientesByUsuario(User $user): Builder
     {
         if ($user->isA('promotor')) {
-            return Paciente::query()->where('promotor_id', $user->id);
+            return Paciente::query()->noOcultos()->where('promotor_id', $user->id);
         }
 
         if ($user->isA('supervisor')) {
-            return Paciente::query()->whereIn('promotor_id', $user->promotores()->select('id'));
+            return Paciente::query()->noOcultos()->whereIn('promotor_id', $user->promotores()->select('id'));
         }
 
         if ($user->isA('supervisor_pais')) {
-            return Paciente::query()->whereHas('centroSalud', fn (Builder $query) => $query->where('pais_id', $user->pais_id));
+            return Paciente::query()->noOcultos()->whereHas('centroSalud', fn (Builder $query) => $query->where('pais_id', $user->pais_id));
         }
 
-        return $user->isA('superusuario') ? Paciente::query() : Paciente::query()->whereRaw('1 = 0');
+        return $user->isA('superusuario') ? Paciente::query()->noOcultos() : Paciente::query()->noOcultos()->whereRaw('1 = 0');
     }
 
     /**
