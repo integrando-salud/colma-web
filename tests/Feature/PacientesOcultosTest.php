@@ -20,6 +20,7 @@ use App\Services\UsuarioService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PacientesOcultosTest extends TestCase
@@ -36,7 +37,13 @@ class PacientesOcultosTest extends TestCase
         $this->centro = $pais->centrosSalud()->create(['nombre' => 'Centro', 'activo' => true]);
     }
 
-    public function test_listados_incluyen_ocultos_y_contadores_los_excluyen_para_todos_los_roles(): void
+    public static function camposExcluidosDeEstadisticas(): array
+    {
+        return ['oculto' => ['oculto'], 'test' => ['test']];
+    }
+
+    #[DataProvider('camposExcluidosDeEstadisticas')]
+    public function test_listados_incluyen_excluidos_y_contadores_los_excluyen_para_todos_los_roles(string $campo): void
     {
         $superusuario = $this->crearUsuario(User::ROL_SUPERUSUARIO);
         $supervisorPais = $this->crearUsuario(User::ROL_SUPERVISOR_PAIS);
@@ -46,14 +53,14 @@ class PacientesOcultosTest extends TestCase
         $inactivo = $this->crearPaciente($promotor, false);
         $oculto = $this->crearPaciente($promotor);
         $ocultoInactivo = $this->crearPaciente($promotor, false);
-        $this->ocultar($oculto);
-        $this->ocultar($ocultoInactivo);
+        DB::table('pacientes')->where('id', $oculto->id)->update([$campo => true]);
+        DB::table('pacientes')->where('id', $ocultoInactivo->id)->update([$campo => true]);
 
         // Un paciente ajeno permanece fuera del alcance del supervisor y promotor.
         $otroPromotor = $this->crearUsuario(User::ROL_PROMOTOR);
         $ajeno = $this->crearPaciente($otroPromotor);
         $ajenoOculto = $this->crearPaciente($otroPromotor);
-        $this->ocultar($ajenoOculto);
+        DB::table('pacientes')->where('id', $ajenoOculto->id)->update([$campo => true]);
 
         $service = app(UsuarioService::class);
         foreach ([$superusuario, $supervisorPais, $supervisor, $promotor] as $usuario) {
@@ -83,13 +90,14 @@ class PacientesOcultosTest extends TestCase
             $this->assertSame($service->countAlertas($usuario->id), (int) $filas[$usuario->id]->alertas_count);
         }
 
-        DB::table('pacientes')->where('id', $oculto->id)->update(['oculto' => false]);
+        DB::table('pacientes')->where('id', $oculto->id)->update([$campo => false]);
         $this->actingAs($promotor);
         $this->assertEqualsCanonicalizing([$visible->id, $inactivo->id, $oculto->id, $ocultoInactivo->id], app(PacienteService::class)->queryGetPacientes()->pluck('pacientes.id')->all());
         $this->assertSame(3, $service->countPacientes($promotor->id));
     }
 
-    public function test_ocultos_no_modifican_ningun_grupo_de_indicadores(): void
+    #[DataProvider('camposExcluidosDeEstadisticas')]
+    public function test_excluidos_no_modifican_ningun_grupo_de_indicadores(string $campo): void
     {
         $usuario = $this->crearUsuario(User::ROL_SUPERUSUARIO);
         $promotor = $this->crearUsuario(User::ROL_PROMOTOR);
@@ -122,12 +130,12 @@ class PacientesOcultosTest extends TestCase
             $this->assertNotEquals($esperados[$metodo], $service->$metodo($usuario), $metodo);
         }
 
-        $this->ocultar($oculto);
+        DB::table('pacientes')->where('id', $oculto->id)->update([$campo => true]);
         foreach ($metodos as $metodo) {
             $this->assertSame($esperados[$metodo], $service->$metodo($usuario), $metodo);
         }
 
-        $this->ocultar($visible);
+        DB::table('pacientes')->where('id', $visible->id)->update([$campo => true]);
         $this->assertSame(0, $service->getIndicadoresGenerales($usuario)['total_participantes']);
         $this->assertEquals(0, $service->getIndicadoresApp($usuario)['porcentaje_adherencia_sesiones']);
     }
