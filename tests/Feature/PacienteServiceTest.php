@@ -464,7 +464,24 @@ class PacienteServiceTest extends TestCase
 
         $this->assertInstanceOf(Paciente::class, $paciente);
         $this->assertTrue($paciente->test);
-        $this->assertSame('test-1', $paciente->documento);
+        $this->assertMatchesRegularExpression('/^[0-9]{8}$/', $paciente->documento);
+        $this->assertSame($paciente->documento, $paciente->usuario->documento);
+        $this->assertSame($paciente->documento, Crypt::decryptString($paciente->clave));
+    }
+
+    public function test_crear_paciente_test_genera_documentos_numericos_distintos_con_pacientes_heredados(): void
+    {
+        $heredado = $this->crearPaciente(['test' => true, 'documento' => 'test-2']);
+
+        $primero = $this->service->crearPacienteTest();
+        $segundo = $this->service->crearPacienteTest();
+
+        $this->assertInstanceOf(Paciente::class, $primero);
+        $this->assertInstanceOf(Paciente::class, $segundo);
+        $this->assertMatchesRegularExpression('/^[0-9]{8}$/', $primero->documento);
+        $this->assertMatchesRegularExpression('/^[0-9]{8}$/', $segundo->documento);
+        $this->assertNotSame($primero->documento, $segundo->documento);
+        $this->assertSame('test-2', $heredado->fresh()->documento);
     }
 
     private function crearUsuario(string $sufijo): User

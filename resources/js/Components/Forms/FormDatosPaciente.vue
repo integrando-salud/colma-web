@@ -143,16 +143,19 @@ onMounted(async () => {
     }
 });
 
-const camposSoloNumeros = ['documento', 'telefono', 'telefono2'];
+// Filtrar sólo la entrada del usuario: los documentos existentes se cargan completos.
+const filtrarDocumento = (event) => {
+    const documento = event.target.value.replace(/\D/g, '');
+    event.target.value = documento;
+    formPaciente.documento = documento;
+};
+
+const camposSoloNumeros = ['telefono', 'telefono2'];
 camposSoloNumeros.forEach(campo => {
     watch(() => formPaciente[campo], (value) => {
         if (!value) return;
 
-        if (campo === 'documento') {
-            formPaciente[campo] = value.replace(/\D/g, '').slice(0,8);
-        } else {
-            formPaciente[campo] = value.replace(/\D/g, '');
-        }
+        formPaciente[campo] = value.replace(/\D/g, '');
     });
 });
 
@@ -496,8 +499,9 @@ camposSoloLetras.forEach(campo => {
                                     class="form-control"
                                     :class="{ 'is-invalid': formPaciente.errors.documento }"
                                     v-model="formPaciente.documento"
+                                    @input="filtrarDocumento"
                                     :disabled="soloLectura"
-                                    maxlength="8"
+                                    maxlength="20"
                                 />
                                 <div class="invalid-feedback" v-if="formPaciente.errors?.documento">
                                     {{ formPaciente.errors.documento }}
