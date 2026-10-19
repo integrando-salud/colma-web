@@ -36,7 +36,7 @@ class PacientesOcultosTest extends TestCase
         $this->centro = $pais->centrosSalud()->create(['nombre' => 'Centro', 'activo' => true]);
     }
 
-    public function test_listados_y_contadores_excluyen_ocultos_para_todos_los_roles(): void
+    public function test_listados_incluyen_ocultos_y_contadores_los_excluyen_para_todos_los_roles(): void
     {
         $superusuario = $this->crearUsuario(User::ROL_SUPERUSUARIO);
         $supervisorPais = $this->crearUsuario(User::ROL_SUPERVISOR_PAIS);
@@ -59,18 +59,20 @@ class PacientesOcultosTest extends TestCase
         foreach ([$superusuario, $supervisorPais, $supervisor, $promotor] as $usuario) {
             $this->actingAs($usuario);
             $alcanceAmplio = in_array($usuario->id, [$superusuario->id, $supervisorPais->id], true);
-            $ids = [$visible->id, $inactivo->id];
+            $ids = [$visible->id, $inactivo->id, $oculto->id, $ocultoInactivo->id];
             if ($alcanceAmplio) {
                 $ids[] = $ajeno->id;
+                $ids[] = $ajenoOculto->id;
             }
 
             $this->assertEqualsCanonicalizing($ids, app(PacienteService::class)->queryGetPacientes()->pluck('pacientes.id')->all());
+            $totalEstadisticas = $alcanceAmplio ? 3 : 2;
             $activos = $alcanceAmplio ? 2 : 1;
-            $this->assertSame(count($ids), $service->countPacientes($usuario->id));
+            $this->assertSame($totalEstadisticas, $service->countPacientes($usuario->id));
             $this->assertSame($activos, $service->countPacientesActivos($usuario->id));
             $this->assertSame($activos, $service->countPacientesConAlertas($usuario->id));
             $this->assertSame($activos, $service->countPacientesConContactosPendientes($usuario->id));
-            $this->assertSame(count($ids) * 2, $service->countAlertas($usuario->id));
+            $this->assertSame($totalEstadisticas * 2, $service->countAlertas($usuario->id));
         }
 
         // La grilla usa subconsultas SQL independientes de los contadores anteriores.
@@ -83,7 +85,7 @@ class PacientesOcultosTest extends TestCase
 
         DB::table('pacientes')->where('id', $oculto->id)->update(['oculto' => false]);
         $this->actingAs($promotor);
-        $this->assertEqualsCanonicalizing([$visible->id, $inactivo->id, $oculto->id], app(PacienteService::class)->queryGetPacientes()->pluck('pacientes.id')->all());
+        $this->assertEqualsCanonicalizing([$visible->id, $inactivo->id, $oculto->id, $ocultoInactivo->id], app(PacienteService::class)->queryGetPacientes()->pluck('pacientes.id')->all());
         $this->assertSame(3, $service->countPacientes($promotor->id));
     }
 
