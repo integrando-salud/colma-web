@@ -32,7 +32,6 @@ class PacienteService
         $usuario = auth()->user();
         $query = Paciente::query()
             ->select('pacientes.*')
-            ->noOcultos()
             ->visibleTo($usuario);
 
         $query->withCount(['alertas AS numero_alertas' => function (Builder $query) {
