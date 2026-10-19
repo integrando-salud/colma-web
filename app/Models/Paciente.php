@@ -46,8 +46,9 @@ class Paciente extends Model
     ];
 
     /**
-     * Excluye pacientes ocultos de listados y estadísticas del panel.
-     * Se aplica explícitamente para conservar el acceso a la ficha y a la app.
+     * Excluye pacientes ocultos de las estadísticas del panel.
+     * Se aplica explícitamente para conservar su presencia en los listados
+     * y el acceso a la ficha y a la app.
      *
      * @param  Builder<Paciente>  $query
      * @return Builder<Paciente>
