@@ -53,6 +53,8 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $user->increment('accesos', 1, ['ultimo_acceso' => now()]);
+
         if (! $user->paciente->fecha_primer_login_app) {
             $user->paciente()
                 ->whereNull('fecha_primer_login_app')
