@@ -548,23 +548,18 @@ class PacienteService
     }
 
     /**
-     * Crea un paciente de prueba
+     * Crea un paciente de prueba con un documento numérico de ocho dígitos.
      */
     public function crearPacienteTest(): Paciente|false
     {
         try {
             $sexo = fake()->randomElement(['M', 'F']);
-            $ultimoDocumento = Paciente::where('test', true)
-                ->latest()
-                ->value('documento');
-
-            if ($ultimoDocumento) {
-                [$test, $numero] = explode('-', $ultimoDocumento);
-                $numero++;
-                $documento = "$test-$numero";
-            } else {
-                $documento = 'test-1';
-            }
+            do {
+                $documento = fake()->numerify('########');
+            } while (
+                Paciente::withTrashed()->where('documento', $documento)->exists()
+                || User::withTrashed()->where('documento', $documento)->exists()
+            );
 
             $nombre = $sexo === 'M'
                 ? fake('es_ES')->name()
