@@ -59,6 +59,17 @@ class Paciente extends Model
     }
 
     /**
+     * Excluye pacientes ocultos y de prueba de las estadísticas del panel.
+     *
+     * @param  Builder<Paciente>  $query
+     * @return Builder<Paciente>
+     */
+    public function scopeParaEstadisticas(Builder $query): Builder
+    {
+        return $query->noOcultos()->where('pacientes.test', false);
+    }
+
+    /**
      * Restringe una consulta al alcance asistencial del usuario del panel.
      *
      * Este alcance es la fuente de verdad que utilizan tanto los listados como

@@ -121,3 +121,9 @@ actualizado en la siguiente petición. Si el servidor conserva la configuración
 anterior con `opcache.validate_timestamps = 0`, aplicar el cambio y reiniciar solo
 PHP-FPM (`docker compose -f docker-compose.prod.yml restart php84`); no hace falta
 ejecutar `docker compose down`.
+
+## Pacientes excluidos de reportes
+
+Los pacientes con `test = TRUE` u `oculto = TRUE` quedan excluidos de los
+indicadores y contadores del panel, incluidos sus datos de alertas,
+interacciones y progreso. Siguen disponibles en los listados y sus fichas.
