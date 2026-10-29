@@ -47,6 +47,7 @@ class PacienteController extends PacienteAutenticadoController
                 'errors' => $exception->errors(),
             ], 422);
         } catch (Throwable $exception) {
+            $request->attributes->set('mobile_api_exception', $exception);
             report($exception);
 
             return response()->json([
@@ -73,6 +74,7 @@ class PacienteController extends PacienteAutenticadoController
                 'message' => 'Pedido de ayuda registrado con éxito.',
             ]);
         } catch (Throwable $exception) {
+            $request->attributes->set('mobile_api_exception', $exception);
             report($exception);
 
             return response()->json([
