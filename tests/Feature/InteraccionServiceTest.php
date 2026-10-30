@@ -185,10 +185,9 @@ class InteraccionServiceTest extends TestCase
             'hora_cita_final' => '14:45',
         ]));
 
-        $this->assertDatabaseHas('entrenamientos', [
-            'paciente_id' => $paciente->id,
-            'fecha' => '2026-08-09',
-        ]);
+        $entrenamiento = Entrenamiento::where('paciente_id', $paciente->id)->sole();
+
+        $this->assertSame('2026-08-09', $entrenamiento->fecha->toDateString());
     }
 
     public function test_usa_la_fecha_de_la_cita_como_proximo_contacto_al_agendar_entrenamiento(): void

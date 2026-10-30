@@ -143,7 +143,7 @@ class DashboardServiceTest extends TestCase
         foreach (['centroSalud', 'promotor', 'usuario', 'diagnosticos', 'entrenamientos', 'proximosContactosProgramados', 'proximosContactosAlertas'] as $relacion) {
             $this->assertTrue($pacientes->first()->relationLoaded($relacion));
         }
-        $paciente = (new \App\Http\Resources\Dashboard\PacienteListResource($pacientes->first()))->resolve();
+        $paciente = $pacientes->first()->resolve();
         $this->assertSame([
             ['fecha' => '01/03/2026', 'motivo' => 'Cita de entrenamiento'],
         ], $paciente['proximos_contactos']);

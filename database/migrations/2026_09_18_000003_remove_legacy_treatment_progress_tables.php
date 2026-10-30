@@ -28,7 +28,7 @@ return new class extends Migration
                 );
 
                 if ($foreignKey) {
-                    $table->dropForeign($foreignKey['name']);
+                    $table->dropForeign(['tratamiento_sesion_id']);
                 }
 
                 if ($indexes->contains('name', 'tratamiento_multimedia_ruta_unica')) {

@@ -13,6 +13,7 @@ use App\Models\Glucosa;
 use App\Models\Interaccion;
 use App\Models\Meta;
 use App\Models\Paciente;
+use App\Models\Pais;
 use App\Models\PresionArterial;
 use App\Models\TratamientoVersion;
 use App\Models\User;
@@ -124,6 +125,12 @@ class PacienteServiceTest extends TestCase
 
     public function test_get_datos_clinicos_combina_mediciones_y_respeta_el_rango(): void
     {
+        $pais = Pais::create(['nombre' => 'Argentina', 'codigo' => 'AR', 'activo' => true]);
+        $usuario = $this->crearUsuario('datos-clinicos');
+        $usuario->pais()->associate($pais);
+        $usuario->save();
+        $this->actingAs($usuario);
+
         $paciente = $this->crearPaciente(['fecha_enrolamiento' => '2026-01-01']);
         Glucosa::create($this->datosGlucosa($paciente, '2026-02-01 08:00:00'));
         PresionArterial::create(array_merge(
@@ -135,9 +142,9 @@ class PacienteServiceTest extends TestCase
         $registros = $this->service->getDatosClinicos($paciente->id, 10, '01/02/2026', '02/02/2026');
 
         $this->assertSame(2, $registros->total());
-        $this->assertSame('01/02/2026 08:00 AM', $registros->items()[0]['fecha']);
+        $this->assertSame('01/02/2026 05:00 AM', $registros->items()[0]['fecha']);
         $this->assertSame(90, $registros->items()[0]['glucosa_valor']);
-        $this->assertSame('15/01/2026 01:05 PM', $registros->items()[1]['fecha']);
+        $this->assertSame('15/01/2026 10:05 AM', $registros->items()[1]['fecha']);
         $this->assertSame(110, $registros->items()[1]['presion_sistolica']);
     }
 
@@ -235,6 +242,7 @@ class PacienteServiceTest extends TestCase
             'entrenamiento_id' => $entrenamiento->id,
             'motivo' => MotivoInteraccion::AGENDAR_CITA_FINAL,
             'fecha_cita' => '2026-03-09',
+            'nueva_fecha_contacto' => '2026-03-09',
         ]);
 
         $motivos = collect($this->service->getFechasProximosContactos($paciente, 10))

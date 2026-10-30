@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MotivoInteraccion;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Alerta;
 use App\Models\CentroSalud;
 use App\Models\Interaccion;
@@ -67,6 +68,7 @@ class HistorialInteraccionesPacienteTest extends TestCase
 
         $this->actingAs($usuario)
             ->withHeader('X-Inertia', 'true')
+            ->withHeader('X-Inertia-Version', app(HandleInertiaRequests::class)->version(request()) ?? '')
             ->get(route('dashboard.pacientes.interacciones', $paciente))
             ->assertOk()
             ->assertJsonPath('props.interacciones.data.0.id', $interaccion->id)
