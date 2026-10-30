@@ -12,6 +12,7 @@ class CentroSalud extends Model
 
     protected $fillable = [
         'nombre',
+        'pais_id',
         'activo',
     ];
 
