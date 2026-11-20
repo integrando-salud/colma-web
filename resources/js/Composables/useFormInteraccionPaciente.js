@@ -191,6 +191,46 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
         return MOTIVOS_CONTACTO_SIN_ALERTA;
     });
 
+    const esSeguimiento = computed(() => [
+        MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS,
+        MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL,
+    ].includes(formContacto.motivo));
+
+    const etapaSeguimiento = computed(() => {
+        if (!esSeguimiento.value) {
+            return null;
+        }
+
+        if (props.interaccion?.motivo === formContacto.motivo
+            && props.interaccion.etapa_seguimiento != null) {
+            return props.interaccion.etapa_seguimiento;
+        }
+
+        return entrenamientoActual.value?.etapas_pendientes
+            ?.find(etapa => etapa.motivo === formContacto.motivo)?.etapa ?? null;
+    });
+
+    const fechaSugeridaPorCronograma = computed(() =>
+        formContacto.contactado === 1 && esSeguimiento.value && !!entrenamientoActual.value
+    );
+
+    const siguienteFechaCronograma = computed(() => {
+        if (props.interaccion?.motivo === formContacto.motivo
+            && props.interaccion.seguimiento_entrenamiento_id != null
+            && props.interaccion.seguimiento_entrenamiento_id !== entrenamientoActual.value?.id) {
+            return props.interaccion.nueva_fecha_contacto;
+        }
+
+        const etapas = entrenamientoActual.value?.etapas_pendientes ?? [];
+        return etapas.find(etapa => etapa.etapa !== etapaSeguimiento.value)?.fecha ?? null;
+    });
+
+    watch([fechaSugeridaPorCronograma, siguienteFechaCronograma], ([usarCronograma, fecha]) => {
+        if (usarCronograma) {
+            formContacto.nueva_fecha_contacto = fecha;
+        }
+    });
+
     const verFilaFechaProximoContacto = computed(() => {
         return formContacto.contactado === 0
             || formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS
@@ -262,11 +302,13 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
             formContacto[value] = hora24;
         });
 
-        if (entrenamientoActual.value) {
-            formContacto.id_entrenamiento = entrenamientoActual.value.id;
-        }
+        formContacto.id_entrenamiento = entrenamientoActual.value?.id ?? null;
+        formContacto.etapa_seguimiento = etapaSeguimiento.value;
 
-        formContacto.post(route('interacciones.store'), {
+        formContacto.transform(data => ({
+            ...data,
+            nueva_fecha_contacto: fechaSugeridaPorCronograma.value ? null : data.nueva_fecha_contacto,
+        })).post(route('interacciones.store'), {
             onError: () => {
                 notification.errorNotification('El formulario contiene errores.');
             }
@@ -303,10 +345,10 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
                 formContacto.nueva_fecha_contacto = formContacto.fecha_cita && isValidDate(formContacto.fecha_cita)
                     ? formContacto.fecha_cita
                     : null;
-            } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_DOS_SEMANAS) {
-                formContacto.nueva_fecha_contacto = getFechaMasDias(14);
-            } else if (formContacto.motivo === MOTIVO_CONTACTO.SEGUIMIENTO_MENSUAL) {
-                formContacto.nueva_fecha_contacto = getFechaMasDias(30);
+            } else if (fechaSugeridaPorCronograma.value) {
+                formContacto.nueva_fecha_contacto = siguienteFechaCronograma.value;
+            } else if (esSeguimiento.value && props.interaccion?.motivo === formContacto.motivo) {
+                formContacto.nueva_fecha_contacto = props.interaccion.nueva_fecha_contacto;
             } else {
                 formContacto.nueva_fecha_contacto = null;
             }
@@ -558,6 +600,7 @@ export const useFormInteraccionPaciente = ({ props, entrenamientoActual }) => {
         submit,
         verFechaHoraContacto,
         verFilaFechaProximoContacto,
+        fechaSugeridaPorCronograma,
         applyAlertaDefaults,
         fillDataInteraccion,
         registerFormWatchers,

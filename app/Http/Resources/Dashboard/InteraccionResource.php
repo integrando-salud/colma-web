@@ -30,6 +30,8 @@ class InteraccionResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'seguimiento_entrenamiento_id' => $this->seguimiento_entrenamiento_id,
+            'etapa_seguimiento' => $this->etapa_seguimiento,
             'paciente' => [
                 'id' => $this->paciente_id,
                 'nombre' => trim($this->paciente->nombre.' '.$this->paciente->apellido),

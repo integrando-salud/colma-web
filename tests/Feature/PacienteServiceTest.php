@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\MotivoInteraccion;
+use App\Enums\MotivoReprogramacion;
 use App\Http\Resources\Dashboard\PacienteListResource;
 use App\Http\Resources\Dashboard\PacienteResource;
 use App\Models\Alerta;
@@ -20,6 +21,8 @@ use App\Models\User;
 use App\Services\PacienteService;
 use Database\Seeders\RolesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia;
 use Illuminate\Support\Facades\Crypt;
 use Tests\TestCase;
 
@@ -315,6 +318,146 @@ class PacienteServiceTest extends TestCase
         $this->assertSame('09/07/2026', $detalle['fecha_proximo_contacto']);
         $this->assertSame('09/07/2026', $detalle['proximos_contactos'][0]['fecha']);
         $this->assertCount(1, $detalle['proximos_contactos']);
+    }
+
+    public function test_un_seguimiento_anticipado_avanza_la_ventana_en_listado_detalle_y_dashboard(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-03 15:00:00'));
+        $promotor = $this->crearUsuario('promotor-seguimiento');
+        $promotor->assign(User::ROL_PROMOTOR);
+        $this->withoutVite()->actingAs($promotor);
+
+        $paciente = $this->crearPaciente(['promotor_id' => $promotor->id]);
+        $entrenamiento = $this->crearEntrenamiento($paciente, [
+            'fecha' => '2026-10-21',
+            'seguimientos_mensuales' => 3,
+            'seguimiento_dos_semanas_inicio' => '2026-11-04',
+            'seguimiento_dos_semanas_fin' => '2026-11-11',
+            'llamada_mensual_1_inicio' => '2026-11-18',
+            'llamada_mensual_1_fin' => '2026-12-02',
+            'llamada_mensual_2_inicio' => '2026-12-16',
+        ]);
+        $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'entrenamiento_id' => $entrenamiento->id,
+            'fecha' => '2026-10-21',
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO,
+            'nueva_fecha_contacto' => '2026-11-04',
+        ]);
+        $otroEntrenamiento = $this->crearEntrenamiento($paciente, ['activo' => false]);
+        $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'seguimiento_entrenamiento_id' => $otroEntrenamiento->id,
+            'etapa_seguimiento' => 0,
+            'fecha' => '2026-01-15',
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+        ]);
+        $this->assertSame('2026-11-04', $this->service->getFechaProximoContacto($paciente));
+
+        $datos = [
+            'paciente_id' => $paciente->id,
+            'id_entrenamiento' => $entrenamiento->id,
+            'etapa_seguimiento' => 0,
+            'contactado' => true,
+            'fecha' => '03/11/2026',
+            'hora' => '15:00',
+            'modalidad' => Interaccion::MODALIDADES[0],
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS->value,
+            'seguimiento_pregunta_a' => 'No',
+            'nueva_fecha_contacto' => '17/11/2026',
+        ];
+        $this->post(route('interacciones.store'), array_replace($datos, [
+            'id_entrenamiento' => $otroEntrenamiento->id,
+        ]))->assertSessionHasErrors('motivo');
+        $this->post(route('interacciones.store'), $datos)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard.pacientes.interacciones', $paciente));
+
+        $seguimiento = $paciente->interacciones()->latest('id')->firstOrFail();
+        $this->assertSame($entrenamiento->id, $seguimiento->seguimiento_entrenamiento_id);
+        $this->assertSame(0, $seguimiento->etapa_seguimiento);
+        $this->assertSame('2026-11-03', $seguimiento->fecha->toDateString());
+        $this->assertSame('2026-11-18', $seguimiento->nueva_fecha_contacto->toDateString());
+
+        $this->getJson(route('ajax.paciente.entrenamientoActual', $paciente))
+            ->assertOk()
+            ->assertJsonPath('etapas_pendientes.0.etapa', 1)
+            ->assertJsonPath('etapas_pendientes.0.fecha', '18/11/2026');
+
+        $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'fecha' => '2026-11-20',
+            'motivo' => MotivoInteraccion::PEDIDO_AYUDA,
+        ]);
+        $otroPaciente = $this->crearPaciente(['promotor_id' => $promotor->id]);
+        $this->crearAlerta($otroPaciente, ['fecha_contacto' => '2026-11-17']);
+
+        foreach (['dashboard.pacientes.index', 'dashboard.index'] as $ruta) {
+            $this->get(route($ruta, ['orderBy' => 'fecha_proximo_contacto', 'orderDir' => 'asc']))
+                ->assertOk()
+                ->assertInertia(fn (AssertableInertia $page) => $page
+                    ->where('pacientes.data.0.id', $otroPaciente->id)
+                    ->where('pacientes.data.1.id', $paciente->id)
+                    ->where('pacientes.data.1.fecha_proximo_contacto', '18/11/2026')
+                    ->where('pacientes.data.1.proximos_contactos.0.motivo', 'Seguimiento mensual 1')
+                    ->etc());
+        }
+
+        $this->get(route('dashboard.pacientes.edit', $paciente))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('paciente.fecha_proximo_contacto', '18/11/2026')
+                ->where('paciente.proximos_contactos.0.fecha', '18/11/2026')
+                ->where('paciente.proximos_contactos.0.motivo', 'Seguimiento mensual 1')
+                ->etc());
+
+        $operador = $this->crearUsuario('operador-seguimiento');
+        $operador->assign(User::ROL_SUPERUSUARIO);
+        $this->actingAs($operador)->post(route('interacciones.store'), array_replace($datos, [
+            'id' => $seguimiento->id,
+            'contactado' => false,
+            'motivo_reprogramacion' => MotivoReprogramacion::NO_RESPONDE->value,
+            'nueva_fecha_contacto' => '05/11/2026',
+        ]))->assertSessionHasNoErrors()
+            ->assertRedirect(route('dashboard.pacientes.interacciones', $paciente));
+
+        $this->assertSame('2026-11-04', $this->service->getFechaProximoContacto($paciente));
+    }
+
+    public function test_la_migracion_vincula_el_seguimiento_historico_y_conserva_su_fecha_guardada(): void
+    {
+        $migracion = require database_path('migrations/2026_11_20_000000_link_follow_up_interactions_to_training_stages.php');
+        $migracion->down();
+
+        $paciente = $this->crearPaciente();
+        $entrenamiento = $this->crearEntrenamiento($paciente, [
+            'fecha' => '2026-10-21',
+            'seguimiento_dos_semanas_inicio' => '2026-11-04',
+            'seguimiento_dos_semanas_fin' => '2026-11-11',
+            'llamada_mensual_1_inicio' => '2026-11-18',
+            'llamada_mensual_1_fin' => '2026-12-02',
+        ]);
+        $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'entrenamiento_id' => $entrenamiento->id,
+            'fecha' => '2026-10-21',
+            'motivo' => MotivoInteraccion::CITA_ENTRENAMIENTO,
+            'nueva_fecha_contacto' => '2026-11-04',
+        ]);
+        $seguimiento = $this->crearInteraccion($paciente, [
+            'contactado' => true,
+            'fecha' => '2026-11-03',
+            'motivo' => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            'nueva_fecha_contacto' => '2026-11-17',
+        ]);
+
+        $migracion->up();
+
+        $seguimiento->refresh();
+        $this->assertSame($entrenamiento->id, $seguimiento->seguimiento_entrenamiento_id);
+        $this->assertSame(0, $seguimiento->etapa_seguimiento);
+        $this->assertSame('2026-11-17', $seguimiento->nueva_fecha_contacto->toDateString());
+        $this->assertSame('2026-11-18', $this->service->getFechaProximoContacto($paciente));
     }
 
     public function test_get_fechas_proximos_contactos_programados_excluye_las_ya_contactadas(): void

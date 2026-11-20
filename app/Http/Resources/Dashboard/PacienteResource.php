@@ -25,7 +25,7 @@ class PacienteResource extends JsonResource
         // conserva el criterio de negocio y no se toma un entrenamiento inactivo.
         $entrenamientoActual = $this->resource->relationLoaded('entrenamientos')
             ? $this->entrenamientos->firstWhere('activo', true)
-            : $this->entrenamientos()->where('activo', true)->latest()->first();
+            : $this->entrenamientos()->where('activo', true)->latest()->orderByDesc('id')->first();
         $metasCumplidas = $entrenamientoActual
             ? $this->metas()
                 ->where('entrenamiento_id', $entrenamientoActual->id)

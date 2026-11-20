@@ -45,6 +45,7 @@ const {
     submit,
     verFechaHoraContacto,
     verFilaFechaProximoContacto,
+    fechaSugeridaPorCronograma,
     applyAlertaDefaults,
     fillDataInteraccion,
     registerFormWatchers,
@@ -133,6 +134,7 @@ onMounted(async () => {
                 <FormProximoContacto
                     v-if="verFilaFechaProximoContacto"
                     :form="formContacto"
+                    :solo-lectura="fechaSugeridaPorCronograma"
                 />
 
                 <FormObservacionesContacto :form="formContacto" />

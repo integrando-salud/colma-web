@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
 
@@ -41,7 +42,11 @@ class InteraccionService
                 ? new Interaccion()
                 : Interaccion::query()->findOrFail($data['id']);
 
+            $seguimiento = $this->resolverEtapaSeguimiento($interaccion, $data);
+
             $interaccion->fill([
+                'seguimiento_entrenamiento_id' => $seguimiento['entrenamiento'] ?? null,
+                'etapa_seguimiento' => $seguimiento['etapa'] ?? null,
                 'paciente_id' => $data['paciente_id'],
                 // user_id identifica siempre a quien creó la interacción.
                 // El último usuario que la modificó se guarda por separado.
@@ -74,7 +79,9 @@ class InteraccionService
                 'razon_contacto_participante' => data_get($data, 'razon_contacto_participante'),
                 'razon_contacto_participante_otro' => data_get($data, 'razon_contacto_participante_otro'),
                 'contacto_participante_acciones' => data_get($data, 'contacto_participante_acciones'),
-                'nueva_fecha_contacto' => $this->nuevaFechaContacto($data),
+                'nueva_fecha_contacto' => $seguimiento && $data['contactado']
+                    ? $seguimiento['siguiente_fecha']
+                    : $this->nuevaFechaContacto($data),
                 'no_adherencia_pregunta_a' => data_get($data, 'no_adherencia_pregunta_a'),
                 'no_adherencia_otro' => data_get($data, 'no_adherencia_otro'),
                 'no_adherencia_pregunta_b' => data_get($data, 'no_adherencia_pregunta_b'),
@@ -126,6 +133,80 @@ class InteraccionService
 
             return true;
         });
+    }
+
+    /** @return array{entrenamiento: int, etapa: int, siguiente_fecha: ?string}|null */
+    private function resolverEtapaSeguimiento(Interaccion $interaccion, array $data): ?array
+    {
+        $motivo = MotivoInteraccion::from($data['motivo']);
+        if (! in_array($motivo, [
+            MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            MotivoInteraccion::SEGUIMIENTO_MENSUAL,
+            MotivoInteraccion::AGENDAR_CITA_FINAL,
+        ], true)) {
+            return null;
+        }
+
+        $mismoMotivo = $interaccion->exists && $interaccion->motivo === $motivo;
+        $entrenamientoVinculado = $interaccion->seguimiento_entrenamiento_id;
+        $entrenamientoSolicitado = $data['id_entrenamiento'] ?? null;
+        $entrenamiento = Entrenamiento::query()
+            ->where('paciente_id', $data['paciente_id'])
+            ->when($entrenamientoVinculado, fn ($query) => $query->whereKey($entrenamientoVinculado))
+            ->when(! $entrenamientoVinculado, fn ($query) => $query->where('activo', true))
+            ->latest()
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->first();
+
+        if ((! $entrenamiento && $entrenamientoVinculado)
+            || (! $entrenamientoVinculado && $entrenamientoSolicitado && $entrenamiento?->id !== (int) $entrenamientoSolicitado)) {
+            throw ValidationException::withMessages(['motivo' => 'El seguimiento debe corresponder al entrenamiento del paciente.']);
+        }
+
+        $fecha = $this->fechaContacto($data);
+        if (! $entrenamiento || ! $fecha || $fecha < $entrenamiento->fecha->toDateString()) {
+            if (isset($data['etapa_seguimiento']) || $entrenamientoVinculado) {
+                throw ValidationException::withMessages(['fecha' => 'La fecha del seguimiento debe ser igual o posterior a la del entrenamiento.']);
+            }
+
+            return null;
+        }
+
+        $pendientes = Entrenamiento::queryEtapasPendientes($entrenamiento->id, $interaccion->id)
+            ->orderBy('etapa')
+            ->get();
+        $etapaPendiente = $pendientes->firstWhere('motivo', $motivo->value)?->etapa;
+        $etapa = match ($motivo) {
+            MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS => Entrenamiento::ETAPA_DOS_SEMANAS,
+            MotivoInteraccion::AGENDAR_CITA_FINAL => Entrenamiento::ETAPA_AGENDAR_CITA_FINAL,
+            MotivoInteraccion::SEGUIMIENTO_MENSUAL => $mismoMotivo && $entrenamientoVinculado
+                ? $interaccion->etapa_seguimiento
+                : ($data['etapa_seguimiento'] ?? $etapaPendiente),
+        };
+
+        if ($etapa === null || ! isset(Entrenamiento::VENTANAS[$etapa])
+            || (isset($data['etapa_seguimiento']) && (int) $data['etapa_seguimiento'] !== (int) $etapa)
+            || Entrenamiento::motivoEtapa($etapa) !== $motivo
+            || ($motivo === MotivoInteraccion::SEGUIMIENTO_MENSUAL
+                && ($etapa > $entrenamiento->seguimientos_mensuales
+                    || ($etapaPendiente !== null && $etapa > $etapaPendiente && ! ($mismoMotivo && $entrenamientoVinculado))))) {
+            throw ValidationException::withMessages(['motivo' => 'La etapa de seguimiento cambió. Volvé a abrir el formulario.']);
+        }
+
+        $siguienteFecha = $motivo === MotivoInteraccion::AGENDAR_CITA_FINAL
+            ? $this->fechaDatabase(data_get($data, 'fecha_cita'))
+            : $pendientes->first(fn ($pendiente) => (int) $pendiente->etapa !== (int) $etapa)?->fecha;
+
+        if (! $entrenamiento->activo && $mismoMotivo) {
+            $siguienteFecha = $interaccion->nueva_fecha_contacto?->toDateString();
+        }
+
+        return [
+            'entrenamiento' => $entrenamiento->id,
+            'etapa' => (int) $etapa,
+            'siguiente_fecha' => $siguienteFecha,
+        ];
     }
 
     /**

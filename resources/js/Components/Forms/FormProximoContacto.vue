@@ -11,7 +11,8 @@ const props = defineProps({
     form: {
         type: Object,
         required: true,
-    }
+    },
+    soloLectura: Boolean,
 });
 
 const formContacto = toRef(props, 'form');
@@ -76,6 +77,7 @@ const motivosReprogramacion = computed(() => {
                         class="form-control"
                         :class="{ 'is-invalid': formContacto.errors?.nueva_fecha_contacto }"
                         v-model="formContacto.nueva_fecha_contacto"
+                        :readonly="soloLectura"
                         v-maska="'##/##/####'"
                         data-maska-eager
                         placeholder="DD/MM/AAAA"

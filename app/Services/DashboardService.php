@@ -224,12 +224,11 @@ class DashboardService
                 'entrenamientos' => fn ($query) => $query
                     ->where('activo', true)
                     ->latest()
+                    ->orderByDesc('id')
                     ->with(['tratamientoVersion.sesiones.elementos', 'progresoElementos']),
                 'proximosContactosProgramados' => fn ($query) => $query
-                    ->pendingAsNextContact()
-                    ->orderBy('nueva_fecha_contacto')
-                    ->limit(3)
-                    ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha'),
+                    ->orderBy('fecha')
+                    ->limit(3),
                 'proximosContactosAlertas' => fn ($query) => $query
                     ->whereNotNull('fecha_contacto')
                     ->whereNull('revisado')

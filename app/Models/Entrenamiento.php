@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\MotivoInteraccion;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 
 class Entrenamiento extends Model
 {
@@ -82,6 +85,72 @@ class Entrenamiento extends Model
         $diasSuma['agendar_cita_final_fin'] = (28 * ($seguimientosMensuales + 1)) + 14;
 
         return $diasSuma;
+    }
+
+    public const int ETAPA_DOS_SEMANAS = 0;
+
+    public const int ETAPA_AGENDAR_CITA_FINAL = 6;
+
+    public const array VENTANAS = [
+        self::ETAPA_DOS_SEMANAS => 'seguimiento_dos_semanas',
+        1 => 'llamada_mensual_1',
+        2 => 'llamada_mensual_2',
+        3 => 'llamada_mensual_3',
+        4 => 'llamada_mensual_4',
+        5 => 'llamada_mensual_5',
+        self::ETAPA_AGENDAR_CITA_FINAL => 'agendar_cita_final',
+    ];
+
+    public static function motivoEtapa(int $etapa): MotivoInteraccion
+    {
+        return match ($etapa) {
+            self::ETAPA_DOS_SEMANAS => MotivoInteraccion::SEGUIMIENTO_DOS_SEMANAS,
+            self::ETAPA_AGENDAR_CITA_FINAL => MotivoInteraccion::AGENDAR_CITA_FINAL,
+            default => MotivoInteraccion::SEGUIMIENTO_MENSUAL,
+        };
+    }
+
+    public static function queryEtapasPendientes(?int $entrenamientoId = null, ?int $excluirInteraccionId = null): Builder
+    {
+        $actual = DB::table('entrenamientos AS candidato')
+            ->select('candidato.id')
+            ->whereColumn('candidato.paciente_id', 'e.paciente_id')
+            ->where('candidato.activo', true)
+            ->orderByDesc('candidato.created_at')
+            ->orderByDesc('candidato.id')
+            ->limit(1);
+
+        $etapas = null;
+
+        foreach (self::VENTANAS as $etapa => $ventana) {
+            $query = DB::table('entrenamientos AS e')
+                ->selectRaw("e.id AS entrenamiento_id, e.paciente_id, ? AS motivo, $etapa AS etapa, e.{$ventana}_inicio AS fecha", [
+                    self::motivoEtapa($etapa)->value,
+                ])
+                ->where('e.activo', true)
+                ->where('e.id', $actual)
+                ->whereColumn("e.{$ventana}_inicio", '>', 'e.fecha')
+                ->when($entrenamientoId !== null, fn (Builder $query) => $query->where('e.id', $entrenamientoId))
+                ->whereNotExists(function (Builder $query) use ($etapa, $excluirInteraccionId) {
+                    $query->selectRaw('1')
+                        ->from('interacciones AS realizada')
+                        ->whereColumn('realizada.seguimiento_entrenamiento_id', 'e.id')
+                        ->whereColumn('realizada.paciente_id', 'e.paciente_id')
+                        ->where('realizada.etapa_seguimiento', $etapa)
+                        ->where('realizada.motivo', self::motivoEtapa($etapa)->value)
+                        ->where('realizada.contactado', true)
+                        ->whereNull('realizada.deleted_at')
+                        ->when($excluirInteraccionId !== null, fn (Builder $query) => $query->where('realizada.id', '!=', $excluirInteraccionId));
+                });
+
+            if (self::motivoEtapa($etapa) === MotivoInteraccion::SEGUIMIENTO_MENSUAL) {
+                $query->where('e.seguimientos_mensuales', '>=', $etapa);
+            }
+
+            $etapas = $etapas ? $etapas->unionAll($query) : $query;
+        }
+
+        return DB::query()->fromSub($etapas, 'etapas');
     }
 
     public function paciente()

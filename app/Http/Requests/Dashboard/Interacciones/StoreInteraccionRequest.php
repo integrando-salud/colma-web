@@ -326,6 +326,7 @@ class StoreInteraccionRequest extends FormRequest
                     return $this->input('contactado') && $this->input('pedido_ayuda_pregunta_c') === 'No';
                 })
             ],
+            'etapa_seguimiento' => ['nullable', 'integer', 'between:0,6'],
             'id_entrenamiento' => ['nullable', 'integer', 'exists:entrenamientos,id'],
         ];
     }
