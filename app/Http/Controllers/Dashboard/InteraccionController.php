@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\InteraccionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class InteraccionController extends Controller
@@ -50,6 +51,8 @@ class InteraccionController extends Controller
             return to_route($rutaDestino, [
                 'paciente' => $paciente->id,
             ])->with('success', 'Se guardó con éxito.');
+        } catch (ValidationException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             Log::error('Error al guardar interacción.', [
                 'exception' => $exception,

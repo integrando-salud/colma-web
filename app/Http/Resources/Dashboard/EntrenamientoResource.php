@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Models\Entrenamiento;
 use App\Services\TratamientoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class EntrenamientoResource extends JsonResource
@@ -23,6 +25,14 @@ class EntrenamientoResource extends JsonResource
             'fecha' => $this->fecha->format('d/m/Y'),
             'sesiones' => $resumenProgreso['sesiones_totales'],
             'seguimientos_mensuales' => $this->seguimientos_mensuales,
+            'etapas_pendientes' => Entrenamiento::queryEtapasPendientes($this->id)
+                ->orderBy('etapa')
+                ->get()
+                ->map(fn ($etapa) => [
+                    'etapa' => (int) $etapa->etapa,
+                    'motivo' => $etapa->motivo,
+                    'fecha' => Carbon::parse($etapa->fecha)->format('d/m/Y'),
+                ]),
             'sesiones_completadas' => $resumenProgreso['sesiones_completadas'],
             'seguimiento_dos_semanas_inicio' => $this->seguimiento_dos_semanas_inicio->format('d/m/Y'),
             'seguimiento_dos_semanas_fin' => $this->seguimiento_dos_semanas_fin->format('d/m/Y'),

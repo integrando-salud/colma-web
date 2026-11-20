@@ -7,6 +7,8 @@ use App\Enums\MotivoReprogramacion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 
 class Interaccion extends Model
 {
@@ -30,6 +32,8 @@ class Interaccion extends Model
         'updated_by_user_id',
         'alerta_id',
         'entrenamiento_id',
+        'seguimiento_entrenamiento_id',
+        'etapa_seguimiento',
         'contactado',
         'fecha',
         'hora',
@@ -78,6 +82,8 @@ class Interaccion extends Model
 
     protected $casts = [
         'contactado' => 'boolean',
+        'seguimiento_entrenamiento_id' => 'integer',
+        'etapa_seguimiento' => 'integer',
         'motivo' => MotivoInteraccion::class,
         'motivo_reprogramacion' => MotivoReprogramacion::class,
         'fecha' => 'datetime',
@@ -148,9 +154,23 @@ class Interaccion extends Model
         });
     }
 
+    public static function queryContactosProgramados(): QueryBuilder
+    {
+        $cronograma = Entrenamiento::queryEtapasPendientes()
+            ->selectRaw('etapas.*, ROW_NUMBER() OVER (PARTITION BY entrenamiento_id ORDER BY etapa) AS posicion');
+
+        $legacy = static::query()->pendingAsNextContact()
+            ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha, NULL AS etapa')
+            ->toBase();
+
+        return DB::query()->fromSub($cronograma, 'cronograma')
+            ->where('posicion', 1)
+            ->selectRaw('entrenamiento_id AS id, paciente_id, entrenamiento_id, motivo, NULL AS fecha_interaccion, fecha, etapa')
+            ->unionAll($legacy);
+    }
+
     /**
-     * Interacciones que son el próximo contacto pendiente de un paciente.
-     * La fecha canónica para este propósito es nueva_fecha_contacto.
+     * Programaciones independientes del cronograma y citas finales ya agendadas.
      *
      * @param  Builder<Interaccion>  $query
      * @return Builder<Interaccion>
@@ -159,6 +179,31 @@ class Interaccion extends Model
     {
         return $query
             ->whereNotNull('nueva_fecha_contacto')
+            ->where(function (Builder $query) {
+                $query->whereNull('seguimiento_entrenamiento_id')
+                    ->orWhere(function (Builder $query) {
+                        $query->where('motivo', MotivoInteraccion::AGENDAR_CITA_FINAL)
+                            ->where('contactado', true)
+                            ->whereHas('paciente.entrenamientos', fn (Builder $query) => $query
+                                ->whereColumn('entrenamientos.id', 'interacciones.seguimiento_entrenamiento_id')
+                                ->where('entrenamientos.activo', true));
+                    });
+            })
+            ->whereNotExists(function ($subquery) {
+                $subquery->selectRaw('1')
+                    ->from('entrenamientos AS cronograma')
+                    ->whereColumn('cronograma.paciente_id', 'interacciones.paciente_id')
+                    ->where(function ($query) {
+                        $query->whereColumn('cronograma.id', 'interacciones.entrenamiento_id')
+                            ->orWhere(function ($query) {
+                                $query->whereNull('interacciones.entrenamiento_id')
+                                    ->whereColumn('cronograma.fecha', 'interacciones.fecha');
+                            });
+                    })
+                    ->whereColumn('cronograma.seguimiento_dos_semanas_inicio', '>', 'cronograma.fecha')
+                    ->where('interacciones.motivo', MotivoInteraccion::CITA_ENTRENAMIENTO)
+                    ->where('interacciones.contactado', true);
+            })
             ->where(function (Builder $query) {
                 $query->whereNull('entrenamiento_id')
                     ->orWhereHas('entrenamiento', fn (Builder $query) => $query->where('activo', true));

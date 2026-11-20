@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\MotivoInteraccion;
 use App\Models\Diagnostico;
 use App\Models\Entrenamiento;
+use App\Models\Interaccion;
 use App\Models\Paciente;
 use App\Models\User;
 use App\Support\UserTimezone;
@@ -38,47 +39,19 @@ class PacienteService
             $query->whereNull('revisado');
         }]);
 
-        $query->selectSub('
-            SELECT MIN(fecha) FROM (
-                SELECT (
-                    SELECT i_programada.nueva_fecha_contacto
-                    FROM interacciones i_programada
-                    WHERE i_programada.paciente_id = pacientes.id
-                        AND i_programada.nueva_fecha_contacto IS NOT NULL
-                        AND i_programada.deleted_at IS NULL
-                        AND (
-                            i_programada.entrenamiento_id IS NULL
-                            OR EXISTS (
-                                SELECT 1
-                                FROM entrenamientos entrenamiento_programado
-                                WHERE entrenamiento_programado.id = i_programada.entrenamiento_id
-                                    AND entrenamiento_programado.activo = 1
-                            )
-                        )
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM interacciones i_contactado
-                            WHERE i_contactado.paciente_id = pacientes.id
-                                AND i_contactado.contactado = 1
-                                AND i_contactado.deleted_at IS NULL
-                                AND i_contactado.fecha >= i_programada.nueva_fecha_contacto
-                        )
-                    ORDER BY i_programada.nueva_fecha_contacto
-                    LIMIT 1
-                ) AS fecha
-                UNION ALL
-                SELECT (
-                    SELECT a.fecha_contacto
-                    FROM alertas a
-                    WHERE a.paciente_id = pacientes.id
-                        AND a.fecha_contacto IS NOT NULL
-                        AND a.revisado IS NULL
-                        AND a.deleted_at IS NULL
-                    ORDER BY a.fecha_contacto
-                    LIMIT 1
-                ) AS fecha
-            ) proximas_fechas
-        ', 'nueva_fecha_contacto');
+        $programados = Interaccion::queryContactosProgramados();
+        $alertas = DB::table('alertas')->select('paciente_id', 'fecha_contacto AS fecha')
+            ->whereNotNull('fecha_contacto')
+            ->whereNull('revisado')
+            ->whereNull('deleted_at');
+
+        $fechas = DB::query()->fromSub($programados, 'programados')
+            ->select('paciente_id', 'fecha')
+            ->unionAll($alertas);
+
+        $query->selectSub(DB::query()->fromSub($fechas, 'proximas_fechas')
+            ->selectRaw('MIN(fecha)')
+            ->whereColumn('proximas_fechas.paciente_id', 'pacientes.id'), 'nueva_fecha_contacto');
 
         if (! empty($filters['nombre'])) {
             $query->where(function ($query) use ($filters) {
@@ -340,11 +313,15 @@ class PacienteService
             ->map(function ($fecha) use ($paciente) {
                 $motivo = MotivoInteraccion::tryFrom($fecha['motivo'] ?? '');
 
+                $etapa = $fecha['etapa'] ?? null;
+
                 return [
                     'fecha' => date('d/m/Y', strtotime($fecha['fecha'])),
-                    'motivo' => $this->getMotivoSiguienteContacto($paciente, $fecha, $motivo)
-                        ?? $motivo?->etiquetaCorta()
-                        ?? ($fecha['motivo'] ?? ''),
+                    'motivo' => $etapa !== null
+                        ? ($motivo === MotivoInteraccion::SEGUIMIENTO_MENSUAL ? "Seguimiento mensual $etapa" : $motivo->value)
+                        : ($this->getMotivoSiguienteContacto($paciente, $fecha, $motivo)
+                            ?? $motivo?->etiquetaCorta()
+                            ?? ($fecha['motivo'] ?? '')),
                 ];
             })
             ->take($cantidad);
@@ -409,12 +386,11 @@ class PacienteService
             'entrenamientos' => fn ($query) => $query
                 ->where('activo', true)
                 ->latest()
+                ->orderByDesc('id')
                 ->with(['tratamientoVersion.sesiones.elementos', 'progresoElementos']),
             'proximosContactosProgramados' => fn ($query) => $query
-                ->pendingAsNextContact()
-                ->orderBy('nueva_fecha_contacto')
-                ->limit(3)
-                ->selectRaw('id, paciente_id, entrenamiento_id, motivo, fecha AS fecha_interaccion, nueva_fecha_contacto AS fecha'),
+                ->orderBy('fecha')
+                ->limit(3),
             'proximosContactosAlertas' => fn ($query) => $query
                 ->whereNotNull('fecha_contacto')
                 ->whereNull('revisado')
@@ -441,11 +417,10 @@ class PacienteService
      */
     public function getFechasProximosContactosProgramados(Paciente $paciente, int $cantidad = 3): Collection
     {
-        return $paciente->interacciones()
-            ->pendingAsNextContact()
-            ->orderBy('nueva_fecha_contacto')
+        return $paciente->proximosContactosProgramados()
+            ->orderBy('fecha')
             ->limit($cantidad)
-            ->get(['id', 'entrenamiento_id', 'motivo', 'fecha AS fecha_interaccion', 'nueva_fecha_contacto AS fecha']);
+            ->get();
     }
 
     /**
@@ -498,14 +473,13 @@ class PacienteService
 
     /**
      * Obtiene la próxima fecha de contacto programada para un paciente
-     * Si ya fue contactado con posterioridad a esa fecha, devuelve NULL
      */
     public function getFechaProximoContactoProgramado(Paciente $paciente): ?string
     {
-        return $paciente->interacciones()
-            ->pendingAsNextContact()
-            ->orderBy('nueva_fecha_contacto')
-            ->value('nueva_fecha_contacto');
+        return $paciente->proximosContactosProgramados()
+            ->orderBy('fecha')
+            ->toBase()
+            ->value('fecha');
     }
 
     /**
@@ -525,7 +499,7 @@ class PacienteService
      */
     public function getEntrenamientoActual(Paciente $paciente): ?Entrenamiento
     {
-        return $paciente->entrenamientos()->where('activo', true)->latest()->first();
+        return $paciente->entrenamientos()->where('activo', true)->latest()->orderByDesc('id')->first();
     }
 
     /**

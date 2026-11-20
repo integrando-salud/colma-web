@@ -55,6 +55,7 @@ export const FORM_CONTACTO = {
     pedido_ayuda_pregunta_c: '',
     pedido_ayuda_pregunta_d: null,
     id_entrenamiento: null,
+    etapa_seguimiento: null,
 };
 
 export const OPCION_SI = 'Si';
